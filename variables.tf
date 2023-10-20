@@ -27,8 +27,8 @@ variable "resource_group_name" {
 }
 
 variable "location" {
-  type        = string
-  default     = null
+  type    = string
+  default = null
   # nullable = false
   description = <<DESCRIPTION
   The Azure region where the resources should be deployed.
@@ -67,7 +67,7 @@ variable "frontend_ip_configurations" { # Variables that can change per IP confi
     tags                                   = optional(map(any), {})
     create_public_ip_address               = optional(bool, false)
     new_public_ip_resource_group_name      = optional(string)
-    new_public_ip_location     = optional(string)
+    new_public_ip_location                 = optional(string)
     inherit_lock                           = optional(bool, true)
     lock_type_if_not_inherited             = optional(string, "None")
     inherit_tags                           = optional(bool, true)
@@ -166,19 +166,19 @@ variable "sku_tier" {
 # Public Ip Configuration - 1 per 1 LB; 1 per (N) Ip Configurations
 variable "public_ip_address_configuration" {
   type = object({
-    resource_group_name     = optional(string) 
-    allocation_method       = optional(string, "Static")
-    ddos_protection_mode    = optional(string, "VirtualNetworkInherited")
+    resource_group_name              = optional(string)
+    allocation_method                = optional(string, "Static")
+    ddos_protection_mode             = optional(string, "VirtualNetworkInherited")
     ddos_protection_plan_resource_id = optional(string)
-    domain_name_label       = optional(string)
-    idle_timeout_in_minutes = optional(number, 4)
-    ip_tags                 = optional(map(string))
-    ip_version              = optional(string, "IPv4")
+    domain_name_label                = optional(string)
+    idle_timeout_in_minutes          = optional(number, 4)
+    ip_tags                          = optional(map(string))
+    ip_version                       = optional(string, "IPv4")
     public_ip_prefix_resource_id     = optional(string)
-    reverse_fqdn            = optional(string)
-    sku                     = optional(string, "Standard")
-    sku_tier                = optional(string, "Regional")
-    tags                    = optional(map(any), {})
+    reverse_fqdn                     = optional(string)
+    sku                              = optional(string, "Standard")
+    sku_tier                         = optional(string, "Regional")
+    tags                             = optional(map(any), {})
   })
   default = {
 
@@ -300,7 +300,7 @@ variable "tunnel_interface_configurations" { ### DO NOT DELETE ###
 # Backend Address Pool Address
 variable "backend_address_pool_addresses" {
   type = list(object({
-    name = optional(string, "address_1")
+    name                               = optional(string, "address_1")
     backend_address_pool_resource_name = optional(string)
     ip_address                         = optional(string)
   }))
@@ -340,7 +340,7 @@ variable "lb_nat_rules" {
     backend_port                       = optional(number, 3389)
     frontend_port_start                = optional(number)
     frontend_port_end                  = optional(number)
-    backend_address_pool_resource_id   = optional(string) 
+    backend_address_pool_resource_id   = optional(string)
     backend_address_pool_resource_name = optional(string)
     idle_timeout_in_minutes            = optional(number, 4)
     enable_floating_ip                 = optional(bool, false)
@@ -514,14 +514,14 @@ variable "lb_rules" {
     # multiple back end pools ONLY IF gateway sku load balancer
     backend_address_pool_resource_ids   = optional(list(string))
     backend_address_pool_resource_names = optional(list(string))
-    probe_resource_id   = optional(string)
-    probe_resource_name = optional(string)
-    enable_floating_ip      = optional(bool, false)
-    idle_timeout_in_minutes = optional(number, 4)
-    load_distribution       = optional(string, "Default")
+    probe_resource_id                   = optional(string)
+    probe_resource_name                 = optional(string)
+    enable_floating_ip                  = optional(bool, false)
+    idle_timeout_in_minutes             = optional(number, 4)
+    load_distribution                   = optional(string, "Default")
     # set `diasble_outbound_snat` to true when same frontend ip configuration is referenced by outbout rule and lb rule
-    disable_outbound_snat   = optional(bool, false)
-    enable_tcp_reset        = optional(bool, false)
+    disable_outbound_snat = optional(bool, false)
+    enable_tcp_reset      = optional(bool, false)
   }))
   default = [
 
@@ -737,7 +737,7 @@ variable "frontend_subnet_resource_id" {
 #   description = <<DESCRIPTION
 
 #   DESCRIPTION
-  
+
 # }
 
 
