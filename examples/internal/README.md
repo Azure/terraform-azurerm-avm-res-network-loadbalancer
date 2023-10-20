@@ -1,7 +1,7 @@
 <!-- BEGIN_TF_DOCS -->
-# Default example
+# Internal Load Balancer \ Standard SKU example
 
-This deploys the module in its simplest form.
+This deploys the module as a common internal load balancer quick start.
 
 ```hcl
 # THIS IS CURRENTLY WORKING
