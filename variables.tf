@@ -93,7 +93,7 @@ variable "frontend_ip_configurations" { # Variables that can change per IP confi
   - `tags`: (Optional) = An optional mapping of tags to assign to the individual public IP resource.
   - `create_public_ip_address`: (Optional) An optional boolean parameter to create a new public IP address resource for the Load Balancer
   - `new_public_ip_resource_group_name`: (Optional) An optional string for the name of the resource group to place the newly created public IP into. If null, will choose `location` from `public_ip_address_configuration` or `location` for the Load Balancer.
-  - `new_public_ip_location`:
+  - `new_public_ip_location`: (Optional)
   - `inherit_lock`: (Optional)  An optional boolean to determine if the lock from the Load Balancer will be inherited by the public IP.
   - `lock_type_if_not_inherited`: (Optional) An optional string to determine what kind of lock will be placed on the public IP is not inherited from the Load Balancer
   - `inherit_tags`: (Optional) An optional boolean to determine if the public IP will inherit tags from the Load Balancer.
