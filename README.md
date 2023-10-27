@@ -48,6 +48,13 @@ The following resources are used by this module:
 
 The following input variables are required:
 
+### <a name="input_location"></a> [location](#input\_location)
+
+Description:   The Azure region where the resources should be deployed.  
+  The full list of Azure regions can be found at: https://azure.microsoft.com/regions
+
+Type: `string`
+
 ### <a name="input_name"></a> [name](#input\_name)
 
 Description:   The name of the load balancer.
@@ -56,7 +63,7 @@ Type: `string`
 
 ### <a name="input_resource_group_name"></a> [resource\_group\_name](#input\_resource\_group\_name)
 
-Description:   The resource group name of the resource group where the load balancer will be deployed.
+Description:   The name of the resource group where the load balancer will be deployed.
 
 Type: `string`
 
@@ -87,7 +94,7 @@ Type:
 
 ```hcl
 list(object({
-    name                               = optional(string, "address_1")
+    name                               = optional(string)
     backend_address_pool_resource_name = optional(string)
     ip_address                         = optional(string)
   }))
@@ -97,8 +104,7 @@ Default: `[]`
 
 ### <a name="input_backend_address_pool_configuration"></a> [backend\_address\_pool\_configuration](#input\_backend\_address\_pool\_configuration)
 
-Description:   An optional string variable that determines the target virtual network for potential backend pools.  
-  If no backend pools desired, leave as null
+Description:   String variable that determines the target virtual network for potential backend pools.
 
 Type: `string`
 
@@ -106,7 +112,7 @@ Default: `null`
 
 ### <a name="input_backend_address_pools"></a> [backend\_address\_pools](#input\_backend\_address\_pools)
 
-Description:   An optional list of objects that creates one or more backend pools  
+Description:   A list of objects that creates one or more backend pools  
   Each object has 1 parameter:
 
   - `name`: (Optional) The name of the backend address pool to create
@@ -124,7 +130,6 @@ Type:
 ```hcl
 list(object({
     name = optional(string, "bepool-1")
-    # virtual_network_id = optional(string) # REMOVE, you can only have 1 virtual network set for the backend, and this is done via virtual network from backend_address_pool_configuration
   }))
 ```
 
@@ -155,9 +160,13 @@ Type:
 ```hcl
 map(object({
     name                                     = optional(string, null)
-    log_categories_and_groups                = optional(set(string), ["allLogs"])
+    # log_categories_and_groups                = optional(set(string), ["allLogs"])
+
+    log_categories = optional(set(string), [])
+    log_groups = optional(set(string), ["allLogs"])
     metric_categories                        = optional(set(string), ["AllMetrics"])
-    log_analytics_destination_type           = optional(string, "Dedicated")
+
+    log_analytics_destination_type           = optional(string)
     workspace_resource_id                    = optional(string, null)
     storage_account_resource_id              = optional(string, null)
     event_hub_authorization_rule_resource_id = optional(string, null)
@@ -199,7 +208,7 @@ Description:   An input variable that is a list of frontend ip configurations fo
   - `frontend_private_ip_subnet_resource_id`: (Optional) An optional string parameter that is the ID of the subnet which should be associated with the IP configuration. If desired to use the same subnet for each frontend ip configuration, use frontend\_subnet\_resource\_id, or use frontend\_vnet\_name and frontend\_subnet\_name. If for public ip configuration, leave parameter empty/null.
   - `public_ip_address_resource_name`: (Optional) An optional string parameter that is the name of the public ip address to be created AND associated with the Load Balancer. Changing this forces a new Public IP to be created.
   - `public_ip_address_resource_id`: (Optional) An optional string parameter that is the ID of a public ip address which should associated with the Load Balancer.
-  - `public_ip_prefix_resource_id`: (Optional) An optional string parameter that is the ID of a public IP prexis which should be associated with the Load Balancer. Public IP prefix can only be used with outbound rules
+  - `public_ip_prefix_resource_id`: (Optional) An optional string parameter that is the ID of a public IP prefixes which should be associated with the Load Balancer. Public IP prefix can only be used with outbound rules
   - `frontend_ip_zones`: (Optional) An optional set of strings that specifies a list of availability zones in which the IP address for this Load Balancer should be located.
   - `tags`: (Optional) = An optional mapping of tags to assign to the individual public IP resource.
   - `create_public_ip_address`: (Optional) An optional boolean parameter to create a new public IP address resource for the Load Balancer
@@ -209,7 +218,7 @@ Description:   An input variable that is a list of frontend ip configurations fo
   - `lock_type_if_not_inherited`: (Optional) An optional string to determine what kind of lock will be placed on the public IP is not inherited from the Load Balancer
   - `inherit_tags`: (Optional) An optional boolean to determine if the public IP will inherit tags from the Load Balancer.
   - `edge_zone`: (Optional) An optional string that specifies the Edge Zone within the Azure Region where this public IP should exist. Changing this forces a new Public IP to be created.
-  - `zones`: (Optional) An optional list of strings that contains the availability zone to allocate the public IP in. Chaning this forces a new resource to be created.
+  - `zones`: (Optional) An optional list of strings that contains the availability zone to allocate the public IP in. Changing this forces a new resource to be created.
 
   Example Input:
   ```terraform
@@ -521,15 +530,6 @@ list(object({
 
 Default: `[]`
 
-### <a name="input_location"></a> [location](#input\_location)
-
-Description:   The Azure region where the resources should be deployed.  
-  The full list of Azure regions can be found at https://azure.microsoft.com/regions
-
-Type: `string`
-
-Default: `null`
-
 ### <a name="input_lock"></a> [lock](#input\_lock)
 
 Description:   An object that sets a lock for the Load Balancer.  
@@ -562,18 +562,18 @@ Default: `{}`
 Description:   An object variable that configures the settings that will be the same for all public IPs for this Load Balancer  
   Each object has 14 parameters:
 
+  - `allocation_method`: (Required) The allocation method for this IP address. Possible valuse are `Static` or `Dynamic`
   - `resource_group_name`: (Optional) Specifies the resource group to deploy all of the public IP addresses to be created
-  - `allocation_method`: (Required) The allocation method for this IP address. Possible valuse are Static or Dynamic
-  - `ddos_protection_mode`: (Optional) The DDoS protection mode of the public IP. Possible values are Disabled, Enabled, and VirtualNetworkInherited. Defaults to VirtualNetworkInherited.
+  - `ddos_protection_mode`: (Optional) The DDoS protection mode of the public IP. Possible values are `Disabled`, `Enabled`, and `VirtualNetworkInherited`. Defaults to `VirtualNetworkInherited`.
   - `ddos_protection_plan_resource_id`: (Optional) The ID of DDoS protection plan associated with the public IP
   - `domain_name_label`: (Optional) The label for the Domain Name. This will be used to make up the FQDN. If a domain name label is specified, an A DNS record is created for the public IP in the Microsoft Azure DNS system.
   - `idle_timeout_in_minutes`: (Optional) Specifies the timeout for the TCP idle connection. The value can be set between 4 and 30 minutes.
   - `ip_tags`: (Optional) A mapping of IP tags to assign to the public IP. Changing this forces a new resource to be created.
-  - `ip_version`: (Optional) The version of IP to use for the Public IPs. Possible valuse are IPv4 or IPv6. Changing this forces a new resource to be created.
+  - `ip_version`: (Optional) The version of IP to use for the Public IPs. Possible valuse are `IPv4` or `IPv6`. Changing this forces a new resource to be created.
   - `public_ip_prefix_resource_id`: (Optional) If specified then public IP address allocated will be provided from the public IP prefix resource. Changing this forces a new resource to be created.
   - `reverse_fqdn`: (Optional) A fully qualified domain name that resolves to this public IP address. If the reverseFqdn is specified, then a PTR DNS record is created pointing from the IP address in the in-addr.arpa domain to the reverse FQDN.
-  - `sku`: (Optional) The SKU of the Public IP. Accepted values are Basic and Standard. Defaults to Standard. Changing this forces a new resource to be created.
-  - `sku_tier`: (Optional) The SKU Tier that should be used for the Public IP. Possible values are Regional and Global. Defaults to Regional. Changing this forces a new resource to be created.
+  - `sku`: (Optional) The SKU of the Public IP. Accepted values are `Basic` and `Standard`. Defaults to `Standard`. Changing this forces a new resource to be created.
+  - `sku_tier`: (Optional) The SKU Tier that should be used for the Public IP. Possible values are `Regional` and `Global`. Defaults to `Regional`. Changing this forces a new resource to be created.
   - `tags`: (Optional) The collection of tags to be assigned to all every Public IP.
 
   Example Input:
@@ -659,8 +659,8 @@ Default: `{}`
 ### <a name="input_sku"></a> [sku](#input\_sku)
 
 Description:   The SKU of the Azure Load Balancer.   
-  Accepted values are Basic and Standard.  
-  Microsoft recommends Standard for production workloads.
+  Accepted values are `Basic` and `Standard`.  
+  Microsoft recommends `Standard` for production workloads.
 
 Type: `string`
 
@@ -668,7 +668,7 @@ Default: `"Standard"`
 
 ### <a name="input_sku_tier"></a> [sku\_tier](#input\_sku\_tier)
 
-Description:   An optional string parameter that specifies the SKU tier of this Load Balancer.   
+Description:   String parameter that specifies the SKU tier of this Load Balancer.   
   Possible values are `Global` and `Regional`.   
   Defaults to `Regional`.   
   Changing this forces a new resource to be created.

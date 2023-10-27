@@ -56,9 +56,9 @@ resource "azurerm_subnet" "example" {
 }
 
 module "loadbalancer" {
-  
+
   source = "../../"
-  
+
   name                = "public-lb"
   enable_telemetry    = false # var.enable_telemetry
   location            = azurerm_resource_group.this.location
@@ -66,7 +66,7 @@ module "loadbalancer" {
 
   frontend_ip_configurations = [
     {
-      name                     = "myFrontend"
+      name = "myFrontend"
       # Creates a public IP address
       create_public_ip_address = true
     }

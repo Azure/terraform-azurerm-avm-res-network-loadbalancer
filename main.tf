@@ -33,12 +33,12 @@ resource "azurerm_public_ip" "azlb" {
   location                = coalesce(each.value.new_public_ip_location, var.location)
   name                    = coalesce(each.value.public_ip_address_resource_name, "pip-${var.name}")
   resource_group_name     = coalesce(each.value.new_public_ip_resource_group_name, var.public_ip_address_configuration.resource_group_name, var.resource_group_name)
-  ddos_protection_mode    = var.public_ip_address_configuration.ddos_protection_mode
-  ddos_protection_plan_id = var.public_ip_address_configuration.ddos_protection_plan_resource_id
-  domain_name_label       = var.public_ip_address_configuration.domain_name_label
+  ddos_protection_mode    = var.public_ip_address_configuration.ddos_protection_mode             # to be modularized in the future?
+  ddos_protection_plan_id = var.public_ip_address_configuration.ddos_protection_plan_resource_id # to be modularized in the future?
+  domain_name_label       = var.public_ip_address_configuration.domain_name_label                # to be modularized in the future?
   edge_zone               = each.value.edge_zone
-  idle_timeout_in_minutes = var.public_ip_address_configuration.idle_timeout_in_minutes
-  ip_tags                 = var.public_ip_address_configuration.ip_tags
+  idle_timeout_in_minutes = var.public_ip_address_configuration.idle_timeout_in_minutes # to be modularized in the future?
+  ip_tags                 = var.public_ip_address_configuration.ip_tags                 # to be modularized in the future?
   ip_version              = var.public_ip_address_configuration.ip_version
   public_ip_prefix_id     = var.public_ip_address_configuration.public_ip_prefix_resource_id
   reverse_fqdn            = var.public_ip_address_configuration.reverse_fqdn
@@ -55,8 +55,10 @@ resource "azurerm_public_ip" "azlb" {
 resource "azurerm_lb_backend_address_pool" "azlb" {
   for_each = { for be_pool in var.backend_address_pools : be_pool.name => be_pool }
 
-  loadbalancer_id = azurerm_lb.this.id
-  name            = each.value.name
+  loadbalancer_id    = azurerm_lb.this.id
+  name               = each.value.name
+  virtual_network_id = var.backend_address_pool_configuration
+  # to add functionality for tunnel interface
 }
 
 
@@ -170,16 +172,24 @@ resource "azurerm_lb_nat_pool" "azlb" {
 resource "azurerm_monitor_diagnostic_setting" "this" {
   for_each = var.diagnostic_settings
 
-  name = each.value.name
-  target_resource_id = azurerm_lb.this.id
-  log_analytics_workspace_id = each.value.workspace_resource_id
-  storage_account_id = each.value.storage_account_resource_id
+  name                           = each.value.name
+  target_resource_id             = azurerm_lb.this.id
+  log_analytics_workspace_id     = each.value.workspace_resource_id
+  storage_account_id             = each.value.storage_account_resource_id
   eventhub_authorization_rule_id = each.value.event_hub_authorization_rule_resource_id
-  partner_solution_id = each.value.marketplace_partner_resource_id
+  partner_solution_id            = each.value.marketplace_partner_resource_id
   log_analytics_destination_type = each.value.log_analytics_destination_type
 
   dynamic "enabled_log" {
-    for_each = each.value.log_categories_and_groups
+    for_each = each.value.log_categories
+
+    content {
+      category_group = enabled_log.value # category or category_group
+    }
+  }
+
+  dynamic "enabled_log" {
+    for_each = each.value.log_groups
 
     content {
       category_group = enabled_log.value # category or category_group
@@ -190,7 +200,7 @@ resource "azurerm_monitor_diagnostic_setting" "this" {
     for_each = each.value.metric_categories
 
     content {
-      category = metric.value 
+      category = metric.value
     }
   }
 }

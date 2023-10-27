@@ -54,7 +54,7 @@ resource "azurerm_subnet" "example" {
 module "loadbalancer" {
 
   source = "../../"
-  
+
   name                = "public-lb"
   enable_telemetry    = false # var.enable_telemetry
   location            = azurerm_resource_group.this.location
@@ -63,7 +63,7 @@ module "loadbalancer" {
   # Frontend IP Configuration
   frontend_ip_configurations = [
     {
-      name                     = "myFrontend"
+      name = "myFrontend"
       # Creates Public IP Address
       create_public_ip_address = true
     }
@@ -90,18 +90,18 @@ module "loadbalancer" {
   # Load Balaner rule(s)
   lb_rules = [
     {
-      name                               = "myHTTPRule"
-      frontend_ip_configuration_name     = "myFrontend"
-      
-      backend_address_pool_resource_names = ["myBackendPool"]
-      protocol = "Tcp" # default
-      frontend_port = 80
-      backend_port = 80
+      name                           = "myHTTPRule"
+      frontend_ip_configuration_name = "myFrontend"
 
-      probe_resource_name                = "myHealthProbe"
+      backend_address_pool_resource_names = ["myBackendPool"]
+      protocol                            = "Tcp" # default
+      frontend_port                       = 80
+      backend_port                        = 80
+
+      probe_resource_name = "myHealthProbe"
 
       idle_timeout_in_minutes = 15
-      enable_tcp_reset = true
+      enable_tcp_reset        = true
     }
   ]
 

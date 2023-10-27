@@ -8,31 +8,20 @@ variable "enable_telemetry" {
   DESCRIPTION
 }
 
-/* 
-description = <<DESCRIPTION
-  
-```terraform
-
-```
-DESCRIPTION
- */
-
-
 variable "resource_group_name" {
   type        = string
   nullable    = false
   description = <<DESCRIPTION
-  The resource group name of the resource group where the load balancer will be deployed.
+  The name of the resource group where the load balancer will be deployed.
   DESCRIPTION
 }
 
 variable "location" {
-  type    = string
-  default = null
-  # nullable = false
+  type        = string
+  nullable    = false
   description = <<DESCRIPTION
   The Azure region where the resources should be deployed.
-  The full list of Azure regions can be found at https://azure.microsoft.com/regions
+  The full list of Azure regions can be found at: https://azure.microsoft.com/regions
   DESCRIPTION
 }
 
@@ -53,7 +42,7 @@ variable "edge_zone" {
   DESCRIPTION
 }
 
-variable "frontend_ip_configurations" { # Variables that can change per IP configuration
+variable "frontend_ip_configurations" {
   type = list(object({
     name                                   = optional(string)
     frontend_private_ip_address            = optional(string)
@@ -88,7 +77,7 @@ variable "frontend_ip_configurations" { # Variables that can change per IP confi
   - `frontend_private_ip_subnet_resource_id`: (Optional) An optional string parameter that is the ID of the subnet which should be associated with the IP configuration. If desired to use the same subnet for each frontend ip configuration, use frontend_subnet_resource_id, or use frontend_vnet_name and frontend_subnet_name. If for public ip configuration, leave parameter empty/null.
   - `public_ip_address_resource_name`: (Optional) An optional string parameter that is the name of the public ip address to be created AND associated with the Load Balancer. Changing this forces a new Public IP to be created.
   - `public_ip_address_resource_id`: (Optional) An optional string parameter that is the ID of a public ip address which should associated with the Load Balancer.
-  - `public_ip_prefix_resource_id`: (Optional) An optional string parameter that is the ID of a public IP prexis which should be associated with the Load Balancer. Public IP prefix can only be used with outbound rules
+  - `public_ip_prefix_resource_id`: (Optional) An optional string parameter that is the ID of a public IP prefixes which should be associated with the Load Balancer. Public IP prefix can only be used with outbound rules
   - `frontend_ip_zones`: (Optional) An optional set of strings that specifies a list of availability zones in which the IP address for this Load Balancer should be located.
   - `tags`: (Optional) = An optional mapping of tags to assign to the individual public IP resource.
   - `create_public_ip_address`: (Optional) An optional boolean parameter to create a new public IP address resource for the Load Balancer
@@ -98,7 +87,7 @@ variable "frontend_ip_configurations" { # Variables that can change per IP confi
   - `lock_type_if_not_inherited`: (Optional) An optional string to determine what kind of lock will be placed on the public IP is not inherited from the Load Balancer
   - `inherit_tags`: (Optional) An optional boolean to determine if the public IP will inherit tags from the Load Balancer.
   - `edge_zone`: (Optional) An optional string that specifies the Edge Zone within the Azure Region where this public IP should exist. Changing this forces a new Public IP to be created.
-  - `zones`: (Optional) An optional list of strings that contains the availability zone to allocate the public IP in. Chaning this forces a new resource to be created.
+  - `zones`: (Optional) An optional list of strings that contains the availability zone to allocate the public IP in. Changing this forces a new resource to be created.
 
   Example Input:
   ```terraform
@@ -130,7 +119,7 @@ variable "frontend_ip_configurations" { # Variables that can change per IP confi
     condition = length([for obj in var.frontend_ip_configurations :
       true
     if(contains(["Dynamic", "Static"], obj.frontend_private_ip_address_allocation))]) == length(var.frontend_ip_configurations)
-    error_message = "The accepted values for `frontend_private_ip_address_allocation` are Dynamic or Static"
+    error_message = "The accepted values for `frontend_private_ip_address_allocation` are `Dynamic` or `Static`"
   }
 }
 
@@ -139,12 +128,12 @@ variable "sku" {
   default     = "Standard"
   description = <<DESCRIPTION
   The SKU of the Azure Load Balancer. 
-  Accepted values are Basic and Standard.
-  Microsoft recommends Standard for production workloads.
+  Accepted values are `Basic` and `Standard`.
+  Microsoft recommends `Standard` for production workloads.
   DESCRIPTION
   validation {
     condition     = contains(["Basic", "Gateway", "Standard"], var.sku)
-    error_message = "The acceptable values for `sku` are Basic, Gateway, or Standard"
+    error_message = "The acceptable values for `sku` are `Basic`, `Gateway`, or `Standard`"
   }
 }
 
@@ -152,7 +141,7 @@ variable "sku_tier" {
   type        = string
   default     = "Regional"
   description = <<DESCRIPTION
-  An optional string parameter that specifies the SKU tier of this Load Balancer. 
+  String parameter that specifies the SKU tier of this Load Balancer. 
   Possible values are `Global` and `Regional`. 
   Defaults to `Regional`. 
   Changing this forces a new resource to be created.
@@ -187,18 +176,18 @@ variable "public_ip_address_configuration" {
   An object variable that configures the settings that will be the same for all public IPs for this Load Balancer
   Each object has 14 parameters:
 
+  - `allocation_method`: (Required) The allocation method for this IP address. Possible valuse are `Static` or `Dynamic`
   - `resource_group_name`: (Optional) Specifies the resource group to deploy all of the public IP addresses to be created
-  - `allocation_method`: (Required) The allocation method for this IP address. Possible valuse are Static or Dynamic
-  - `ddos_protection_mode`: (Optional) The DDoS protection mode of the public IP. Possible values are Disabled, Enabled, and VirtualNetworkInherited. Defaults to VirtualNetworkInherited.
+  - `ddos_protection_mode`: (Optional) The DDoS protection mode of the public IP. Possible values are `Disabled`, `Enabled`, and `VirtualNetworkInherited`. Defaults to `VirtualNetworkInherited`.
   - `ddos_protection_plan_resource_id`: (Optional) The ID of DDoS protection plan associated with the public IP
   - `domain_name_label`: (Optional) The label for the Domain Name. This will be used to make up the FQDN. If a domain name label is specified, an A DNS record is created for the public IP in the Microsoft Azure DNS system.
   - `idle_timeout_in_minutes`: (Optional) Specifies the timeout for the TCP idle connection. The value can be set between 4 and 30 minutes.
   - `ip_tags`: (Optional) A mapping of IP tags to assign to the public IP. Changing this forces a new resource to be created.
-  - `ip_version`: (Optional) The version of IP to use for the Public IPs. Possible valuse are IPv4 or IPv6. Changing this forces a new resource to be created.
+  - `ip_version`: (Optional) The version of IP to use for the Public IPs. Possible valuse are `IPv4` or `IPv6`. Changing this forces a new resource to be created.
   - `public_ip_prefix_resource_id`: (Optional) If specified then public IP address allocated will be provided from the public IP prefix resource. Changing this forces a new resource to be created.
   - `reverse_fqdn`: (Optional) A fully qualified domain name that resolves to this public IP address. If the reverseFqdn is specified, then a PTR DNS record is created pointing from the IP address in the in-addr.arpa domain to the reverse FQDN.
-  - `sku`: (Optional) The SKU of the Public IP. Accepted values are Basic and Standard. Defaults to Standard. Changing this forces a new resource to be created.
-  - `sku_tier`: (Optional) The SKU Tier that should be used for the Public IP. Possible values are Regional and Global. Defaults to Regional. Changing this forces a new resource to be created.
+  - `sku`: (Optional) The SKU of the Public IP. Accepted values are `Basic` and `Standard`. Defaults to `Standard`. Changing this forces a new resource to be created.
+  - `sku_tier`: (Optional) The SKU Tier that should be used for the Public IP. Possible values are `Regional` and `Global`. Defaults to `Regional`. Changing this forces a new resource to be created.
   - `tags`: (Optional) The collection of tags to be assigned to all every Public IP.
 
   Example Input:
@@ -215,15 +204,15 @@ variable "public_ip_address_configuration" {
   DESCRIPTION
   validation {
     condition     = contains(["Dynamic", "Static"], var.public_ip_address_configuration.allocation_method)
-    error_message = "The acceptable value for `allocation_method` are Dynamic or Static"
+    error_message = "The acceptable value for `allocation_method` are `Dynamic` or `Static`"
   }
   validation {
     condition     = contains(["Disabled", "Enabled", "VirtualNetworkInherited"], var.public_ip_address_configuration.ddos_protection_mode)
-    error_message = "The acceptable value for `ddos_protection_mode` are Disabled, Enabled or VirtualNetworkInherited"
+    error_message = "The acceptable value for `ddos_protection_mode` are `Disabled`, `Enabled` or `VirtualNetworkInherited`"
   }
   validation {
     condition     = (contains(["Disabled", "VirtualNetworkInherited"], var.public_ip_address_configuration.ddos_protection_mode) && var.public_ip_address_configuration.ddos_protection_plan_resource_id == null) || (contains(["Enabled"], var.public_ip_address_configuration.ddos_protection_mode) && var.public_ip_address_configuration.ddos_protection_plan_resource_id != null)
-    error_message = "A `ddos_protection_plan_resource_id` can only be set when `ddos_protection_mode` is set to Enabled"
+    error_message = "A `ddos_protection_plan_resource_id` can only be set when `ddos_protection_mode` is set to `Enabled`"
   }
   validation {
     condition     = var.public_ip_address_configuration.idle_timeout_in_minutes >= 4 && var.public_ip_address_configuration.idle_timeout_in_minutes <= 30
@@ -231,19 +220,19 @@ variable "public_ip_address_configuration" {
   }
   validation {
     condition     = contains(["IPv4", "IPv6"], var.public_ip_address_configuration.ip_version)
-    error_message = "The accepted values for `ip_version` are IPv4 or IPv6"
+    error_message = "The accepted values for `ip_version` are `IPv4` or `IPv6`"
   }
   validation {
     condition     = (contains(["IPv4", "IPv6"], var.public_ip_address_configuration.ip_version) && var.public_ip_address_configuration.allocation_method == "Static") || (contains(["IPv4"], var.public_ip_address_configuration.ip_version) && var.public_ip_address_configuration.allocation_method == "Dynamic") # Could probably format this to be consistent in line
-    error_message = "Only Static `allocation_method` supported for IPv6"
+    error_message = "Only Static `allocation_method` supported for `IPv6`"
   }
   validation {
     condition     = contains(["Basic", "Standard"], var.public_ip_address_configuration.sku)
-    error_message = "The acceptable values for `sku` are Basic or Standard"
+    error_message = "The acceptable values for `sku` are `Basic` or `Standard`"
   }
   validation {
     condition     = contains(["Global", "Regional"], var.public_ip_address_configuration.sku_tier)
-    error_message = "The acceptable values for `sku_tier` are Global or Regional"
+    error_message = "The acceptable values for `sku_tier` are `Global` or `Regional`"
   }
 }
 
@@ -252,8 +241,7 @@ variable "backend_address_pool_configuration" {
   type        = string
   default     = null
   description = <<DESCRIPTION
-  An optional string variable that determines the target virtual network for potential backend pools.
-  If no backend pools desired, leave as null
+  String variable that determines the target virtual network for potential backend pools.
   DESCRIPTION
 }
 
@@ -261,13 +249,12 @@ variable "backend_address_pool_configuration" {
 variable "backend_address_pools" {
   type = list(object({
     name = optional(string, "bepool-1")
-    # virtual_network_id = optional(string) # REMOVE, you can only have 1 virtual network set for the backend, and this is done via virtual network from backend_address_pool_configuration
   }))
   default = [
 
   ]
   description = <<DESCRIPTION
-  An optional list of objects that creates one or more backend pools
+  A list of objects that creates one or more backend pools
   Each object has 1 parameter:
 
   - `name`: (Optional) The name of the backend address pool to create
@@ -300,7 +287,7 @@ variable "tunnel_interface_configurations" { ### DO NOT DELETE ###
 # Backend Address Pool Address
 variable "backend_address_pool_addresses" {
   type = list(object({
-    name                               = optional(string, "address_1")
+    name                               = optional(string)
     backend_address_pool_resource_name = optional(string)
     ip_address                         = optional(string)
   }))
@@ -749,10 +736,14 @@ variable "frontend_subnet_resource_id" {
 
 variable "diagnostic_settings" {
   type = map(object({
-    name                                     = optional(string, null)
-    log_categories_and_groups                = optional(set(string), ["allLogs"])
-    metric_categories                        = optional(set(string), ["AllMetrics"])
-    log_analytics_destination_type           = optional(string, "Dedicated")
+    name = optional(string, null)
+    # log_categories_and_groups                = optional(set(string), ["allLogs"])
+
+    log_categories    = optional(set(string), [])
+    log_groups        = optional(set(string), ["allLogs"])
+    metric_categories = optional(set(string), ["AllMetrics"])
+
+    log_analytics_destination_type           = optional(string)
     workspace_resource_id                    = optional(string, null)
     storage_account_resource_id              = optional(string, null)
     event_hub_authorization_rule_resource_id = optional(string, null)
@@ -761,6 +752,21 @@ variable "diagnostic_settings" {
   }))
   default = {
 
+  }
+  nullable = false
+
+  validation {
+    condition     = alltrue([for _, v in var.diagnostic_settings : contains(["Dedicated", "AzureDiagnostics"], v.log_analytics_destination_type)])
+    error_message = "Log analytics destination type must be one of: 'Dedicated', 'AzureDiagnostics'."
+  }
+  validation {
+    condition = alltrue(
+      [
+        for _, v in var.diagnostic_settings :
+        v.workspace_resource_id != null || v.storage_account_resource_id != null || v.event_hub_authorization_rule_resource_id != null || v.marketplace_partner_resource_id != null
+      ]
+    )
+    error_message = "At least one of `workspace_resource_id`, `storage_account_resource_id`, `marketplace_partner_resource_id`, or `event_hub_authorization_rule_resource_id`, must be set."
   }
   description = <<DESCRIPTION
   Map of objects that manage a Diagnostic Setting for an existing resource
@@ -781,11 +787,6 @@ variable "diagnostic_settings" {
   }
   ```
   DESCRIPTION
-  nullable    = false
-  validation {
-    condition     = alltrue([for _, v in var.diagnostic_settings : contains(["Dedicated", "AzureDiagnostics"], v.log_analytics_destination_type)])
-    error_message = "Log analytics destination type must be one of: 'Dedicated', 'AzureDiagnostics'."
-  }
 }
 
 variable "role_assignments" {

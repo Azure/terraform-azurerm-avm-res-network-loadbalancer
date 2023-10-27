@@ -53,15 +53,15 @@ resource "azurerm_subnet" "example" {
 module "loadbalancer" {
 
   source = "../../"
-  
+
   name                = "internal-lb"
   enable_telemetry    = false # var.enable_telemetry
   location            = azurerm_resource_group.this.location
   resource_group_name = azurerm_resource_group.this.name
 
   # Virtual Network and Subnet for Internal LoadBalancer
-  frontend_vnet_resource_id     = azurerm_virtual_network.example.id
-  frontend_subnet_resource_id   = azurerm_subnet.example.id
+  frontend_vnet_resource_id   = azurerm_virtual_network.example.id
+  frontend_subnet_resource_id = azurerm_subnet.example.id
 
   # Frontend IP Configuration
   frontend_ip_configurations = [
