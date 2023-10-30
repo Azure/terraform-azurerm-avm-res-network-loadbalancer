@@ -62,9 +62,9 @@ resource "azurerm_subnet" "example" {
 }
 
 module "loadbalancer" {
-  
+
   source = "../../"
-  
+
   name                = "public-lb"
   enable_telemetry    = false # var.enable_telemetry
   location            = azurerm_resource_group.this.location
@@ -72,11 +72,21 @@ module "loadbalancer" {
 
   frontend_ip_configurations = [
     {
-      name                     = "myFrontend"
+      name = "myFrontend"
       # Creates a public IP address
       create_public_ip_address = true
     }
   ]
+}
+
+output "azurerm_lb" {
+  value       = module.loadbalancer.azurerm_lb
+  description = "Outputs the entire Azure Load Balancer resource"
+}
+
+output "azurerm_public_ip" {
+  value       = module.loadbalancer.azurerm_public_ip
+  description = "Outputs each Public IP Address resource in it's entirety"
 }
 ```
 
@@ -129,7 +139,15 @@ Default: `true`
 
 ## Outputs
 
-No outputs.
+The following outputs are exported:
+
+### <a name="output_azurerm_lb"></a> [azurerm\_lb](#output\_azurerm\_lb)
+
+Description: Outputs the entire Azure Load Balancer resource
+
+### <a name="output_azurerm_public_ip"></a> [azurerm\_public\_ip](#output\_azurerm\_public\_ip)
+
+Description: Outputs each Public IP Address resource in it's entirety
 
 ## Modules
 

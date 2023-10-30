@@ -159,12 +159,12 @@ Type:
 
 ```hcl
 map(object({
-    name                                     = optional(string, null)
+    name = optional(string, null)
     # log_categories_and_groups                = optional(set(string), ["allLogs"])
 
-    log_categories = optional(set(string), [])
-    log_groups = optional(set(string), ["allLogs"])
-    metric_categories                        = optional(set(string), ["AllMetrics"])
+    log_categories    = optional(set(string), [])
+    log_groups        = optional(set(string), ["allLogs"])
+    metric_categories = optional(set(string), ["AllMetrics"])
 
     log_analytics_destination_type           = optional(string)
     workspace_resource_id                    = optional(string, null)
@@ -198,27 +198,26 @@ Default: `true`
 
 ### <a name="input_frontend_ip_configurations"></a> [frontend\_ip\_configurations](#input\_frontend\_ip\_configurations)
 
-Description:   An input variable that is a list of frontend ip configurations for the load balancer.  
-  Each object has 14 attributes:
+Description:   An input variable that is a list of frontend ip configurations for the load balancer.
 
   - `name`: (Required) The name of the frontend IP configuration. Changing this forces a new resource to be created
-  - `frontend_private_ip_address`: (Optional) An optional string parameter that is the private IP address to assign to the Load Balancer. The last one and first four IPs in any range are reserved and cannot be manually assigned.
-  - `frontend_private_ip_address_version`: (Optional) An optional string parameter that is the version of IP that the private IP address is. Possible values are IPv4 or IPv6
-  - `frontend_private_ip_address_allocation`: (Optional) An optional string parameter that is the allocation method for the private IP address used by this Load Balancer. Possible values as Dynamic or Static
-  - `frontend_private_ip_subnet_resource_id`: (Optional) An optional string parameter that is the ID of the subnet which should be associated with the IP configuration. If desired to use the same subnet for each frontend ip configuration, use frontend\_subnet\_resource\_id, or use frontend\_vnet\_name and frontend\_subnet\_name. If for public ip configuration, leave parameter empty/null.
-  - `public_ip_address_resource_name`: (Optional) An optional string parameter that is the name of the public ip address to be created AND associated with the Load Balancer. Changing this forces a new Public IP to be created.
-  - `public_ip_address_resource_id`: (Optional) An optional string parameter that is the ID of a public ip address which should associated with the Load Balancer.
-  - `public_ip_prefix_resource_id`: (Optional) An optional string parameter that is the ID of a public IP prefixes which should be associated with the Load Balancer. Public IP prefix can only be used with outbound rules
-  - `frontend_ip_zones`: (Optional) An optional set of strings that specifies a list of availability zones in which the IP address for this Load Balancer should be located.
-  - `tags`: (Optional) = An optional mapping of tags to assign to the individual public IP resource.
-  - `create_public_ip_address`: (Optional) An optional boolean parameter to create a new public IP address resource for the Load Balancer
-  - `new_public_ip_resource_group_name`: (Optional) An optional string for the name of the resource group to place the newly created public IP into. If null, will choose `location` from `public_ip_address_configuration` or `location` for the Load Balancer.
-  - `new_public_ip_location`: (Optional)
-  - `inherit_lock`: (Optional)  An optional boolean to determine if the lock from the Load Balancer will be inherited by the public IP.
+  - `frontend_private_ip_address`: (Optional) A string parameter that is the private IP address to assign to the Load Balancer. The last one and first four IPs in any range are reserved and cannot be manually assigned.
+  - `frontend_private_ip_address_version`: (Optional) A string parameter that is the version of IP that the private IP address is. Possible values are IPv4 or IPv6
+  - `frontend_private_ip_address_allocation`: (Optional) A string parameter that is the allocation method for the private IP address used by this Load Balancer. Possible values as Dynamic or Static
+  - `frontend_private_ip_subnet_resource_id`: (Optional) A string parameter that is the ID of the subnet which should be associated with the IP configuration. If desired to use the same subnet for each frontend ip configuration, use frontend\_subnet\_resource\_id, or use frontend\_vnet\_name and frontend\_subnet\_name. If for public ip configuration, leave parameter empty/null.
+  - `public_ip_address_resource_name`: (Optional) A string parameter that is the name of the public ip address to be created AND associated with the Load Balancer. Changing this forces a new Public IP to be created.
+  - `public_ip_address_resource_id`: (Optional) A string parameter that is the ID of a public ip address which should associated with the Load Balancer.
+  - `public_ip_prefix_resource_id`: (Optional) A string parameter that is the ID of a public IP prefixes which should be associated with the Load Balancer. Public IP prefix can only be used with outbound rules
+  - `frontend_ip_zones`: (Optional) A  set of strings that specifies a list of availability zones in which the IP address for this Load Balancer should be located.
+  - `tags`: (Optional) = A mapping of tags to assign to the individual public IP resource.
+  - `create_public_ip_address`: (Optional) A boolean parameter to create a new public IP address resource for the Load Balancer
+  - `new_public_ip_resource_group_name`: (Optional) A string for the name of the resource group to place the newly created public IP into. If null, will choose `location` from `public_ip_address_configuration` or `location` for the Load Balancer.
+  - `new_public_ip_location`: (Optional) A string parameter for the location to deploy the public IP address resource.
+  - `inherit_lock`: (Optional)  A boolean to determine if the lock from the Load Balancer will be inherited by the public IP.
   - `lock_type_if_not_inherited`: (Optional) An optional string to determine what kind of lock will be placed on the public IP is not inherited from the Load Balancer
-  - `inherit_tags`: (Optional) An optional boolean to determine if the public IP will inherit tags from the Load Balancer.
-  - `edge_zone`: (Optional) An optional string that specifies the Edge Zone within the Azure Region where this public IP should exist. Changing this forces a new Public IP to be created.
-  - `zones`: (Optional) An optional list of strings that contains the availability zone to allocate the public IP in. Changing this forces a new resource to be created.
+  - `inherit_tags`: (Optional) A boolean to determine if the public IP will inherit tags from the Load Balancer.
+  - `edge_zone`: (Optional) A string that specifies the Edge Zone within the Azure Region where this public IP should exist. Changing this forces a new Public IP to be created.
+  - `zones`: (Optional) A list of strings that contains the availability zone to allocate the public IP in. Changing this forces a new resource to be created.
 
   Example Input:
   ```terraform
@@ -291,15 +290,26 @@ Description:
   - `name`: (Required) The name of the Load Balancer rule. Changing this forces a new resource to be created.
   - `frontend_ip_configuration_name`: (Required) The name of the frontend IP configuration to which the rule is associated with
   - `protocol`: (Required) The transport protocol for the external endpoint. Possible values are All, Tcp, or Udp.
-  - `frontend_port_start`:
-  - `frontend_port_end`:
-  - `backend_port`:
-  - `idle_timeout_in_minutes`: Specifies the idle timeout in minutes for TCP connections. Valid values are between 4 and 30 minutes. Defaults to 4 minutes.
+  - `frontend_port_start`: (Required) The first port number in the range of external ports that will be used to provide Inbound NAT to NICs associated with this Load Balancer. Possible values range between 1 and 65534, inclusive.
+  - `frontend_port_end`: (Required) The last port number in the range of external ports that will be used to provide Inbound NAT to NICs associated with this Load Balancer. Possible values range between 1 and 65534, inclusive.
+  - `backend_port`: (Required) The port used for the internal endpoint. Possible values range between 1 and 65535, inclusive.
+  - `idle_timeout_in_minutes`: (Optional) Specifies the idle timeout in minutes for TCP connections. Valid values are between 4 and 30 minutes. Defaults to 4 minutes.
   - `enable_floating_ip`: (Optional) A boolean parameter to determine if there are floating IPs enabled for this Load Balancer NAT rule. A "floating” IP is reassigned to a secondary server in case the primary server fails. Required to configure a SQL AlwaysOn Availability Group. Defaults to false.
-  - `enable_tcp_reset`: A boolean to determine if TCP Reset is enabled for this Load Balancer rule. Defaults to false.
+  - `enable_tcp_reset`: (Optional) A boolean to determine if TCP Reset is enabled for this Load Balancer rule. Defaults to false.
 
   ```terraform
-
+  lb_nat_pools = [
+    lb_nat_pool_1 = {
+      resource_group_name            = azurerm_resource_group.example.name
+      loadbalancer_id                = azurerm_lb.example.id
+      name                           = "SampleApplicationPool"
+      protocol                       = "Tcp"
+      frontend_port_start            = 80
+      frontend_port_end              = 81
+      backend_port                   = 8080
+      frontend_ip_configuration_name = "PublicIPAddress"
+    }
+  ]
 ```
 
 Type:
@@ -354,11 +364,11 @@ Type:
 
 ```hcl
 list(object({
-    name                               = optional(string, "lb_nat_rule_1")
-    frontend_ip_configuration_name     = optional(string, "ipv4-config")
-    protocol                           = optional(string, "Tcp")
+    name                               = optional(string)
+    frontend_ip_configuration_name     = optional(string)
+    protocol                           = optional(string)
     frontend_port                      = optional(number)
-    backend_port                       = optional(number, 3389)
+    backend_port                       = optional(number)
     frontend_port_start                = optional(number)
     frontend_port_end                  = optional(number)
     backend_address_pool_resource_id   = optional(string)
@@ -456,7 +466,7 @@ Type:
 
 ```hcl
 list(object({
-    name                            = optional(string, "lb_probe_1")
+    name                            = optional(string)
     protocol                        = optional(string, "Tcp")
     port                            = optional(number, 80)
     interval_in_seconds             = optional(number, 15)
@@ -509,8 +519,8 @@ Type:
 
 ```hcl
 list(object({
-    name                           = optional(string, "lb_rule_1")
-    frontend_ip_configuration_name = optional(string, "ipv4-ipconfig")
+    name                           = optional(string)
+    frontend_ip_configuration_name = optional(string)
     protocol                       = optional(string, "Tcp")
     frontend_port                  = optional(number, 3389)
     backend_port                   = optional(number, 3389)
@@ -559,8 +569,7 @@ Default: `{}`
 
 ### <a name="input_public_ip_address_configuration"></a> [public\_ip\_address\_configuration](#input\_public\_ip\_address\_configuration)
 
-Description:   An object variable that configures the settings that will be the same for all public IPs for this Load Balancer  
-  Each object has 14 parameters:
+Description:   An object variable that configures the settings that will be the same for all public IPs for this Load Balancer
 
   - `allocation_method`: (Required) The allocation method for this IP address. Possible valuse are `Static` or `Dynamic`
   - `resource_group_name`: (Optional) Specifies the resource group to deploy all of the public IP addresses to be created
@@ -614,12 +623,12 @@ Default: `{}`
 
 Description:   Map of objects that assigns a given principal (user or group) to a given role.
 
-  - `role_definition_id_or_name` - The ID or name of the role definition to assign to the principal.
-  - `principal_id` - The ID of the principal to assign the role to.
-  - `description` - The description of the role assignment.
-  - `skip_service_principal_aad_check` - If set to true, skips the Azure Active Directory check for the service principal in the tenant. Defaults to false.
-  - `condition` - The condition which will be used to scope the role assignment.
-  - `condition_version` - The version of the condition syntax. Valid values are '2.0'.
+  - `role_definition_id_or_name`: The ID or name of the role definition to assign to the principal.
+  - `principal_id`: The ID of the principal to assign the role to.
+  - `description`: The description of the role assignment.
+  - `skip_service_principal_aad_check`: If set to true, skips the Azure Active Directory check for the service principal in the tenant. Defaults to false.
+  - `condition`: The condition which will be used to scope the role assignment.
+  - `condition_version`: The version of the condition syntax. Valid values are '2.0'.
 
   ```terraform
   role_assignments = {

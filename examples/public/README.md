@@ -60,7 +60,7 @@ resource "azurerm_subnet" "example" {
 module "loadbalancer" {
 
   source = "../../"
-  
+
   name                = "public-lb"
   enable_telemetry    = false # var.enable_telemetry
   location            = azurerm_resource_group.this.location
@@ -69,7 +69,7 @@ module "loadbalancer" {
   # Frontend IP Configuration
   frontend_ip_configurations = [
     {
-      name                     = "myFrontend"
+      name = "myFrontend"
       # Creates Public IP Address
       create_public_ip_address = true
     }
@@ -96,21 +96,31 @@ module "loadbalancer" {
   # Load Balaner rule(s)
   lb_rules = [
     {
-      name                               = "myHTTPRule"
-      frontend_ip_configuration_name     = "myFrontend"
-      
-      backend_address_pool_resource_names = ["myBackendPool"]
-      protocol = "Tcp" # default
-      frontend_port = 80
-      backend_port = 80
+      name                           = "myHTTPRule"
+      frontend_ip_configuration_name = "myFrontend"
 
-      probe_resource_name                = "myHealthProbe"
+      backend_address_pool_resource_names = ["myBackendPool"]
+      protocol                            = "Tcp" # default
+      frontend_port                       = 80
+      backend_port                        = 80
+
+      probe_resource_name = "myHealthProbe"
 
       idle_timeout_in_minutes = 15
-      enable_tcp_reset = true
+      enable_tcp_reset        = true
     }
   ]
 
+}
+
+output "azurerm_lb" {
+  value       = module.loadbalancer.azurerm_lb
+  description = "Outputs the entire Azure Load Balancer resource"
+}
+
+output "azurerm_public_ip" {
+  value       = module.loadbalancer.azurerm_public_ip
+  description = "Outputs each Public IP Address resource in it's entirety"
 }
 
 # data "azurerm_resource_group" "azlb" {
@@ -183,7 +193,15 @@ Default: `true`
 
 ## Outputs
 
-No outputs.
+The following outputs are exported:
+
+### <a name="output_azurerm_lb"></a> [azurerm\_lb](#output\_azurerm\_lb)
+
+Description: Outputs the entire Azure Load Balancer resource
+
+### <a name="output_azurerm_public_ip"></a> [azurerm\_public\_ip](#output\_azurerm\_public\_ip)
+
+Description: Outputs each Public IP Address resource in it's entirety
 
 ## Modules
 

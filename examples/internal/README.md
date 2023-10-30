@@ -59,15 +59,15 @@ resource "azurerm_subnet" "example" {
 module "loadbalancer" {
 
   source = "../../"
-  
+
   name                = "internal-lb"
   enable_telemetry    = false # var.enable_telemetry
   location            = azurerm_resource_group.this.location
   resource_group_name = azurerm_resource_group.this.name
 
   # Virtual Network and Subnet for Internal LoadBalancer
-  frontend_vnet_resource_id     = azurerm_virtual_network.example.id
-  frontend_subnet_resource_id   = azurerm_subnet.example.id
+  frontend_vnet_resource_id   = azurerm_virtual_network.example.id
+  frontend_subnet_resource_id = azurerm_subnet.example.id
 
   # Frontend IP Configuration
   frontend_ip_configurations = [
@@ -112,6 +112,11 @@ module "loadbalancer" {
     }
   ]
 
+}
+
+output "azurerm_lb" {
+  value       = module.loadbalancer.azurerm_lb
+  description = "Outputs the entire Azure Load Balancer resource"
 }
 
 # data "azurerm_resource_group" "azlb" {
@@ -184,7 +189,11 @@ Default: `true`
 
 ## Outputs
 
-No outputs.
+The following outputs are exported:
+
+### <a name="output_azurerm_lb"></a> [azurerm\_lb](#output\_azurerm\_lb)
+
+Description: Outputs the entire Azure Load Balancer resource
 
 ## Modules
 
