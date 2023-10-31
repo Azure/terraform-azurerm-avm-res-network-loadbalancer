@@ -70,7 +70,7 @@ resource "azurerm_log_analytics_workspace" "example" {
 
 data "azurerm_role_definition" "role" {
   name = "Contributor"
-  
+
 }
 
 
@@ -103,8 +103,8 @@ module "loadbalancer" {
 
   diagnostic_settings = {
     diag_settings1 = {
-      name                           = "diag_settings_1"
-      workspace_resource_id          = azurerm_log_analytics_workspace.example.id
+      name                  = "diag_settings_1"
+      workspace_resource_id = azurerm_log_analytics_workspace.example.id
     }
   }
 

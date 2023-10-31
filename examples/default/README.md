@@ -65,6 +65,9 @@ module "loadbalancer" {
 
   source = "../../"
 
+  # source = "Azure/avm-res-network-loadbalancer/azurerm"
+  # version = 0.1.0
+
   name                = "public-lb"
   enable_telemetry    = false # var.enable_telemetry
   location            = azurerm_resource_group.this.location
