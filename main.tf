@@ -219,7 +219,9 @@ resource "azurerm_management_lock" "azlb" {
     azurerm_lb_nat_rule.azlb,
     azurerm_lb_probe.azlb,
     azurerm_lb_rule.azlb,
-    azurerm_lb_outbound_rule.azlb
+    azurerm_lb_outbound_rule.azlb,
+    azurerm_monitor_diagnostic_setting.this,
+    azurerm_role_assignment.this
   ]
 }
 
@@ -231,7 +233,15 @@ resource "azurerm_management_lock" "noninherited_pip_lock" {
   lock_level = each.value.lock_type_if_not_inherited
   depends_on = [
     azurerm_lb.this,
-    azurerm_public_ip.azlb
+    azurerm_public_ip.azlb,
+    azurerm_lb_backend_address_pool.azlb,
+    azurerm_lb_backend_address_pool_address.azlb,
+    azurerm_lb_nat_rule.azlb,
+    azurerm_lb_probe.azlb,
+    azurerm_lb_rule.azlb,
+    azurerm_lb_outbound_rule.azlb,
+    azurerm_monitor_diagnostic_setting.this,
+    azurerm_role_assignment.this
   ]
 }
 
@@ -243,7 +253,15 @@ resource "azurerm_management_lock" "inherited_pip_lock" {
   lock_level = var.lock.kind
   depends_on = [
     azurerm_lb.this,
-    azurerm_public_ip.azlb
+    azurerm_public_ip.azlb,
+    azurerm_lb_backend_address_pool.azlb,
+    azurerm_lb_backend_address_pool_address.azlb,
+    azurerm_lb_nat_rule.azlb,
+    azurerm_lb_probe.azlb,
+    azurerm_lb_rule.azlb,
+    azurerm_lb_outbound_rule.azlb,
+    azurerm_monitor_diagnostic_setting.this,
+    azurerm_role_assignment.this
   ]
 }
 

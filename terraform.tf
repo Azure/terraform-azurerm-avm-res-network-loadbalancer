@@ -1,5 +1,5 @@
 terraform {
-  required_version = ">= 1.0.0"
+  required_version = ">= 1.5.2"
   required_providers {
     # TODO: Ensure all required providers are listed here.
     azurerm = {
@@ -11,11 +11,4 @@ terraform {
       version = ">= 3.5.0"
     }
   }
-}
-
-provider "azurerm" {
-  features {
-
-  }
-
 }

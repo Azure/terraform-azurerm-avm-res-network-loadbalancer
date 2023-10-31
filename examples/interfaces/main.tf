@@ -1,8 +1,5 @@
-# THIS IS CURRENTLY WORKING
-# false positive with public ip address and private ip address version
-
 terraform {
-  required_version = ">= 1.5.2"
+  required_version = ">= 1.0.0"
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
@@ -20,18 +17,23 @@ provider "azurerm" {
   }
 }
 
+
 module "naming" {
   source  = "Azure/naming/azurerm"
   version = "0.3.0"
 }
 
-# This picks a random region from the list of regions.
+# Helps pick a random region from the list of regions.
 resource "random_integer" "region_index" {
   min = 0
   max = length(local.azure_regions) - 1
 }
 
-# This is required for resource modules
+data "azurerm_client_config" "this" {
+
+}
+
+
 resource "azurerm_resource_group" "this" {
   name     = module.naming.resource_group.name_unique
   location = local.azure_regions[random_integer.region_index.result]
@@ -51,6 +53,22 @@ resource "azurerm_subnet" "example" {
   address_prefixes     = ["10.1.1.0/26"]
 }
 
+# Log Analytics workspace
+resource "azurerm_log_analytics_workspace" "example" {
+  name                = "acctest-01"
+  location            = azurerm_resource_group.this.location
+  resource_group_name = azurerm_resource_group.this.name
+  sku                 = "PerGB2018"
+  retention_in_days   = 30
+}
+
+data "azurerm_role_definition" "role" {
+  name = "Contributor"
+  
+}
+
+
+
 module "loadbalancer" {
 
   source = "../../"
@@ -63,59 +81,39 @@ module "loadbalancer" {
   location            = azurerm_resource_group.this.location
   resource_group_name = azurerm_resource_group.this.name
 
-  # Frontend IP Configuration
+
   frontend_ip_configurations = [
     {
       name = "myFrontend"
-      # Creates Public IP Address
+      # Creates a public IP address
       create_public_ip_address = true
+      tags = {
+        createdBy = "TF-InfraTeam"
+      }
+      inherit_lock = true
+      inherit_tags = true
     }
   ]
 
-  # Backend Address Pool(s)
-  backend_address_pools = [
-    {
-      name = "myBackendPool"
+  diagnostic_settings = {
+    diag_settings1 = {
+      name                           = "diag_settings_1"
+      workspace_resource_id          = azurerm_log_analytics_workspace.example.id
     }
-  ]
+  }
 
-  # Virtual Network for Backend Address Pool(s)
-  backend_address_pool_configuration = azurerm_virtual_network.example.id
+  lock = {
+    kind = "None"
+  }
 
-  # Health Probe(s)
-  lb_probes = [
-    {
-      name     = "myHealthProbe"
-      protocol = "Tcp" # default
+  tags = {
+    environment = "dev-tf"
+  }
+
+  role_assignments = {
+    role_assignment_1 = {
+      role_definition_id_or_name = data.azurerm_role_definition.role.name
+      principal_id               = data.azurerm_client_config.this.object_id
     }
-  ]
-
-  # Load Balaner rule(s)
-  lb_rules = [
-    {
-      name                           = "myHTTPRule"
-      frontend_ip_configuration_name = "myFrontend"
-
-      backend_address_pool_resource_names = ["myBackendPool"]
-      protocol                            = "Tcp" # default
-      frontend_port                       = 80
-      backend_port                        = 80
-
-      probe_resource_name = "myHealthProbe"
-
-      idle_timeout_in_minutes = 15
-      enable_tcp_reset        = true
-    }
-  ]
-
-}
-
-output "azurerm_lb" {
-  value       = module.loadbalancer.azurerm_lb
-  description = "Outputs the entire Azure Load Balancer resource"
-}
-
-output "azurerm_public_ip" {
-  value       = module.loadbalancer.azurerm_public_ip
-  description = "Outputs each Public IP Address resource in it's entirety"
+  }
 }
