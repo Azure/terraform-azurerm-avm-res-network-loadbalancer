@@ -8,7 +8,7 @@ Module to deploy load balancers in Azure.
 
 The following requirements are needed by this module:
 
-- <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) (>= 1.0.0)
+- <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) (>= 1.5.2)
 
 - <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) (>= 3.71.0)
 
@@ -18,9 +18,9 @@ The following requirements are needed by this module:
 
 The following providers are used by this module:
 
-- <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) (>= 3.71.0)
+- <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) (3.78.0)
 
-- <a name="provider_random"></a> [random](#provider\_random) (>= 3.5.0)
+- <a name="provider_random"></a> [random](#provider\_random) (3.5.1)
 
 ## Resources
 
@@ -166,7 +166,7 @@ map(object({
     log_groups        = optional(set(string), ["allLogs"])
     metric_categories = optional(set(string), ["AllMetrics"])
 
-    log_analytics_destination_type           = optional(string)
+    log_analytics_destination_type           = optional(string, null)
     workspace_resource_id                    = optional(string, null)
     storage_account_resource_id              = optional(string, null)
     event_hub_authorization_rule_resource_id = optional(string, null)

@@ -35,7 +35,9 @@ resource "random_integer" "region_index" {
   max = length(local.azure_regions) - 1
 }
 
+data "azurerm_client_config" "this" {
 
+}
 
 
 resource "azurerm_resource_group" "this" {
@@ -60,12 +62,16 @@ resource "azurerm_subnet" "example" {
 # Log Analytics workspace
 resource "azurerm_log_analytics_workspace" "example" {
   name                = "acctest-01"
-  location            = azurerm_resource_group.example.location
-  resource_group_name = azurerm_resource_group.example.name
+  location            = azurerm_resource_group.this.location
+  resource_group_name = azurerm_resource_group.this.name
   sku                 = "PerGB2018"
   retention_in_days   = 30
 }
 
+data "azurerm_role_definition" "role" {
+  name = "Contributor"
+  
+}
 
 
 
@@ -73,10 +79,14 @@ module "loadbalancer" {
 
   source = "../../"
 
+  # source = "Azure/avm-res-network-loadbalancer/azurerm"
+  # version = 0.1.0
+
   name                = "public-lb"
   enable_telemetry    = false # var.enable_telemetry
   location            = azurerm_resource_group.this.location
   resource_group_name = azurerm_resource_group.this.name
+
 
   frontend_ip_configurations = [
     {
@@ -94,13 +104,12 @@ module "loadbalancer" {
   diagnostic_settings = {
     diag_settings1 = {
       name                           = "diag_settings_1"
-      log_analytics_destination_type = "Dedicated"
       workspace_resource_id          = azurerm_log_analytics_workspace.example.id
     }
   }
 
   lock = {
-    kind = "ReadOnly"
+    kind = "None"
   }
 
   tags = {
@@ -109,7 +118,7 @@ module "loadbalancer" {
 
   role_assignments = {
     role_assignment_1 = {
-      role_definition_id_or_name = "/providers/Microsoft.Authorization/roleDefinitions/8e3af657-a8ff-443c-a75c-2fe8c4bcb635"
+      role_definition_id_or_name = data.azurerm_role_definition.role.name
       principal_id               = data.azurerm_client_config.this.object_id
     }
   }
@@ -144,6 +153,8 @@ The following resources are used by this module:
 - [azurerm_subnet.example](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/subnet) (resource)
 - [azurerm_virtual_network.example](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network) (resource)
 - [random_integer.region_index](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/integer) (resource)
+- [azurerm_client_config.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/client_config) (data source)
+- [azurerm_role_definition.role](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/role_definition) (data source)
 
 <!-- markdownlint-disable MD013 -->
 ## Required Inputs

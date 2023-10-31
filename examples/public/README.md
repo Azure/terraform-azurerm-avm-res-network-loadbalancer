@@ -8,7 +8,7 @@ This deploys the module as a common public load balancer quick start.
 # false positive with public ip address and private ip address version
 
 terraform {
-  required_version = ">= 1.0.0"
+  required_version = ">= 1.5.2"
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
@@ -60,6 +60,9 @@ resource "azurerm_subnet" "example" {
 module "loadbalancer" {
 
   source = "../../"
+
+  # source = "Azure/avm-res-network-loadbalancer/azurerm"
+  # version = 0.1.0
 
   name                = "public-lb"
   enable_telemetry    = false # var.enable_telemetry
@@ -122,26 +125,6 @@ output "azurerm_public_ip" {
   value       = module.loadbalancer.azurerm_public_ip
   description = "Outputs each Public IP Address resource in it's entirety"
 }
-
-# data "azurerm_resource_group" "azlb" {
-#   count = (var.resource_group_name != null) ? 1 : 0
-
-#   name = var.resource_group_name
-# }
-
-# data "azurerm_subnet" "snet" {
-#   count = (var.frontend_subnet_resource_name != null && var.frontend_subnet_resource_name != "") ? 1 : 0
-
-#   name                 = var.frontend_subnet_resource_name
-#   resource_group_name  = var.resource_group_name # data.azurerm_resource_group.azlb.name # going to have to create a variable for the frontend_vnet_resource_group / frontend_subnet_resource_group
-#   virtual_network_name = var.frontend_vnet_resource_name
-# }
-
-# data "azurerm_virtual_network" "vnet" {
-#   count               = (var.backend_address_pool_configuration != null) ? 1 : 0
-#   name                = var.backend_address_pool_configuration
-#   resource_group_name = coalesce(var.backend_vnet_resource_group_name, var.resource_group_name) # going to have to create a variable for the backend_vnet_resource_group
-# }
 ```
 
 <!-- markdownlint-disable MD033 -->
@@ -149,7 +132,7 @@ output "azurerm_public_ip" {
 
 The following requirements are needed by this module:
 
-- <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) (>= 1.0.0)
+- <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) (>= 1.5.2)
 
 - <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) (>= 3.71.0)
 
