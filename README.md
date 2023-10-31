@@ -276,14 +276,6 @@ Type: `string`
 
 Default: `null`
 
-### <a name="input_frontend_vnet_resource_id"></a> [frontend\_vnet\_resource\_id](#input\_frontend\_vnet\_resource\_id)
-
-Description:   The frontend virtual network id to use when in private mode.
-
-Type: `string`
-
-Default: `""`
-
 ### <a name="input_lb_nat_pools"></a> [lb\_nat\_pools](#input\_lb\_nat\_pools)
 
 Description:

@@ -671,13 +671,13 @@ variable "lb_nat_pools" {
 
 # Variables kept from terraform-azurerm-loadbalancer [START]
 
-variable "frontend_vnet_resource_id" {
-  type        = string
-  default     = ""
-  description = <<DESCRIPTION
-  The frontend virtual network id to use when in private mode. 
-  DESCRIPTION
-}
+# variable "frontend_vnet_resource_id" {
+#   type        = string
+#   default     = ""
+#   description = <<DESCRIPTION
+#   The frontend virtual network id to use when in private mode. 
+#   DESCRIPTION
+# }
 
 variable "frontend_subnet_resource_id" {
   type        = string
