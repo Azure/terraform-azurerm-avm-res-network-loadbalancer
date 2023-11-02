@@ -63,7 +63,7 @@ module "loadbalancer" {
   resource_group_name = azurerm_resource_group.this.name
 
   # Virtual Network and Subnet for Internal LoadBalancer
-  frontend_vnet_resource_id   = azurerm_virtual_network.example.id
+  # frontend_vnet_resource_id   = azurerm_virtual_network.example.id
   frontend_subnet_resource_id = azurerm_subnet.example.id
 
   # Frontend IP Configuration
