@@ -5,7 +5,7 @@ This deploys the module in its simplest form (Standard SKU Public Load Balancer)
 
 ```hcl
 terraform {
-  required_version = ">= 1.0.0"
+  required_version = ">= 1.5.2"
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
@@ -40,15 +40,15 @@ data "azurerm_client_config" "this" {
 }
 
 
-resource "azurerm_resource_group" "this" {
+resource "azurerm_resource_group" "example" {
   name     = module.naming.resource_group.name_unique
   location = local.azure_regions[random_integer.region_index.result]
 }
 
 resource "azurerm_virtual_network" "example" {
   name                = module.naming.virtual_network.name_unique
-  location            = azurerm_resource_group.this.location
-  resource_group_name = azurerm_resource_group.this.name
+  location            = azurerm_resource_group.example.location
+  resource_group_name = azurerm_resource_group.example.name
   address_space       = ["10.1.0.0/16"]
 }
 
@@ -61,14 +61,14 @@ resource "azurerm_subnet" "example" {
 
 # Log Analytics workspace
 resource "azurerm_log_analytics_workspace" "example" {
-  name                = "acctest-01"
-  location            = azurerm_resource_group.this.location
-  resource_group_name = azurerm_resource_group.this.name
+  name                = "law-test-001"
+  location            = azurerm_resource_group.example.location
+  resource_group_name = azurerm_resource_group.example.name
   sku                 = "PerGB2018"
   retention_in_days   = 30
 }
 
-data "azurerm_role_definition" "role" {
+data "azurerm_role_definition" "example" {
   name = "Contributor"
 
 }
@@ -84,8 +84,8 @@ module "loadbalancer" {
 
   name                = "public-lb"
   enable_telemetry    = false # var.enable_telemetry
-  location            = azurerm_resource_group.this.location
-  resource_group_name = azurerm_resource_group.this.name
+  location            = azurerm_resource_group.example.location
+  resource_group_name = azurerm_resource_group.example.name
 
 
   frontend_ip_configurations = [
@@ -118,7 +118,7 @@ module "loadbalancer" {
 
   role_assignments = {
     role_assignment_1 = {
-      role_definition_id_or_name = data.azurerm_role_definition.role.name
+      role_definition_id_or_name = data.azurerm_role_definition.example.name
       principal_id               = data.azurerm_client_config.this.object_id
     }
   }
@@ -130,7 +130,7 @@ module "loadbalancer" {
 
 The following requirements are needed by this module:
 
-- <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) (>= 1.0.0)
+- <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) (>= 1.5.2)
 
 - <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) (>= 3.71.0)
 
@@ -149,12 +149,12 @@ The following providers are used by this module:
 The following resources are used by this module:
 
 - [azurerm_log_analytics_workspace.example](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/log_analytics_workspace) (resource)
-- [azurerm_resource_group.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group) (resource)
+- [azurerm_resource_group.example](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group) (resource)
 - [azurerm_subnet.example](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/subnet) (resource)
 - [azurerm_virtual_network.example](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network) (resource)
 - [random_integer.region_index](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/integer) (resource)
 - [azurerm_client_config.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/client_config) (data source)
-- [azurerm_role_definition.role](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/role_definition) (data source)
+- [azurerm_role_definition.example](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/role_definition) (data source)
 
 <!-- markdownlint-disable MD013 -->
 ## Required Inputs
