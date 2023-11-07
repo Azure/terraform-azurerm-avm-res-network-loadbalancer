@@ -1,5 +1,3 @@
-# THIS IS CURRENTLY WORKING
-
 terraform {
   required_version = ">= 1.5.2"
   required_providers {
@@ -31,29 +29,45 @@ resource "random_integer" "region_index" {
   max = length(local.azure_regions) - 1
 }
 
-# This is required for resource modules
+data "azurerm_client_config" "this" {
 
-# Creates a resource group
-resource "azurerm_resource_group" "this" {
+}
+
+
+resource "azurerm_resource_group" "example" {
   name     = module.naming.resource_group.name_unique
   location = local.azure_regions[random_integer.region_index.result]
 }
 
-# Creates a virtual network
 resource "azurerm_virtual_network" "example" {
   name                = module.naming.virtual_network.name_unique
-  location            = azurerm_resource_group.this.location
-  resource_group_name = azurerm_resource_group.this.name
+  location            = azurerm_resource_group.example.location
+  resource_group_name = azurerm_resource_group.example.name
   address_space       = ["10.1.0.0/16"]
 }
 
-# Creates a subnet
 resource "azurerm_subnet" "example" {
   name                 = module.naming.subnet.name_unique
   resource_group_name  = azurerm_virtual_network.example.resource_group_name
   virtual_network_name = azurerm_virtual_network.example.name
   address_prefixes     = ["10.1.1.0/26"]
 }
+
+# Log Analytics workspace
+resource "azurerm_log_analytics_workspace" "example" {
+  name                = "law-test-001"
+  location            = azurerm_resource_group.example.location
+  resource_group_name = azurerm_resource_group.example.name
+  sku                 = "PerGB2018"
+  retention_in_days   = 30
+}
+
+data "azurerm_role_definition" "example" {
+  name = "Contributor"
+
+}
+
+
 
 module "loadbalancer" {
 
@@ -64,24 +78,42 @@ module "loadbalancer" {
 
   name                = "public-lb"
   enable_telemetry    = false # var.enable_telemetry
-  location            = azurerm_resource_group.this.location
-  resource_group_name = azurerm_resource_group.this.name
+  location            = azurerm_resource_group.example.location
+  resource_group_name = azurerm_resource_group.example.name
+
 
   frontend_ip_configurations = [
     {
       name = "myFrontend"
       # Creates a public IP address
       create_public_ip_address = true
+      tags = {
+        createdBy = "TF-InfraTeam"
+      }
+      inherit_lock = true
+      inherit_tags = true
     }
   ]
-}
 
-output "azurerm_lb" {
-  value       = module.loadbalancer.azurerm_lb
-  description = "Outputs the entire Azure Load Balancer resource"
-}
+  diagnostic_settings = {
+    diag_settings1 = {
+      name                  = "diag_settings_1"
+      workspace_resource_id = azurerm_log_analytics_workspace.example.id
+    }
+  }
 
-output "azurerm_public_ip" {
-  value       = module.loadbalancer.azurerm_public_ip
-  description = "Outputs each Public IP Address resource in it's entirety"
+  lock = {
+    kind = "None"
+  }
+
+  tags = {
+    environment = "dev-tf"
+  }
+
+  role_assignments = {
+    role_assignment_1 = {
+      role_definition_id_or_name = data.azurerm_role_definition.example.name
+      principal_id               = data.azurerm_client_config.this.object_id
+    }
+  }
 }

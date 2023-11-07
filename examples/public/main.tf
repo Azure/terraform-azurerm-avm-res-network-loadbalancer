@@ -1,4 +1,5 @@
 # THIS IS CURRENTLY WORKING
+# false positive with public ip address and private ip address version
 
 terraform {
   required_version = ">= 1.5.2"
@@ -19,27 +20,23 @@ provider "azurerm" {
   }
 }
 
-
 module "naming" {
   source  = "Azure/naming/azurerm"
   version = "0.3.0"
 }
 
-# Helps pick a random region from the list of regions.
+# This picks a random region from the list of regions.
 resource "random_integer" "region_index" {
   min = 0
   max = length(local.azure_regions) - 1
 }
 
 # This is required for resource modules
-
-# Creates a resource group
 resource "azurerm_resource_group" "this" {
   name     = module.naming.resource_group.name_unique
   location = local.azure_regions[random_integer.region_index.result]
 }
 
-# Creates a virtual network
 resource "azurerm_virtual_network" "example" {
   name                = module.naming.virtual_network.name_unique
   location            = azurerm_resource_group.this.location
@@ -47,7 +44,6 @@ resource "azurerm_virtual_network" "example" {
   address_space       = ["10.1.0.0/16"]
 }
 
-# Creates a subnet
 resource "azurerm_subnet" "example" {
   name                 = module.naming.subnet.name_unique
   resource_group_name  = azurerm_virtual_network.example.resource_group_name
@@ -67,13 +63,51 @@ module "loadbalancer" {
   location            = azurerm_resource_group.this.location
   resource_group_name = azurerm_resource_group.this.name
 
+  # Frontend IP Configuration
   frontend_ip_configurations = [
     {
       name = "myFrontend"
-      # Creates a public IP address
+      # Creates Public IP Address
       create_public_ip_address = true
     }
   ]
+
+  # Backend Address Pool(s)
+  backend_address_pools = [
+    {
+      name = "myBackendPool"
+    }
+  ]
+
+  # Virtual Network for Backend Address Pool(s)
+  backend_address_pool_configuration = azurerm_virtual_network.example.id
+
+  # Health Probe(s)
+  lb_probes = [
+    {
+      name     = "myHealthProbe"
+      protocol = "Tcp" # default
+    }
+  ]
+
+  # Load Balaner rule(s)
+  lb_rules = [
+    {
+      name                           = "myHTTPRule"
+      frontend_ip_configuration_name = "myFrontend"
+
+      backend_address_pool_resource_names = ["myBackendPool"]
+      protocol                            = "Tcp" # default
+      frontend_port                       = 80
+      backend_port                        = 80
+
+      probe_resource_name = "myHealthProbe"
+
+      idle_timeout_in_minutes = 15
+      enable_tcp_reset        = true
+    }
+  ]
+
 }
 
 output "azurerm_lb" {
