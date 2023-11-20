@@ -91,7 +91,7 @@ module "loadbalancer" {
 
       public_ip_address_resource_name = module.naming.public_ip.name_unique
       tags = {
-        createdBy = "TF-InfraTeam"
+        createdBy = "tf-infra-team"
       }
 
       inherit_lock = true
@@ -104,11 +104,18 @@ module "loadbalancer" {
         }
       }
 
+      diagnostic_settings = {
+        diagnotic_settings_1 = {
+          name                  = "pip-diag_settings_1"
+          workspace_resource_id = azurerm_log_analytics_workspace.example.id
+        }
+      }
+
     }
   }
 
   diagnostic_settings = {
-    diag_settings1 = {
+    diagnostic_settings_1 = {
       name                  = "diag_settings_1"
       workspace_resource_id = azurerm_log_analytics_workspace.example.id
     }
@@ -116,6 +123,14 @@ module "loadbalancer" {
 
   lock = {
     kind = "None"
+
+    /*
+    kind = "ReadOnly"
+    */
+
+    /*
+    kind = "CanNotDelete"
+    */
   }
 
   tags = {
