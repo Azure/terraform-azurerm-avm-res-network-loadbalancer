@@ -67,47 +67,47 @@ module "loadbalancer" {
   frontend_subnet_resource_id = azurerm_subnet.example.id
 
   # Frontend IP Configuration
-  frontend_ip_configurations = [
-    {
+  frontend_ip_configurations = {
+    frontend_configuration_1 = {
       name = "myFrontend"
     }
-  ]
+  }
 
   # Backend Address Pool
-  backend_address_pools = [
-    {
+  backend_address_pools = {
+    pool1 = {
       name = "myBackendPool"
     }
-  ]
+  }
 
   # Virtual Network for Backend Address Pool(s)
   backend_address_pool_configuration = azurerm_virtual_network.example.id
 
   # Health Probe(s)
-  lb_probes = [
-    {
+  lb_probes = {
+    tcp1 = {
       name     = "myHealthProbe"
-      protocol = "Tcp" # default
+      protocol = "Tcp"
     }
-  ]
+  }
 
   # Load Balaner rule(s)
-  lb_rules = [
-    {
+  lb_rules = {
+    http1 = {
       name                           = "myHTTPRule"
       frontend_ip_configuration_name = "myFrontend"
 
-      backend_address_pool_resource_names = ["myBackendPool"]
-      protocol                            = "Tcp" # default
-      frontend_port                       = 80
-      backend_port                        = 80
+      backend_address_pool_object_names = ["pool1"]
+      protocol                          = "Tcp"
+      frontend_port                     = 80
+      backend_port                      = 80
 
-      probe_resource_name = "myHealthProbe"
+      probe_object_name = "tcp1"
 
       idle_timeout_in_minutes = 15
       enable_tcp_reset        = true
     }
-  ]
+  }
 
 }
 

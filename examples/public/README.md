@@ -70,49 +70,50 @@ module "loadbalancer" {
   resource_group_name = azurerm_resource_group.this.name
 
   # Frontend IP Configuration
-  frontend_ip_configurations = [
-    {
+  frontend_ip_configurations = {
+    frontend_configuration_1 = {
       name = "myFrontend"
       # Creates Public IP Address
-      create_public_ip_address = true
+      create_public_ip_address        = true
+      public_ip_address_resource_name = module.naming.public_ip.name_unique
     }
-  ]
-
-  # Backend Address Pool(s)
-  backend_address_pools = [
-    {
-      name = "myBackendPool"
-    }
-  ]
+  }
 
   # Virtual Network for Backend Address Pool(s)
   backend_address_pool_configuration = azurerm_virtual_network.example.id
 
-  # Health Probe(s)
-  lb_probes = [
-    {
-      name     = "myHealthProbe"
-      protocol = "Tcp" # default
+  # Backend Address Pool(s)
+  backend_address_pools = {
+    pool1 = {
+      name = "myBackendPool"
     }
-  ]
+  }
+
+  # Health Probe(s)
+  lb_probes = {
+    tcp1 = {
+      name     = "myHealthProbe"
+      protocol = "Tcp"
+    }
+  }
 
   # Load Balaner rule(s)
-  lb_rules = [
-    {
+  lb_rules = {
+    http1 = {
       name                           = "myHTTPRule"
       frontend_ip_configuration_name = "myFrontend"
 
-      backend_address_pool_resource_names = ["myBackendPool"]
-      protocol                            = "Tcp" # default
-      frontend_port                       = 80
-      backend_port                        = 80
+      backend_address_pool_object_names = ["pool1"]
+      protocol                          = "Tcp"
+      frontend_port                     = 80
+      backend_port                      = 80
 
-      probe_resource_name = "myHealthProbe"
+      probe_object_name = "tcp1"
 
       idle_timeout_in_minutes = 15
       enable_tcp_reset        = true
     }
-  ]
+  }
 
 }
 

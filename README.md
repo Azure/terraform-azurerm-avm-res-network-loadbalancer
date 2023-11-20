@@ -35,11 +35,11 @@ The following resources are used by this module:
 - [azurerm_lb_probe.azlb](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/lb_probe) (resource)
 - [azurerm_lb_rule.azlb](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/lb_rule) (resource)
 - [azurerm_management_lock.azlb](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/management_lock) (resource)
-- [azurerm_management_lock.inherited_pip_lock](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/management_lock) (resource)
-- [azurerm_management_lock.noninherited_pip_lock](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/management_lock) (resource)
+- [azurerm_management_lock.pip_lock](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/management_lock) (resource)
 - [azurerm_monitor_diagnostic_setting.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/monitor_diagnostic_setting) (resource)
 - [azurerm_public_ip.azlb](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/public_ip) (resource)
 - [azurerm_resource_group_template_deployment.telemetry](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group_template_deployment) (resource)
+- [azurerm_role_assignment.pip](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/role_assignment) (resource)
 - [azurerm_role_assignment.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/role_assignment) (resource)
 - [random_id.telemetry](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/id) (resource)
 
@@ -93,14 +93,14 @@ Description:   A list of backend address pool addresses to associate with the ba
 Type:
 
 ```hcl
-list(object({
+map(object({
     name                               = optional(string)
     backend_address_pool_resource_name = optional(string)
     ip_address                         = optional(string)
   }))
 ```
 
-Default: `[]`
+Default: `{}`
 
 ### <a name="input_backend_address_pool_configuration"></a> [backend\_address\_pool\_configuration](#input\_backend\_address\_pool\_configuration)
 
@@ -128,12 +128,12 @@ Description:   A list of objects that creates one or more backend pools
 Type:
 
 ```hcl
-list(object({
+map(object({
     name = optional(string, "bepool-1")
   }))
 ```
 
-Default: `[]`
+Default: `{}`
 
 ### <a name="input_diagnostic_settings"></a> [diagnostic\_settings](#input\_diagnostic\_settings)
 
@@ -198,7 +198,7 @@ Default: `true`
 
 ### <a name="input_frontend_ip_configurations"></a> [frontend\_ip\_configurations](#input\_frontend\_ip\_configurations)
 
-Description:   An input variable that is a list of frontend ip configurations for the load balancer.
+Description:   An input variable that is a map of frontend ip configurations for the load balancer.
 
   - `name`: (Required) The name of the frontend IP configuration. Changing this forces a new resource to be created
   - `frontend_private_ip_address`: (Optional) A string parameter that is the private IP address to assign to the Load Balancer. The last one and first four IPs in any range are reserved and cannot be manually assigned.
@@ -242,7 +242,7 @@ Description:   An input variable that is a list of frontend ip configurations fo
 Type:
 
 ```hcl
-list(object({
+map(object({
     name                                   = optional(string)
     frontend_private_ip_address            = optional(string)
     frontend_private_ip_address_version    = optional(string)
@@ -261,10 +261,21 @@ list(object({
     inherit_tags                           = optional(bool, true)
     edge_zone                              = optional(string)
     zones                                  = optional(list(string))
+
+    role_assignments = optional(map(object({
+      role_definition_id_or_name = string
+      principal_id               = string
+      # In terraform registry, says that scope is required - CLARIFICATION
+      description                            = optional(string, null)
+      skip_service_principal_aad_check       = optional(bool, false) # only set to true IF using service principal
+      condition                              = optional(string, null)
+      condition_version                      = optional(string, null) # Valid values are 2.0
+      delegated_managed_identity_resource_id = optional(string, null)
+    })), {})
   }))
 ```
 
-Default: `[]`
+Default: `{}`
 
 ### <a name="input_frontend_subnet_resource_id"></a> [frontend\_subnet\_resource\_id](#input\_frontend\_subnet\_resource\_id)
 
@@ -307,7 +318,7 @@ Description:
 Type:
 
 ```hcl
-list(object({
+map(object({
     name                           = optional(string)
     frontend_ip_configuration_name = optional(string)
     protocol                       = optional(string, "Tcp")
@@ -320,7 +331,7 @@ list(object({
   }))
 ```
 
-Default: `[]`
+Default: `{}`
 
 ### <a name="input_lb_nat_rules"></a> [lb\_nat\_rules](#input\_lb\_nat\_rules)
 
@@ -355,7 +366,7 @@ Description:   A list of objects that specifies the creation of NAT rules.
 Type:
 
 ```hcl
-list(object({
+map(object({
     name                               = optional(string)
     frontend_ip_configuration_name     = optional(string)
     protocol                           = optional(string)
@@ -371,7 +382,7 @@ list(object({
   }))
 ```
 
-Default: `[]`
+Default: `{}`
 
 ### <a name="input_lb_outbound_rules"></a> [lb\_outbound\_rules](#input\_lb\_outbound\_rules)
 
@@ -401,7 +412,7 @@ Description:
 Type:
 
 ```hcl
-list(object({
+map(object({
     name                               = optional(string)
     frontend_ip_configurations         = optional(list(object({ name = optional(string) })))
     backend_address_pool_resource_id   = optional(string)
@@ -413,7 +424,7 @@ list(object({
   }))
 ```
 
-Default: `[]`
+Default: `{}`
 
 ### <a name="input_lb_probes"></a> [lb\_probes](#input\_lb\_probes)
 
@@ -457,7 +468,7 @@ Description:   A list of objects that specify the Load Balancer probes to be cre
 Type:
 
 ```hcl
-list(object({
+map(object({
     name                            = optional(string)
     protocol                        = optional(string, "Tcp")
     port                            = optional(number, 80)
@@ -468,7 +479,7 @@ list(object({
   }))
 ```
 
-Default: `[]`
+Default: `{}`
 
 ### <a name="input_lb_rules"></a> [lb\_rules](#input\_lb\_rules)
 
@@ -510,7 +521,7 @@ Description:   A list of objects that specifies the Load Balancer rules for the 
 Type:
 
 ```hcl
-list(object({
+map(object({
     name                           = optional(string)
     frontend_ip_configuration_name = optional(string)
     protocol                       = optional(string, "Tcp")
@@ -520,7 +531,7 @@ list(object({
     backend_address_pool_resource_ids   = optional(list(string))
     backend_address_pool_resource_names = optional(list(string))
     probe_resource_id                   = optional(string)
-    probe_resource_name                 = optional(string)
+    probe_object_name                   = optional(string)
     enable_floating_ip                  = optional(bool, false)
     idle_timeout_in_minutes             = optional(number, 4)
     load_distribution                   = optional(string, "Default")
@@ -530,7 +541,7 @@ list(object({
   }))
 ```
 
-Default: `[]`
+Default: `{}`
 
 ### <a name="input_lock"></a> [lock](#input\_lock)
 

@@ -82,24 +82,36 @@ module "loadbalancer" {
   # source = "Azure/avm-res-network-loadbalancer/azurerm"
   # version = 0.1.0
 
-  name                = "public-lb"
+  name                = "interfaces-lb"
   enable_telemetry    = false # var.enable_telemetry
   location            = azurerm_resource_group.example.location
   resource_group_name = azurerm_resource_group.example.name
 
 
-  frontend_ip_configurations = [
-    {
+  frontend_ip_configurations = {
+    frontend_configuration_1 = {
       name = "myFrontend"
+
       # Creates a public IP address
       create_public_ip_address = true
+
+      public_ip_address_resource_name = module.naming.public_ip.name_unique
       tags = {
         createdBy = "TF-InfraTeam"
       }
+
       inherit_lock = true
       inherit_tags = true
+
+      role_assignments = {
+        role_assignment_1 = {
+          role_definition_id_or_name = data.azurerm_role_definition.example.name
+          principal_id               = data.azurerm_client_config.this.object_id
+        }
+      }
+
     }
-  ]
+  }
 
   diagnostic_settings = {
     diag_settings1 = {

@@ -43,7 +43,27 @@ variable "edge_zone" {
 }
 
 variable "frontend_ip_configurations" {
-  type = list(object({
+  # type = list(object({
+  #   name                                   = optional(string)
+  #   frontend_private_ip_address            = optional(string)
+  #   frontend_private_ip_address_version    = optional(string)
+  #   frontend_private_ip_address_allocation = optional(string, "Dynamic")
+  #   frontend_private_ip_subnet_resource_id = optional(string)
+  #   public_ip_address_resource_name        = optional(string)
+  #   public_ip_address_resource_id          = optional(string)
+  #   public_ip_prefix_resource_id           = optional(string)
+  #   frontend_ip_zones                      = optional(set(string))
+  #   tags                                   = optional(map(any), {})
+  #   create_public_ip_address               = optional(bool, false)
+  #   new_public_ip_resource_group_name      = optional(string)
+  #   new_public_ip_location                 = optional(string)
+  #   inherit_lock                           = optional(bool, true)
+  #   lock_type_if_not_inherited             = optional(string, "None")
+  #   inherit_tags                           = optional(bool, true)
+  #   edge_zone                              = optional(string)
+  #   zones                                  = optional(list(string))
+  # }))
+  type = map(object({
     name                                   = optional(string)
     frontend_private_ip_address            = optional(string)
     frontend_private_ip_address_version    = optional(string)
@@ -62,12 +82,23 @@ variable "frontend_ip_configurations" {
     inherit_tags                           = optional(bool, true)
     edge_zone                              = optional(string)
     zones                                  = optional(list(string))
-  }))
-  default = [
 
-  ]
+    role_assignments = optional(map(object({
+      role_definition_id_or_name = string
+      principal_id               = string
+      # In terraform registry, says that scope is required - CLARIFICATION
+      description                            = optional(string, null)
+      skip_service_principal_aad_check       = optional(bool, false) # only set to true IF using service principal
+      condition                              = optional(string, null)
+      condition_version                      = optional(string, null) # Valid values are 2.0
+      delegated_managed_identity_resource_id = optional(string, null)
+    })), {})
+  }))
+  default = {
+
+  }
   description = <<DESCRIPTION
-  An input variable that is a list of frontend ip configurations for the load balancer.
+  An input variable that is a map of frontend ip configurations for the load balancer.
 
   - `name`: (Required) The name of the frontend IP configuration. Changing this forces a new resource to be created
   - `frontend_private_ip_address`: (Optional) A string parameter that is the private IP address to assign to the Load Balancer. The last one and first four IPs in any range are reserved and cannot be manually assigned.
@@ -245,12 +276,12 @@ variable "backend_address_pool_configuration" {
 
 # Backend Address Pool
 variable "backend_address_pools" {
-  type = list(object({
+  type = map(object({
     name = optional(string, "bepool-1")
   }))
-  default = [
+  default = {
 
-  ]
+  }
   description = <<DESCRIPTION
   A list of objects that creates one or more backend pools
   Each object has 1 parameter:
@@ -284,14 +315,14 @@ variable "tunnel_interface_configurations" { ### DO NOT DELETE ###
 
 # Backend Address Pool Address
 variable "backend_address_pool_addresses" {
-  type = list(object({
+  type = map(object({
     name                               = optional(string)
     backend_address_pool_resource_name = optional(string)
     ip_address                         = optional(string)
   }))
-  default = [
+  default = {
 
-  ]
+  }
   description = <<DESCRIPTION
   A list of backend address pool addresses to associate with the backend address pool
   Each object has 5 parameters:
@@ -317,7 +348,7 @@ variable "backend_address_pool_addresses" {
 
 # Load Balancing NAT Rules
 variable "lb_nat_rules" {
-  type = list(object({
+  type = map(object({
     name                               = optional(string)
     frontend_ip_configuration_name     = optional(string)
     protocol                           = optional(string)
@@ -331,9 +362,9 @@ variable "lb_nat_rules" {
     enable_floating_ip                 = optional(bool, false)
     enable_tcp_reset                   = optional(bool, false)
   }))
-  default = [
+  default = {
 
-  ]
+  }
   description = <<DESCRIPTION
   A list of objects that specifies the creation of NAT rules.
   Each object has 12 parameters:
@@ -403,7 +434,7 @@ variable "lb_nat_rules" {
 
 # Probes
 variable "lb_probes" {
-  type = list(object({
+  type = map(object({
     name                            = optional(string)
     protocol                        = optional(string, "Tcp")
     port                            = optional(number, 80)
@@ -412,9 +443,9 @@ variable "lb_probes" {
     request_path                    = optional(string)
     number_of_probes_before_removal = optional(number, 2)
   }))
-  default = [
+  default = {
 
-  ]
+  }
   description = <<DESCRIPTION
   A list of objects that specify the Load Balancer probes to be created.
   Each object has 7 parameters:
@@ -490,7 +521,7 @@ variable "lb_probes" {
 
 # Load Balancing Rules
 variable "lb_rules" {
-  type = list(object({
+  type = map(object({
     name                           = optional(string)
     frontend_ip_configuration_name = optional(string)
     protocol                       = optional(string, "Tcp")
@@ -500,7 +531,7 @@ variable "lb_rules" {
     backend_address_pool_resource_ids   = optional(list(string))
     backend_address_pool_resource_names = optional(list(string))
     probe_resource_id                   = optional(string)
-    probe_resource_name                 = optional(string)
+    probe_object_name                   = optional(string)
     enable_floating_ip                  = optional(bool, false)
     idle_timeout_in_minutes             = optional(number, 4)
     load_distribution                   = optional(string, "Default")
@@ -508,9 +539,9 @@ variable "lb_rules" {
     disable_outbound_snat = optional(bool, false)
     enable_tcp_reset      = optional(bool, false)
   }))
-  default = [
+  default = {
 
-  ]
+  }
   description = <<DESCRIPTION
   A list of objects that specifies the Load Balancer rules for the Load Balancer.
   Each object has 14 parameters:
@@ -583,7 +614,7 @@ variable "lb_rules" {
 
 
 variable "lb_outbound_rules" {
-  type = list(object({
+  type = map(object({
     name                               = optional(string)
     frontend_ip_configurations         = optional(list(object({ name = optional(string) })))
     backend_address_pool_resource_id   = optional(string)
@@ -593,9 +624,9 @@ variable "lb_outbound_rules" {
     number_of_allocated_outbound_ports = optional(number, 1024)
     idle_timeout_in_minutes            = optional(number, 4)
   }))
-  default = [
+  default = {
 
-  ]
+  }
   description = <<DESCRIPTION
 
   - `name`: (Required) The name of the Load Balancer rule. Changing this forces a new resource to be created.
@@ -623,7 +654,7 @@ variable "lb_outbound_rules" {
 }
 
 variable "lb_nat_pools" {
-  type = list(object({
+  type = map(object({
     name                           = optional(string)
     frontend_ip_configuration_name = optional(string)
     protocol                       = optional(string, "Tcp")
@@ -634,9 +665,9 @@ variable "lb_nat_pools" {
     enable_floating_ip             = optional(bool, false)
     enable_tcp_reset               = optional(bool, false)
   }))
-  default = [
+  default = {
 
-  ]
+  }
   description = <<DESCRIPTION
 
   - `name`: (Required) The name of the Load Balancer rule. Changing this forces a new resource to be created.
