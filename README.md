@@ -27,17 +27,18 @@ The following providers are used by this module:
 The following resources are used by this module:
 
 - [azurerm_lb.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/lb) (resource)
-- [azurerm_lb_backend_address_pool.azlb](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/lb_backend_address_pool) (resource)
-- [azurerm_lb_backend_address_pool_address.azlb](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/lb_backend_address_pool_address) (resource)
-- [azurerm_lb_nat_pool.azlb](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/lb_nat_pool) (resource)
-- [azurerm_lb_nat_rule.azlb](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/lb_nat_rule) (resource)
-- [azurerm_lb_outbound_rule.azlb](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/lb_outbound_rule) (resource)
-- [azurerm_lb_probe.azlb](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/lb_probe) (resource)
-- [azurerm_lb_rule.azlb](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/lb_rule) (resource)
-- [azurerm_management_lock.azlb](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/management_lock) (resource)
-- [azurerm_management_lock.pip_lock](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/management_lock) (resource)
+- [azurerm_lb_backend_address_pool.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/lb_backend_address_pool) (resource)
+- [azurerm_lb_backend_address_pool_address.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/lb_backend_address_pool_address) (resource)
+- [azurerm_lb_nat_pool.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/lb_nat_pool) (resource)
+- [azurerm_lb_nat_rule.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/lb_nat_rule) (resource)
+- [azurerm_lb_outbound_rule.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/lb_outbound_rule) (resource)
+- [azurerm_lb_probe.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/lb_probe) (resource)
+- [azurerm_lb_rule.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/lb_rule) (resource)
+- [azurerm_management_lock.pip](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/management_lock) (resource)
+- [azurerm_management_lock.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/management_lock) (resource)
+- [azurerm_monitor_diagnostic_setting.pip](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/monitor_diagnostic_setting) (resource)
 - [azurerm_monitor_diagnostic_setting.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/monitor_diagnostic_setting) (resource)
-- [azurerm_public_ip.azlb](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/public_ip) (resource)
+- [azurerm_public_ip.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/public_ip) (resource)
 - [azurerm_resource_group_template_deployment.telemetry](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group_template_deployment) (resource)
 - [azurerm_role_assignment.pip](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/role_assignment) (resource)
 - [azurerm_role_assignment.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/role_assignment) (resource)
@@ -47,6 +48,116 @@ The following resources are used by this module:
 ## Required Inputs
 
 The following input variables are required:
+
+### <a name="input_frontend_ip_configurations"></a> [frontend\_ip\_configurations](#input\_frontend\_ip\_configurations)
+
+Description:   A map of objects that builds frontend ip configurations for the load balancer.   
+  You need at least one frontend ip configuration to deploy a load balancer.
+
+  - `name`: (Optional) The name of the frontend IP configuration. Changing this forces a new resource to be created
+  - `frontend_private_ip_address`: (Optional) A string parameter that is the private IP address to assign to the Load Balancer. The last one and first four IPs in any range are reserved and cannot be manually assigned.
+  - `frontend_private_ip_address_version`: (Optional) A string parameter that is the version of IP that the private IP address is. Possible values are IPv4 or IPv6
+  - `frontend_private_ip_address_allocation`: (Optional) A string parameter that is the allocation method for the private IP address used by this Load Balancer. Possible values as Dynamic or Static
+  - `frontend_private_ip_subnet_resource_id`: (Optional) A string parameter that is the ID of the subnet which should be associated with the IP configuration. If desired to use the same subnet for each frontend ip configuration, use frontend\_subnet\_resource\_id, or use frontend\_vnet\_name and frontend\_subnet\_name. If for public ip configuration, leave parameter empty/null.
+  - `public_ip_address_resource_name`: (Optional) A string parameter that is the name of the public ip address to be created AND associated with the Load Balancer. Changing this forces a new Public IP to be created.
+  - `public_ip_address_resource_id`: (Optional) A string parameter that is the ID of a public ip address which should associated with the Load Balancer.
+  - `public_ip_prefix_resource_id`: (Optional) A string parameter that is the ID of a public IP prefixes which should be associated with the Load Balancer. Public IP prefix can only be used with outbound rules
+  - `frontend_ip_zones`: (Optional) A  set of strings that specifies a list of availability zones in which the IP address for this Load Balancer should be located.
+  - `tags`: (Optional) = A mapping of tags to assign to the individual public IP resource.
+  - `create_public_ip_address`: (Optional) A boolean parameter to create a new public IP address resource for the Load Balancer
+  - `new_public_ip_resource_group_name`: (Optional) A string for the name of the resource group to place the newly created public IP into. If null, will choose `location` from `public_ip_address_configuration` or `location` for the Load Balancer.
+  - `new_public_ip_location`: (Optional) A string parameter for the location to deploy the public IP address resource.
+  - `inherit_lock`: (Optional)  A boolean to determine if the lock from the Load Balancer will be inherited by the public IP.
+  - `lock_type_if_not_inherited`: (Optional) An optional string to determine what kind of lock will be placed on the public IP is not inherited from the Load Balancer
+  - `inherit_tags`: (Optional) A boolean to determine if the public IP will inherit tags from the Load Balancer.
+  - `edge_zone`: (Optional) A string that specifies the Edge Zone within the Azure Region where this public IP should exist. Changing this forces a new Public IP to be created.
+  - `zones`: (Optional) A list of strings that contains the availability zone to allocate the public IP in. Changing this forces a new resource to be created.
+  - `role_assignments`: A map of objects that assigns a given principal (user or group) to a given role.
+    - `role_definition_id_or_name`: The ID or name of the role definition to assign to the principal.
+    - `principal_id`: The ID of the principal to assign the role to.
+    - `description`: (Optional) A description of the role assignment.
+    - `skip_service_principal_aad_check`: (Optional) If set to true, skips the Azure Active Directory check for the service principal in the tenant. This should only be set to true if using a service principal. Defaults to false.
+    - `condition`: (Optional) A condition that will be used to scope the role assignment.
+    - `condition_version`: (Optional) The version of the condition syntax. Valid values are '2.0'. Defaults to null.
+    - `delegated_managed_identity_resource_id`: (Optional) The resource ID of the delegated managed identity.
+  - `diagnostic_settings`: A map of objects that manage a Diagnostic Setting.
+    - `name`: (Optional) The name of the diagnostic setting.
+    - `log_groups`: (Optional) A set of log groups. Defaults to a set containing "allLogs".
+    - `metric_categories`: (Optional) A set of metric categories. Defaults to a set containing "AllMetrics".
+    - `log_analytics_destination_type`: (Optional) The destination type for log analytics. Defaults to "Dedicated".
+    - `workspace_resource_id`: (Optional) The resource ID of the workspace. Defaults to null. This is a required field if `storage_account_resource_id`, `event_hub_authorization_rule_resource_id`, and `marketplace_partner_resource_id` are not set.
+    - `storage_account_resource_id`: (Optional) The resource ID of the storage account. Defaults to null. This is a required field if `workspace_resource_id`, `event_hub_authorization_rule_resource_id`, and `marketplace_partner_resource_id` are not set.
+    - `event_hub_authorization_rule_resource_id`: (Optional) The resource ID of the event hub authorization rule. Defaults to null. This is a required field if `workspace_resource_id`, `storage_account_resource_id`, and `marketplace_partner_resource_id` are not set.
+    - `event_hub_name`: (Optional) The name of the event hub. Defaults to null.
+    - `marketplace_partner_resource_id`: (Optional) The resource ID of the marketplace partner. Defaults to null. This is a required field if `workspace_resource_id`, `storage_account_resource_id`, and `event_hub_authorization_rule_resource_id` are not set.
+
+  Example Input:
+  ```terraform
+  # Standard Regional IPv4 Private Ip Configuration
+  frontend_ip_configurations = {
+    frontend_configuration_1 = {
+      name = "internal_lb_private_ip_1_config"
+      frontend_private_ip_address_version    = "IPv4"
+      frontend_private_ip_address_allocation = "Dynamic"
+    }
+
+  # Standard Regional IPv4 Public IP Frontend IP Configuration
+  frontend_ip_configurations = {
+    frontend_configuration_1 = {
+      name                     = "public_lb_public_ip_1_config"
+      public_ip_address_name = "public_lb_public_ip_1"
+      create_public_ip_address = true
+    }
+  }
+```
+
+Type:
+
+```hcl
+map(object({
+    name                                   = optional(string)
+    frontend_private_ip_address            = optional(string)
+    frontend_private_ip_address_version    = optional(string)
+    frontend_private_ip_address_allocation = optional(string, "Dynamic")
+    frontend_private_ip_subnet_resource_id = optional(string)
+    public_ip_address_resource_name        = optional(string)
+    public_ip_address_resource_id          = optional(string)
+    public_ip_prefix_resource_id           = optional(string)
+    frontend_ip_zones                      = optional(set(string))
+    tags                                   = optional(map(any), {})
+    create_public_ip_address               = optional(bool, false)
+    new_public_ip_resource_group_name      = optional(string)
+    new_public_ip_location                 = optional(string)
+    inherit_lock                           = optional(bool, true)
+    lock_type_if_not_inherited             = optional(string, "None")
+    inherit_tags                           = optional(bool, true)
+    edge_zone                              = optional(string)
+    zones                                  = optional(list(string))
+
+    role_assignments = optional(map(object({
+      role_definition_id_or_name             = string
+      principal_id                           = string
+      description                            = optional(string, null)
+      skip_service_principal_aad_check       = optional(bool, false) # only set to true IF using service principal
+      condition                              = optional(string, null)
+      condition_version                      = optional(string, null) # Valid values are 2.0
+      delegated_managed_identity_resource_id = optional(string, null)
+    })), {})
+
+    diagnostic_settings = optional(map(object({
+      name                                     = optional(string, null)
+      log_categories                           = optional(set(string), [])
+      log_groups                               = optional(set(string), ["allLogs"])
+      metric_categories                        = optional(set(string), ["AllMetrics"])
+      log_analytics_destination_type           = optional(string, null)
+      workspace_resource_id                    = optional(string, null)
+      storage_account_resource_id              = optional(string, null)
+      event_hub_authorization_rule_resource_id = optional(string, null)
+      event_hub_name                           = optional(string, null)
+      marketplace_partner_resource_id          = optional(string, null)
+    })), {})
+  }))
+```
 
 ### <a name="input_location"></a> [location](#input\_location)
 
@@ -73,21 +184,20 @@ The following input variables are optional (have default values):
 
 ### <a name="input_backend_address_pool_addresses"></a> [backend\_address\_pool\_addresses](#input\_backend\_address\_pool\_addresses)
 
-Description:   A list of backend address pool addresses to associate with the backend address pool  
-  Each object has 5 parameters:
+Description:   A map of backend address pool addresses to associate with the backend address pool
 
-  - `name`: (Required) The name of the backend address pool address, if adding an address. Changing this forces a new backend address pool address to be created.
-  - `backend_address_pool_resource_name`: (Required) The name of the backend address pool within the virtual network. Changing this forces a new backend address pool address to be created.
+  - `name`: (Optional) The name of the backend address pool address, if adding an address. Changing this forces a new backend address pool address to be created.
+  - `backend_address_pool_resource_name`: (Optional) The name of the backend address pool within the virtual network. Changing this forces a new backend address pool address to be created.
   - `ip_address`: (Optional) The static IP address which should be allocated to the backend address pool.
 
   ```terraform
-  backend_address_pool_addresses = [
-    {
+  backend_address_pool_addresses = {
+    address1 = {
       name                      = "backend_vm_address"
       backend_address_pool_resource_name = "bepool_1"
       ip_address                = "10.10.1.5"
     }
-  ]
+  }
 ```
 
 Type:
@@ -112,17 +222,16 @@ Default: `null`
 
 ### <a name="input_backend_address_pools"></a> [backend\_address\_pools](#input\_backend\_address\_pools)
 
-Description:   A list of objects that creates one or more backend pools  
-  Each object has 1 parameter:
+Description:   A map of objects that creates one or more backend pools
 
   - `name`: (Optional) The name of the backend address pool to create
 
   ```terraform
-  backend_address_pools = [
-    {
+  backend_address_pools = {
+    pool1 = {
       name = "bepool1"
     }
-  ]
+  }
 ```
 
 Type:
@@ -137,13 +246,25 @@ Default: `{}`
 
 ### <a name="input_diagnostic_settings"></a> [diagnostic\_settings](#input\_diagnostic\_settings)
 
-Description:   Map of objects that manage a Diagnostic Setting for an existing resource
+Description:   A map of objects that manage a Diagnostic Setting.
+
+  - `name`: (Optional) The name of the diagnostic setting.
+  - `log_groups`: (Optional) A set of log groups. Defaults to a set containing "allLogs".
+  - `metric_categories`: (Optional) A set of metric categories. Defaults to a set containing "AllMetrics".
+  - `log_analytics_destination_type`: (Optional) The destination type for log analytics. Defaults to "Dedicated".
+  - `workspace_resource_id`: (Optional) The resource ID of the workspace. Defaults to null. This is a required field if `storage_account_resource_id`, `event_hub_authorization_rule_resource_id`, and `marketplace_partner_resource_id` are not set.
+  - `storage_account_resource_id`: (Optional) The resource ID of the storage account. Defaults to null. This is a required field if `workspace_resource_id`, `event_hub_authorization_rule_resource_id`, and `marketplace_partner_resource_id` are not set.
+  - `event_hub_authorization_rule_resource_id`: (Optional) The resource ID of the event hub authorization rule. Defaults to null. This is a required field if `workspace_resource_id`, `storage_account_resource_id`, and `marketplace_partner_resource_id` are not set.
+  - `event_hub_name`: (Optional) The name of the event hub. Defaults to null.
+  - `marketplace_partner_resource_id`: (Optional) The resource ID of the marketplace partner. Defaults to null. This is a required field if `workspace_resource_id`, `storage_account_resource_id`, and `event_hub_authorization_rule_resource_id` are not set.
+
+  Please note that at least one of `workspace_resource_id`, `storage_account_resource_id`, `marketplace_partner_resource_id`, or `event_hub_authorization_rule_resource_id` must be set.
 
   ```terraform
   diagnostic_settings = {
     diag_setting_1 = {
       name                                     = "diagSetting1"
-      log_categories_and_groups                = ["allLogs"]
+      log_groups                               = ["allLogs"]
       metric_categories                        = ["AllMetrics"]
       log_analytics_destination_type           = "Dedicated"
       workspace_resource_id                    = "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.OperationalInsights/workspaces/{workspaceName}"
@@ -159,13 +280,10 @@ Type:
 
 ```hcl
 map(object({
-    name = optional(string, null)
-    # log_categories_and_groups                = optional(set(string), ["allLogs"])
-
-    log_categories    = optional(set(string), [])
-    log_groups        = optional(set(string), ["allLogs"])
-    metric_categories = optional(set(string), ["AllMetrics"])
-
+    name                                     = optional(string, null)
+    log_categories                           = optional(set(string), [])
+    log_groups                               = optional(set(string), ["allLogs"])
+    metric_categories                        = optional(set(string), ["AllMetrics"])
     log_analytics_destination_type           = optional(string, null)
     workspace_resource_id                    = optional(string, null)
     storage_account_resource_id              = optional(string, null)
@@ -196,92 +314,9 @@ Type: `bool`
 
 Default: `true`
 
-### <a name="input_frontend_ip_configurations"></a> [frontend\_ip\_configurations](#input\_frontend\_ip\_configurations)
-
-Description:   An input variable that is a map of frontend ip configurations for the load balancer.
-
-  - `name`: (Required) The name of the frontend IP configuration. Changing this forces a new resource to be created
-  - `frontend_private_ip_address`: (Optional) A string parameter that is the private IP address to assign to the Load Balancer. The last one and first four IPs in any range are reserved and cannot be manually assigned.
-  - `frontend_private_ip_address_version`: (Optional) A string parameter that is the version of IP that the private IP address is. Possible values are IPv4 or IPv6
-  - `frontend_private_ip_address_allocation`: (Optional) A string parameter that is the allocation method for the private IP address used by this Load Balancer. Possible values as Dynamic or Static
-  - `frontend_private_ip_subnet_resource_id`: (Optional) A string parameter that is the ID of the subnet which should be associated with the IP configuration. If desired to use the same subnet for each frontend ip configuration, use frontend\_subnet\_resource\_id, or use frontend\_vnet\_name and frontend\_subnet\_name. If for public ip configuration, leave parameter empty/null.
-  - `public_ip_address_resource_name`: (Optional) A string parameter that is the name of the public ip address to be created AND associated with the Load Balancer. Changing this forces a new Public IP to be created.
-  - `public_ip_address_resource_id`: (Optional) A string parameter that is the ID of a public ip address which should associated with the Load Balancer.
-  - `public_ip_prefix_resource_id`: (Optional) A string parameter that is the ID of a public IP prefixes which should be associated with the Load Balancer. Public IP prefix can only be used with outbound rules
-  - `frontend_ip_zones`: (Optional) A  set of strings that specifies a list of availability zones in which the IP address for this Load Balancer should be located.
-  - `tags`: (Optional) = A mapping of tags to assign to the individual public IP resource.
-  - `create_public_ip_address`: (Optional) A boolean parameter to create a new public IP address resource for the Load Balancer
-  - `new_public_ip_resource_group_name`: (Optional) A string for the name of the resource group to place the newly created public IP into. If null, will choose `location` from `public_ip_address_configuration` or `location` for the Load Balancer.
-  - `new_public_ip_location`: (Optional) A string parameter for the location to deploy the public IP address resource.
-  - `inherit_lock`: (Optional)  A boolean to determine if the lock from the Load Balancer will be inherited by the public IP.
-  - `lock_type_if_not_inherited`: (Optional) An optional string to determine what kind of lock will be placed on the public IP is not inherited from the Load Balancer
-  - `inherit_tags`: (Optional) A boolean to determine if the public IP will inherit tags from the Load Balancer.
-  - `edge_zone`: (Optional) A string that specifies the Edge Zone within the Azure Region where this public IP should exist. Changing this forces a new Public IP to be created.
-  - `zones`: (Optional) A list of strings that contains the availability zone to allocate the public IP in. Changing this forces a new resource to be created.
-
-  Example Input:
-  ```terraform
-  # Standard Regional IPv4 Private Ip Configuration
-  frontend_ip_configurations = [
-    {
-      name = "internal_lb_private_ip_1_config"
-      frontend_private_ip_address_version    = "IPv4"
-      frontend_private_ip_address_allocation = "Dynamic"
-    }
-
-  # Standard Regional IPv4 Public IP Frontend IP Configuration
-  frontend_ip_configurations = [
-    {
-      name                     = "public_lb_public_ip_1_config"
-      public_ip_address_name = "public_lb_public_ip_1"
-      create_public_ip_address = true
-    }
-  ]
-```
-
-Type:
-
-```hcl
-map(object({
-    name                                   = optional(string)
-    frontend_private_ip_address            = optional(string)
-    frontend_private_ip_address_version    = optional(string)
-    frontend_private_ip_address_allocation = optional(string, "Dynamic")
-    frontend_private_ip_subnet_resource_id = optional(string)
-    public_ip_address_resource_name        = optional(string)
-    public_ip_address_resource_id          = optional(string)
-    public_ip_prefix_resource_id           = optional(string)
-    frontend_ip_zones                      = optional(set(string))
-    tags                                   = optional(map(any), {})
-    create_public_ip_address               = optional(bool, false)
-    new_public_ip_resource_group_name      = optional(string)
-    new_public_ip_location                 = optional(string)
-    inherit_lock                           = optional(bool, true)
-    lock_type_if_not_inherited             = optional(string, "None")
-    inherit_tags                           = optional(bool, true)
-    edge_zone                              = optional(string)
-    zones                                  = optional(list(string))
-
-    role_assignments = optional(map(object({
-      role_definition_id_or_name = string
-      principal_id               = string
-      # In terraform registry, says that scope is required - CLARIFICATION
-      description                            = optional(string, null)
-      skip_service_principal_aad_check       = optional(bool, false) # only set to true IF using service principal
-      condition                              = optional(string, null)
-      condition_version                      = optional(string, null) # Valid values are 2.0
-      delegated_managed_identity_resource_id = optional(string, null)
-    })), {})
-  }))
-```
-
-Default: `{}`
-
 ### <a name="input_frontend_subnet_resource_id"></a> [frontend\_subnet\_resource\_id](#input\_frontend\_subnet\_resource\_id)
 
-Description:   (Optional) The frontend subnet id to use when in private mode.   
-  Can be used for all ip configurations that will use the same subnet.
-  `frontend_private_ip_subnet_resource_id` can be set per frontend configuration for private ip.
+Description:   (Optional) The frontend subnet id to use when in private mode. Can be used for all ip configurations that will use the same subnet. `frontend_private_ip_subnet_resource_id` can be set per frontend configuration for private ip.
 
 Type: `string`
 
@@ -289,19 +324,20 @@ Default: `null`
 
 ### <a name="input_lb_nat_pools"></a> [lb\_nat\_pools](#input\_lb\_nat\_pools)
 
-Description:
-  - `name`: (Required) The name of the Load Balancer rule. Changing this forces a new resource to be created.
-  - `frontend_ip_configuration_name`: (Required) The name of the frontend IP configuration to which the rule is associated with
-  - `protocol`: (Required) The transport protocol for the external endpoint. Possible values are All, Tcp, or Udp.
-  - `frontend_port_start`: (Required) The first port number in the range of external ports that will be used to provide Inbound NAT to NICs associated with this Load Balancer. Possible values range between 1 and 65534, inclusive.
-  - `frontend_port_end`: (Required) The last port number in the range of external ports that will be used to provide Inbound NAT to NICs associated with this Load Balancer. Possible values range between 1 and 65534, inclusive.
-  - `backend_port`: (Required) The port used for the internal endpoint. Possible values range between 1 and 65535, inclusive.
+Description:   A map of objects that define the inbound NAT rules for a Load Balancer. Each object has the following
+
+  - `name`: (Optional) The name of the Load Balancer rule. Changing this forces a new resource to be created.
+  - `frontend_ip_configuration_name`: (Optional) The name of the frontend IP configuration to which the rule is associated with
+  - `protocol`: (Optional) The transport protocol for the external endpoint. Possible values are All, Tcp, or Udp.
+  - `frontend_port_start`: (Optional) The first port number in the range of external ports that will be used to provide Inbound NAT to NICs associated with this Load Balancer. Possible values range between 1 and 65534, inclusive.
+  - `frontend_port_end`: (Optional) The last port number in the range of external ports that will be used to provide Inbound NAT to NICs associated with this Load Balancer. Possible values range between 1 and 65534, inclusive.
+  - `backend_port`: (Optional) The port used for the internal endpoint. Possible values range between 1 and 65535, inclusive.
   - `idle_timeout_in_minutes`: (Optional) Specifies the idle timeout in minutes for TCP connections. Valid values are between 4 and 30 minutes. Defaults to 4 minutes.
   - `enable_floating_ip`: (Optional) A boolean parameter to determine if there are floating IPs enabled for this Load Balancer NAT rule. A "floating” IP is reassigned to a secondary server in case the primary server fails. Required to configure a SQL AlwaysOn Availability Group. Defaults to false.
   - `enable_tcp_reset`: (Optional) A boolean to determine if TCP Reset is enabled for this Load Balancer rule. Defaults to false.
 
   ```terraform
-  lb_nat_pools = [
+  lb_nat_pools = {
     lb_nat_pool_1 = {
       resource_group_name            = azurerm_resource_group.example.name
       loadbalancer_id                = azurerm_lb.example.id
@@ -312,7 +348,7 @@ Description:
       backend_port                   = 8080
       frontend_ip_configuration_name = "PublicIPAddress"
     }
-  ]
+  }
 ```
 
 Type:
@@ -335,14 +371,13 @@ Default: `{}`
 
 ### <a name="input_lb_nat_rules"></a> [lb\_nat\_rules](#input\_lb\_nat\_rules)
 
-Description:   A list of objects that specifies the creation of NAT rules.  
-  Each object has 12 parameters:
+Description:   A map of objects that specifies the creation of NAT rules.
 
-  - `name`: (Required) The name of the NAT rule. Changing this forces a new resource to be created
-  - `frontend_ip_configuration_name`: (Required) The name of the frontend IP configuration exposing this rule
-  - `protocol`: (Required) The transport protocol front the external endpoint. Possible values are All, Tcp, or Udp
-  - `frontend_port`: (Required) The port for the external endpoint. Port numbers for each Rule must be unique within the Load Balancer. Possible values range between 1 and 65534, inclusive. Leave null or 0 if protocol is set to All
-  - `backend_port`: (Required) The port used for internal connections on the endpoint. Possible values range between 1 and 65535, inclusive. Leave null or 0 if protocol is set to All
+  - `name`: (Optional) The name of the NAT rule. Changing this forces a new resource to be created
+  - `frontend_ip_configuration_name`: (Optional) The name of the frontend IP configuration exposing this rule
+  - `protocol`: (Optional) The transport protocol front the external endpoint. Possible values are All, Tcp, or Udp
+  - `frontend_port`: (Optional) The port for the external endpoint. Port numbers for each Rule must be unique within the Load Balancer. Possible values range between 1 and 65534, inclusive. Leave null or 0 if protocol is set to All
+  - `backend_port`: (Optional) The port used for internal connections on the endpoint. Possible values range between 1 and 65535, inclusive. Leave null or 0 if protocol is set to All
   - `frontend_port_start`: (Optional) The port range start for the external endpoint. This property is used together with BackendAddressPool and FrontendPortRangeEnd. Individual inbound NAT rule port mappings will be created for each backend address from BackendAddressPool. Acceptable values range from 1 to 65534, inclusive.
   - `frontend_port_end`: (Optional) The port range end for the external endpoint. This property is used together with BackendAddressPool and FrontendPortRangeStart. Individual inbound NAT rule port mappings will be created for each backend address from BackendAddressPool. Acceptable values range from 1 to 65534, inclusive.
   - `backend_address_pool_resource_id`: (Optional) The ID of the backend address pool that this NAT rule references
@@ -352,15 +387,15 @@ Description:   A list of objects that specifies the creation of NAT rules.
   - `enable_tcp_reset`: (Optional) A boolean parameter to determine if TCP Reset is enabled for this Load Balancer NAT rule. Defaults to false
 
   ```terraform
-  lb_nat_rules = [
-    {
-      name                           = "lb_nat_rule_1"
+  lb_nat_rules = {
+    lb_nat_rule_1 = {
+      name                           = "tcp_nat_rule_1"
       frontend_ip_configuration_name = "internal_lb_private_ip_1_config"
       protocol = "Tcp"
       frontend_port = 3389
       backend_port = 3389
     }
-  ]
+  }
 ```
 
 Type:
@@ -386,19 +421,20 @@ Default: `{}`
 
 ### <a name="input_lb_outbound_rules"></a> [lb\_outbound\_rules](#input\_lb\_outbound\_rules)
 
-Description:
-  - `name`: (Required) The name of the Load Balancer rule. Changing this forces a new resource to be created.
-  - `frontend_ip_configuration_name`: (Required) The list of names of the frontend IP configuration to which the rule is associated with
+Description:   A map of objects that define the outbound rules for a Load Balancer. Each object is identified by a unique key in the map and has the following properties:
+
+  - `name`: (Optional) The name of the Load Balancer rule. Changing this forces a new resource to be created.
+  - `frontend_ip_configuration_name`: (Optional) The list of names of the frontend IP configuration to which the rule is associated with
   - `backend_address_pool_resource_id`: (Optional) An ID that references a Backend Address Pool over which this Load Balancing Rule operates. Multiple backend pools only valid if Gateway SKU
   - `backend_address_pool_resource_name`: (Optional) A name that references a Backend Address Pool over which this Load Balancing Rule operates. Multiple backend pools only valid if Gateway SKU
-  - `protocol`: (Required) The transport protocol for the external endpoint. Possible values are All, Tcp, or Udp.
+  - `protocol`: (Optional) The transport protocol for the external endpoint. Possible values are All, Tcp, or Udp.
   - `enable_tcp_reset`: A boolean to determine if TCP Reset is enabled for this Load Balancer rule. Defaults to false.
   - `number_of_allocated_outbound_ports`: (Optional)
   - `idle_timeout_in_minutes`: Specifies the idle timeout in minutes for TCP connections. Valid values are between 4 and 30 minutes. Defaults to 4 minutes.
 
   ```terraform
-  lb_outbound_rules = [
-    {
+  lb_outbound_rules = {
+    lb_outbound_rule_1 = {
       name = "outbound_rule_1"
       frontend_ip_configurations = [
         {
@@ -406,7 +442,7 @@ Description:
         }
       ]
     }
-  ]
+  }
 ```
 
 Type:
@@ -431,38 +467,38 @@ Default: `{}`
 Description:   A list of objects that specify the Load Balancer probes to be created.  
   Each object has 7 parameters:
 
-  - `name`: (Required) The name of the probe. Changing this forces a new probe resource to be created.
-  - `protocol`: Specifies the protocol of the end point. Possible values are Http, Https or Tcp. If TCP is specified, a received ACK is required for the probe to be successful. If HTTP is specified, a 200 OK response from the specified URI is required for the probe to be successful.
-  - `port`: (Required) The port on which the probe queries the backend endpoint. Possible values range from 1 to 65535, inclusive.
-  - `probe_threshold`: The number of consecutive successful or failed probes that allow or deny traffic to this endpoint. Possible values range from 1 to 100. The default value is 1.
-  - `request_path`: The URI used for requesting health status from the backend endpoint. Required if protocol is set to Http or Https. Otherwise, it is not allowed.
-  - `interval_in_seconds`: The interval, in seconds between probes to the backend endpoint for health status. The default value is 15, the minimum value is 5.
-  - `number_of_probes_before_removal`: The number of failed probe attempts after which the backend endpoint is removed from rotation. The default value is 2. NumberOfProbes multiplied by intervalInSeconds value must be greater or equal to 10.Endpoints are returned to rotation when at least one probe is successful.
+  - `name`: (Optional) The name of the probe. Changing this forces a new probe resource to be created.
+  - `protocol`: (Optional) Specifies the protocol of the end point. Possible values are Http, Https or Tcp. If TCP is specified, a received ACK is required for the probe to be successful. If HTTP is specified, a 200 OK response from the specified URI is required for the probe to be successful.
+  - `port`: (Optional) The port on which the probe queries the backend endpoint. Possible values range from 1 to 65535, inclusive.
+  - `probe_threshold`: (Optional) The number of consecutive successful or failed probes that allow or deny traffic to this endpoint. Possible values range from 1 to 100. The default value is 1.
+  - `request_path`: (Optional) The URI used for requesting health status from the backend endpoint. Required if protocol is set to Http or Https. Otherwise, it is not allowed.
+  - `interval_in_seconds`: (Optional) The interval, in seconds between probes to the backend endpoint for health status. The default value is 15, the minimum value is 5.
+  - `number_of_probes_before_removal`: (Optional) The number of failed probe attempts after which the backend endpoint is removed from rotation. The default value is 2. NumberOfProbes multiplied by intervalInSeconds value must be greater or equal to 10.Endpoints are returned to rotation when at least one probe is successful.
 
   ```terraform
   # Each type of probe
-  lb_probes = [
-    {
+  lb_probes = {
+    probe1 = {
       name     = "probe_1"
       protocol = "Tcp"
       port     = 80
       interval_in_seconds = 5
     },
-    {
+    probe2 = {
       name         = "probe_2"
       protocol     = "Http"
       port         = 80
       request_path = "/"
       interval_in_seconds = 5
     },
-    {
+    probe3 = {
       name         = "probe_3"
       protocol     = "Https"
       port         = 443
       request_path = "/"
       interval_in_seconds = 5
     }
-  ]
+  }
 ```
 
 Type:
@@ -486,11 +522,11 @@ Default: `{}`
 Description:   A list of objects that specifies the Load Balancer rules for the Load Balancer.  
   Each object has 14 parameters:
 
-  - `name`: (Required) The name of the Load Balancer rule. Changing this forces a new resource to be created.
-  - `frontend_ip_configuration_name`: (Required) The name of the frontend IP configuration to which the rule is associated with
-  - `protocol`: (Required) The transport protocol for the external endpoint. Possible values are All, Tcp, or Udp.
-  - `frontend_port`: (Required) The port for the external endpoint. Port numbers for each Rule must be unique within the Load Balancer. Possible values range between 0 and 65534, inclusive.
-  - `backend_port`: (Required) The port used for internal connections on the endpoint. Possible values range between 0 and 65535, inclusive.
+  - `name`: (Optional) The name of the Load Balancer rule. Changing this forces a new resource to be created.
+  - `frontend_ip_configuration_name`: (Optional) The name of the frontend IP configuration to which the rule is associated with
+  - `protocol`: (Optional) The transport protocol for the external endpoint. Possible values are All, Tcp, or Udp.
+  - `frontend_port`: (Optional) The port for the external endpoint. Port numbers for each Rule must be unique within the Load Balancer. Possible values range between 0 and 65534, inclusive.
+  - `backend_port`: (Optional) The port used for internal connections on the endpoint. Possible values range between 0 and 65535, inclusive.
   - `backend_address_pool_resource_ids`: (Optional) A list of IDs that reference to a Backend Address Pool over which this Load Balancing Rule operates. Multiple backend pools only valid if Gateway SKU
   - `backend_address_pool_resource_names`: (Optional) A list of names reference to a Backend Address Pool over which this Load Balancing Rule operates. Multiple backend pools only valid if Gateway SKU
   - `probe_resource_id`: The ID of the probe used by this Load balancing rule.
@@ -502,8 +538,8 @@ Description:   A list of objects that specifies the Load Balancer rules for the 
   - `enable_tcp_reset`: A boolean to determine if TCP Reset is enabled for this Load Balancer rule. Defaults to false.
 
   ```terraform
-  lb_rules = [
-    {
+  lb_rules = {
+    lb_rule_1 = {
       name                               = "myHTTPRule"
       frontend_ip_configuration_name     = "myFrontend"
       backend_address_pool_resource_names = ["myBackendPool"]
@@ -514,7 +550,7 @@ Description:   A list of objects that specifies the Load Balancer rules for the 
       idle_timeout_in_minutes = 15
       enable_tcp_reset = true
     }
-  ]
+  }
 
 ```
 
@@ -522,22 +558,20 @@ Type:
 
 ```hcl
 map(object({
-    name                           = optional(string)
-    frontend_ip_configuration_name = optional(string)
-    protocol                       = optional(string, "Tcp")
-    frontend_port                  = optional(number, 3389)
-    backend_port                   = optional(number, 3389)
-    # multiple back end pools ONLY IF gateway sku load balancer
-    backend_address_pool_resource_ids   = optional(list(string))
-    backend_address_pool_resource_names = optional(list(string))
+    name                                = optional(string)
+    frontend_ip_configuration_name      = optional(string)
+    protocol                            = optional(string, "Tcp")
+    frontend_port                       = optional(number, 3389)
+    backend_port                        = optional(number, 3389)
+    backend_address_pool_resource_ids   = optional(list(string)) # multiple back end pools ONLY IF gateway sku load balancer
+    backend_address_pool_resource_names = optional(list(string)) # multiple back end pools ONLY IF gateway sku load balancer
     probe_resource_id                   = optional(string)
     probe_object_name                   = optional(string)
     enable_floating_ip                  = optional(bool, false)
     idle_timeout_in_minutes             = optional(number, 4)
     load_distribution                   = optional(string, "Default")
-    # set `diasble_outbound_snat` to true when same frontend ip configuration is referenced by outbout rule and lb rule
-    disable_outbound_snat = optional(bool, false)
-    enable_tcp_reset      = optional(bool, false)
+    disable_outbound_snat               = optional(bool, false) # set `diasble_outbound_snat` to true when same frontend ip configuration is referenced by outbout rule and lb rule
+    enable_tcp_reset                    = optional(bool, false)
   }))
 ```
 
@@ -545,16 +579,15 @@ Default: `{}`
 
 ### <a name="input_lock"></a> [lock](#input\_lock)
 
-Description:   An object that sets a lock for the Load Balancer.  
-  Defaults to None if kind is not set.
+Description:   An object that sets a lock for the Load Balancer.
 
   - `name`: The name of the lock
-  - `kind`: The type of lock to be created. Accepted values are `CanNotDelete`, `ReadOnly`, `None`.
+  - `kind`: The type of lock to be created. Accepted values are `CanNotDelete`, `ReadOnly`, `None`. Defaults to None if kind is not set.
 
   ```terraform
   # Delete Lock for the Load Balancer
   lock = {
-    name = "lock-{resourcename}" # optional
+    name = "lock-{resourcename}"
     kind = "CanNotDelete"
   }
 ```
@@ -574,7 +607,7 @@ Default: `{}`
 
 Description:   An object variable that configures the settings that will be the same for all public IPs for this Load Balancer
 
-  - `allocation_method`: (Required) The allocation method for this IP address. Possible valuse are `Static` or `Dynamic`
+  - `allocation_method`: (Optional) The allocation method for this IP address. Possible valuse are `Static` or `Dynamic`
   - `resource_group_name`: (Optional) Specifies the resource group to deploy all of the public IP addresses to be created
   - `ddos_protection_mode`: (Optional) The DDoS protection mode of the public IP. Possible values are `Disabled`, `Enabled`, and `VirtualNetworkInherited`. Defaults to `VirtualNetworkInherited`.
   - `ddos_protection_plan_resource_id`: (Optional) The ID of DDoS protection plan associated with the public IP
@@ -624,14 +657,15 @@ Default: `{}`
 
 ### <a name="input_role_assignments"></a> [role\_assignments](#input\_role\_assignments)
 
-Description:   Map of objects that assigns a given principal (user or group) to a given role.
+Description:   A map of objects that assigns a given principal (user or group) to a given role.
 
   - `role_definition_id_or_name`: The ID or name of the role definition to assign to the principal.
   - `principal_id`: The ID of the principal to assign the role to.
-  - `description`: The description of the role assignment.
-  - `skip_service_principal_aad_check`: If set to true, skips the Azure Active Directory check for the service principal in the tenant. Defaults to false.
-  - `condition`: The condition which will be used to scope the role assignment.
-  - `condition_version`: The version of the condition syntax. Valid values are '2.0'.
+  - `description`: (Optional) A description of the role assignment.
+  - `skip_service_principal_aad_check`: (Optional) If set to true, skips the Azure Active Directory check for the service principal in the tenant. This should only be set to true if using a service principal. Defaults to false.
+  - `condition`: (Optional) A condition that will be used to scope the role assignment.
+  - `condition_version`: (Optional) The version of the condition syntax. Valid values are '2.0'. Defaults to null.
+  - `delegated_managed_identity_resource_id`: (Optional) The resource ID of the delegated managed identity.
 
   ```terraform
   role_assignments = {
@@ -655,9 +689,8 @@ Type:
 
 ```hcl
 map(object({
-    role_definition_id_or_name = string
-    principal_id               = string
-    # In terraform registry, says that scope is required - CLARIFICATION
+    role_definition_id_or_name             = string
+    principal_id                           = string
     description                            = optional(string, null)
     skip_service_principal_aad_check       = optional(bool, false) # only set to true IF using service principal
     condition                              = optional(string, null)

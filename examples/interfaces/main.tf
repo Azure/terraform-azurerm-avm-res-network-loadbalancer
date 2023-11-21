@@ -53,7 +53,6 @@ resource "azurerm_subnet" "example" {
   address_prefixes     = ["10.1.1.0/26"]
 }
 
-# Log Analytics workspace
 resource "azurerm_log_analytics_workspace" "example" {
   name                = "law-test-001"
   location            = azurerm_resource_group.example.location
@@ -76,8 +75,9 @@ module "loadbalancer" {
   # source = "Azure/avm-res-network-loadbalancer/azurerm"
   # version = 0.1.0
 
+  enable_telemetry = false
+
   name                = "interfaces-lb"
-  enable_telemetry    = false # var.enable_telemetry
   location            = azurerm_resource_group.example.location
   resource_group_name = azurerm_resource_group.example.name
 
@@ -86,9 +86,7 @@ module "loadbalancer" {
     frontend_configuration_1 = {
       name = "myFrontend"
 
-      # Creates a public IP address
-      create_public_ip_address = true
-
+      create_public_ip_address        = true
       public_ip_address_resource_name = module.naming.public_ip.name_unique
       tags = {
         createdBy = "tf-infra-team"
@@ -110,14 +108,6 @@ module "loadbalancer" {
           workspace_resource_id = azurerm_log_analytics_workspace.example.id
         }
       }
-
-    }
-  }
-
-  diagnostic_settings = {
-    diagnostic_settings_1 = {
-      name                  = "diag_settings_1"
-      workspace_resource_id = azurerm_log_analytics_workspace.example.id
     }
   }
 
@@ -133,8 +123,11 @@ module "loadbalancer" {
     */
   }
 
-  tags = {
-    environment = "dev-tf"
+  diagnostic_settings = {
+    diagnostic_settings_1 = {
+      name                  = "diag_settings_1"
+      workspace_resource_id = azurerm_log_analytics_workspace.example.id
+    }
   }
 
   role_assignments = {
@@ -142,5 +135,9 @@ module "loadbalancer" {
       role_definition_id_or_name = data.azurerm_role_definition.example.name
       principal_id               = data.azurerm_client_config.this.object_id
     }
+  }
+
+  tags = {
+    environment = "dev-tf"
   }
 }
