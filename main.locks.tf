@@ -1,0 +1,41 @@
+resource "azurerm_management_lock" "this" {
+  count = var.lock.kind != "None" ? 1 : 0
+
+  name       = coalesce(var.lock.name, "lock-${var.name}")
+  scope      = azurerm_lb.this.id
+  lock_level = var.lock.kind
+  depends_on = [
+    azurerm_lb.this,
+    azurerm_public_ip.this,
+    azurerm_lb_backend_address_pool.this,
+    azurerm_lb_backend_address_pool_address.this,
+    azurerm_lb_nat_rule.this,
+    azurerm_lb_probe.this,
+    azurerm_lb_rule.this,
+    azurerm_lb_outbound_rule.this,
+    azurerm_monitor_diagnostic_setting.this,
+    azurerm_role_assignment.this
+  ]
+}
+
+resource "azurerm_management_lock" "pip" {
+  for_each = { for frontend, frontend_values in var.frontend_ip_configurations : frontend => frontend_values if frontend_values.create_public_ip_address && (frontend_values.lock_type_if_not_inherited != "None" || (frontend_values.inherit_lock && var.lock.kind != "None")) }
+
+  name       = "lock-${each.value.public_ip_address_resource_name}"
+  scope      = azurerm_public_ip.this[each.key].id
+  lock_level = each.value.inherit_lock ? var.lock.kind : each.value.lock_type_if_not_inherited
+  depends_on = [
+    azurerm_lb.this,
+    azurerm_public_ip.this,
+    azurerm_lb_backend_address_pool.this,
+    azurerm_lb_backend_address_pool_address.this,
+    azurerm_lb_nat_rule.this,
+    azurerm_lb_probe.this,
+    azurerm_lb_rule.this,
+    azurerm_lb_outbound_rule.this,
+    azurerm_monitor_diagnostic_setting.this,
+    azurerm_monitor_diagnostic_setting.pip,
+    azurerm_role_assignment.this,
+    azurerm_role_assignment.pip
+  ]
+}

@@ -1,7 +1,7 @@
 <!-- BEGIN_TF_DOCS -->
-# Default example
+# Internal Load Balancer \ Standard SKU example
 
-This deploys the module in its simplest form (Standard SKU Public Load Balancer).
+This deploys the module as a common internal load balancer quick start.
 
 ```hcl
 # THIS IS CURRENTLY WORKING
@@ -25,27 +25,23 @@ provider "azurerm" {
   }
 }
 
-
 module "naming" {
   source  = "Azure/naming/azurerm"
   version = "0.3.0"
 }
 
-# Helps pick a random region from the list of regions.
+# This picks a random region from the list of regions.
 resource "random_integer" "region_index" {
   min = 0
   max = length(local.azure_regions) - 1
 }
 
 # This is required for resource modules
-
-# Creates a resource group
 resource "azurerm_resource_group" "this" {
   name     = module.naming.resource_group.name_unique
   location = local.azure_regions[random_integer.region_index.result]
 }
 
-# Creates a virtual network
 resource "azurerm_virtual_network" "example" {
   name                = module.naming.virtual_network.name_unique
   location            = azurerm_resource_group.this.location
@@ -53,7 +49,6 @@ resource "azurerm_virtual_network" "example" {
   address_space       = ["10.1.0.0/16"]
 }
 
-# Creates a subnet
 resource "azurerm_subnet" "example" {
   name                 = module.naming.subnet.name_unique
   resource_group_name  = azurerm_virtual_network.example.resource_group_name
@@ -68,18 +63,55 @@ module "loadbalancer" {
   # source = "Azure/avm-res-network-loadbalancer/azurerm"
   # version = 0.1.0
 
-  enable_telemetry = false # var.enable_telemetry
-
-  name                = "default-lb"
+  name                = "internal-lb"
+  enable_telemetry    = false # var.enable_telemetry
   location            = azurerm_resource_group.this.location
   resource_group_name = azurerm_resource_group.this.name
 
+  # Virtual Network and Subnet for Internal LoadBalancer
+  # frontend_vnet_resource_id   = azurerm_virtual_network.example.id
+  frontend_subnet_resource_id = azurerm_subnet.example.id
+
+  # Frontend IP Configuration
   frontend_ip_configurations = {
     frontend_configuration_1 = {
       name = "myFrontend"
-      # Creates a public IP address
-      create_public_ip_address        = true
-      public_ip_address_resource_name = module.naming.public_ip.name_unique
+    }
+  }
+
+  # Backend Address Pool
+  backend_address_pools = {
+    pool1 = {
+      name = "myBackendPool"
+    }
+  }
+
+  # Virtual Network for Backend Address Pool(s)
+  backend_address_pool_configuration = azurerm_virtual_network.example.id
+
+  # Health Probe(s)
+  lb_probes = {
+    tcp1 = {
+      name     = "myHealthProbe"
+      protocol = "Tcp"
+    }
+  }
+
+  # Load Balaner rule(s)
+  lb_rules = {
+    http1 = {
+      name                           = "myHTTPRule"
+      frontend_ip_configuration_name = "myFrontend"
+
+      backend_address_pool_object_names = ["pool1"]
+      protocol                          = "Tcp"
+      frontend_port                     = 80
+      backend_port                      = 80
+
+      probe_object_name = "tcp1"
+
+      idle_timeout_in_minutes = 15
+      enable_tcp_reset        = true
     }
   }
 
@@ -88,11 +120,6 @@ module "loadbalancer" {
 output "azurerm_lb" {
   value       = module.loadbalancer.azurerm_lb
   description = "Outputs the entire Azure Load Balancer resource"
-}
-
-output "azurerm_public_ip" {
-  value       = module.loadbalancer.azurerm_public_ip
-  description = "Outputs each Public IP Address resource in it's entirety"
 }
 ```
 
@@ -150,10 +177,6 @@ The following outputs are exported:
 ### <a name="output_azurerm_lb"></a> [azurerm\_lb](#output\_azurerm\_lb)
 
 Description: Outputs the entire Azure Load Balancer resource
-
-### <a name="output_azurerm_public_ip"></a> [azurerm\_public\_ip](#output\_azurerm\_public\_ip)
-
-Description: Outputs each Public IP Address resource in it's entirety
 
 ## Modules
 

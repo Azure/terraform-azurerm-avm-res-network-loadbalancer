@@ -1,11 +1,9 @@
 <!-- BEGIN_TF_DOCS -->
-# Default example
+# Load Balancer with Interfaces example
 
 This deploys the module in its simplest form (Standard SKU Public Load Balancer).
 
 ```hcl
-# THIS IS CURRENTLY WORKING
-
 terraform {
   required_version = ">= 1.5.2"
   required_providers {
@@ -37,29 +35,44 @@ resource "random_integer" "region_index" {
   max = length(local.azure_regions) - 1
 }
 
-# This is required for resource modules
+data "azurerm_client_config" "this" {
 
-# Creates a resource group
-resource "azurerm_resource_group" "this" {
+}
+
+
+resource "azurerm_resource_group" "example" {
   name     = module.naming.resource_group.name_unique
   location = local.azure_regions[random_integer.region_index.result]
 }
 
-# Creates a virtual network
 resource "azurerm_virtual_network" "example" {
   name                = module.naming.virtual_network.name_unique
-  location            = azurerm_resource_group.this.location
-  resource_group_name = azurerm_resource_group.this.name
+  location            = azurerm_resource_group.example.location
+  resource_group_name = azurerm_resource_group.example.name
   address_space       = ["10.1.0.0/16"]
 }
 
-# Creates a subnet
 resource "azurerm_subnet" "example" {
   name                 = module.naming.subnet.name_unique
   resource_group_name  = azurerm_virtual_network.example.resource_group_name
   virtual_network_name = azurerm_virtual_network.example.name
   address_prefixes     = ["10.1.1.0/26"]
 }
+
+resource "azurerm_log_analytics_workspace" "example" {
+  name                = "law-test-001"
+  location            = azurerm_resource_group.example.location
+  resource_group_name = azurerm_resource_group.example.name
+  sku                 = "PerGB2018"
+  retention_in_days   = 30
+}
+
+data "azurerm_role_definition" "example" {
+  name = "Contributor"
+
+}
+
+
 
 module "loadbalancer" {
 
@@ -68,31 +81,71 @@ module "loadbalancer" {
   # source = "Azure/avm-res-network-loadbalancer/azurerm"
   # version = 0.1.0
 
-  enable_telemetry = false # var.enable_telemetry
+  enable_telemetry = false
 
-  name                = "default-lb"
-  location            = azurerm_resource_group.this.location
-  resource_group_name = azurerm_resource_group.this.name
+  name                = "interfaces-lb"
+  location            = azurerm_resource_group.example.location
+  resource_group_name = azurerm_resource_group.example.name
+
 
   frontend_ip_configurations = {
     frontend_configuration_1 = {
       name = "myFrontend"
-      # Creates a public IP address
+
       create_public_ip_address        = true
       public_ip_address_resource_name = module.naming.public_ip.name_unique
+      tags = {
+        createdBy = "tf-infra-team"
+      }
+
+      inherit_lock = true
+      inherit_tags = true
+
+      role_assignments = {
+        role_assignment_1 = {
+          role_definition_id_or_name = data.azurerm_role_definition.example.name
+          principal_id               = data.azurerm_client_config.this.object_id
+        }
+      }
+
+      diagnostic_settings = {
+        diagnotic_settings_1 = {
+          name                  = "pip-diag_settings_1"
+          workspace_resource_id = azurerm_log_analytics_workspace.example.id
+        }
+      }
     }
   }
 
-}
+  lock = {
+    kind = "None"
 
-output "azurerm_lb" {
-  value       = module.loadbalancer.azurerm_lb
-  description = "Outputs the entire Azure Load Balancer resource"
-}
+    /*
+    kind = "ReadOnly"
+    */
 
-output "azurerm_public_ip" {
-  value       = module.loadbalancer.azurerm_public_ip
-  description = "Outputs each Public IP Address resource in it's entirety"
+    /*
+    kind = "CanNotDelete"
+    */
+  }
+
+  diagnostic_settings = {
+    diagnostic_settings_1 = {
+      name                  = "diag_settings_1"
+      workspace_resource_id = azurerm_log_analytics_workspace.example.id
+    }
+  }
+
+  role_assignments = {
+    role_assignment_1 = {
+      role_definition_id_or_name = data.azurerm_role_definition.example.name
+      principal_id               = data.azurerm_client_config.this.object_id
+    }
+  }
+
+  tags = {
+    environment = "dev-tf"
+  }
 }
 ```
 
@@ -119,10 +172,13 @@ The following providers are used by this module:
 
 The following resources are used by this module:
 
-- [azurerm_resource_group.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group) (resource)
+- [azurerm_log_analytics_workspace.example](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/log_analytics_workspace) (resource)
+- [azurerm_resource_group.example](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group) (resource)
 - [azurerm_subnet.example](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/subnet) (resource)
 - [azurerm_virtual_network.example](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network) (resource)
 - [random_integer.region_index](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/integer) (resource)
+- [azurerm_client_config.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/client_config) (data source)
+- [azurerm_role_definition.example](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/role_definition) (data source)
 
 <!-- markdownlint-disable MD013 -->
 ## Required Inputs
@@ -131,29 +187,11 @@ No required inputs.
 
 ## Optional Inputs
 
-The following input variables are optional (have default values):
-
-### <a name="input_enable_telemetry"></a> [enable\_telemetry](#input\_enable\_telemetry)
-
-Description: This variable controls whether or not telemetry is enabled for the module.  
-For more information see https://aka.ms/avm/telemetryinfo.  
-If it is set to false, then no telemetry will be collected.
-
-Type: `bool`
-
-Default: `true`
+No optional inputs.
 
 ## Outputs
 
-The following outputs are exported:
-
-### <a name="output_azurerm_lb"></a> [azurerm\_lb](#output\_azurerm\_lb)
-
-Description: Outputs the entire Azure Load Balancer resource
-
-### <a name="output_azurerm_public_ip"></a> [azurerm\_public\_ip](#output\_azurerm\_public\_ip)
-
-Description: Outputs each Public IP Address resource in it's entirety
+No outputs.
 
 ## Modules
 
