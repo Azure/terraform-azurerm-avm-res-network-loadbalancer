@@ -71,11 +71,10 @@ data "azurerm_role_definition" "example" {
 module "loadbalancer" {
 
   source = "../../"
-
   # source = "Azure/avm-res-network-loadbalancer/azurerm"
   # version = 0.1.0
 
-  enable_telemetry = false
+  enable_telemetry = var.enable_telemetry
 
   name                = "interfaces-lb"
   location            = azurerm_resource_group.example.location

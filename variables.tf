@@ -323,9 +323,9 @@ variable "tunnel_interface_configurations" {
 
 variable "backend_address_pool_addresses" {
   type = map(object({
-    name                               = optional(string)
-    backend_address_pool_resource_name = optional(string)
-    ip_address                         = optional(string)
+    name                             = optional(string)
+    backend_address_pool_object_name = optional(string)
+    ip_address                       = optional(string)
   }))
   default = {
 
@@ -334,14 +334,14 @@ variable "backend_address_pool_addresses" {
   A map of backend address pool addresses to associate with the backend address pool
 
   - `name`: (Optional) The name of the backend address pool address, if adding an address. Changing this forces a new backend address pool address to be created.
-  - `backend_address_pool_resource_name`: (Optional) The name of the backend address pool within the virtual network. Changing this forces a new backend address pool address to be created.
+  - `backend_address_pool_object_name`: (Optional) The name of the backend address pool object within the virtual network. Changing this forces a new backend address pool address to be created.
   - `ip_address`: (Optional) The static IP address which should be allocated to the backend address pool.
 
   ```terraform
   backend_address_pool_addresses = {
     address1 = {
       name                      = "backend_vm_address"
-      backend_address_pool_resource_name = "bepool_1"
+      backend_address_pool_object_name = "bepool_1"
       ip_address                = "10.10.1.5"
     }
   }
@@ -351,18 +351,18 @@ variable "backend_address_pool_addresses" {
 
 variable "lb_nat_rules" {
   type = map(object({
-    name                               = optional(string)
-    frontend_ip_configuration_name     = optional(string)
-    protocol                           = optional(string)
-    frontend_port                      = optional(number)
-    backend_port                       = optional(number)
-    frontend_port_start                = optional(number)
-    frontend_port_end                  = optional(number)
-    backend_address_pool_resource_id   = optional(string)
-    backend_address_pool_resource_name = optional(string)
-    idle_timeout_in_minutes            = optional(number, 4)
-    enable_floating_ip                 = optional(bool, false)
-    enable_tcp_reset                   = optional(bool, false)
+    name                             = optional(string)
+    frontend_ip_configuration_name   = optional(string)
+    protocol                         = optional(string)
+    frontend_port                    = optional(number)
+    backend_port                     = optional(number)
+    frontend_port_start              = optional(number)
+    frontend_port_end                = optional(number)
+    backend_address_pool_resource_id = optional(string)
+    backend_address_pool_object_name = optional(string)
+    idle_timeout_in_minutes          = optional(number, 4)
+    enable_floating_ip               = optional(bool, false)
+    enable_tcp_reset                 = optional(bool, false)
   }))
   default = {
 
@@ -378,7 +378,7 @@ variable "lb_nat_rules" {
   - `frontend_port_start`: (Optional) The port range start for the external endpoint. This property is used together with BackendAddressPool and FrontendPortRangeEnd. Individual inbound NAT rule port mappings will be created for each backend address from BackendAddressPool. Acceptable values range from 1 to 65534, inclusive.
   - `frontend_port_end`: (Optional) The port range end for the external endpoint. This property is used together with BackendAddressPool and FrontendPortRangeStart. Individual inbound NAT rule port mappings will be created for each backend address from BackendAddressPool. Acceptable values range from 1 to 65534, inclusive.
   - `backend_address_pool_resource_id`: (Optional) The ID of the backend address pool that this NAT rule references
-  - `backend_address_pool_resource_name`: (Optional) The name of the backend address pool that this NAT rule references
+  - `backend_address_pool_object_name`: (Optional) The name of the backend address pool that this NAT rule references
   - `idle_timeout_in_minutes`: (Optional) Specifies the idle timeout in minutes for TCP connections. Valid values are between 4 and 30 minutes. Defaults to 4 minutes.
   - `enable_floating_ip`: (Optional) A boolean parameter to determine if there are floating IPs enabled for this Load Balancer NAT rule. A "floating” IP is reassigned to a secondary server in case the primary server fails. Required to configure a SQL AlwaysOn Availability Group. Defaults to false.
   - `enable_tcp_reset`: (Optional) A boolean parameter to determine if TCP Reset is enabled for this Load Balancer NAT rule. Defaults to false
@@ -518,20 +518,20 @@ variable "lb_probes" {
 
 variable "lb_rules" {
   type = map(object({
-    name                                = optional(string)
-    frontend_ip_configuration_name      = optional(string)
-    protocol                            = optional(string, "Tcp")
-    frontend_port                       = optional(number, 3389)
-    backend_port                        = optional(number, 3389)
-    backend_address_pool_resource_ids   = optional(list(string)) # multiple back end pools ONLY IF gateway sku load balancer
-    backend_address_pool_resource_names = optional(list(string)) # multiple back end pools ONLY IF gateway sku load balancer
-    probe_resource_id                   = optional(string)
-    probe_object_name                   = optional(string)
-    enable_floating_ip                  = optional(bool, false)
-    idle_timeout_in_minutes             = optional(number, 4)
-    load_distribution                   = optional(string, "Default")
-    disable_outbound_snat               = optional(bool, false) # set `diasble_outbound_snat` to true when same frontend ip configuration is referenced by outbout rule and lb rule
-    enable_tcp_reset                    = optional(bool, false)
+    name                              = optional(string)
+    frontend_ip_configuration_name    = optional(string)
+    protocol                          = optional(string, "Tcp")
+    frontend_port                     = optional(number, 3389)
+    backend_port                      = optional(number, 3389)
+    backend_address_pool_resource_ids = optional(list(string)) # multiple back end pools ONLY IF gateway sku load balancer
+    backend_address_pool_object_names = optional(list(string)) # multiple back end pools ONLY IF gateway sku load balancer
+    probe_resource_id                 = optional(string)
+    probe_object_name                 = optional(string)
+    enable_floating_ip                = optional(bool, false)
+    idle_timeout_in_minutes           = optional(number, 4)
+    load_distribution                 = optional(string, "Default")
+    disable_outbound_snat             = optional(bool, false) # set `diasble_outbound_snat` to true when same frontend ip configuration is referenced by outbout rule and lb rule
+    enable_tcp_reset                  = optional(bool, false)
   }))
   default = {
 
@@ -546,9 +546,9 @@ variable "lb_rules" {
   - `frontend_port`: (Optional) The port for the external endpoint. Port numbers for each Rule must be unique within the Load Balancer. Possible values range between 0 and 65534, inclusive.
   - `backend_port`: (Optional) The port used for internal connections on the endpoint. Possible values range between 0 and 65535, inclusive.
   - `backend_address_pool_resource_ids`: (Optional) A list of IDs that reference to a Backend Address Pool over which this Load Balancing Rule operates. Multiple backend pools only valid if Gateway SKU
-  - `backend_address_pool_resource_names`: (Optional) A list of names reference to a Backend Address Pool over which this Load Balancing Rule operates. Multiple backend pools only valid if Gateway SKU
+  - `backend_address_pool_object_names`: (Optional) A list of names reference to a Backend Address Pool object over which this Load Balancing Rule operates. Multiple backend pools only valid if Gateway SKU
   - `probe_resource_id`: The ID of the probe used by this Load balancing rule.
-  - `probe_resource_name`: The name of the probe used by this Load balancing rule.
+  - `probe_object_name`: The name of the probe object used by this Load balancing rule.
   - `enable_floating_ip`: (Optional) A boolean parameter to determine if there are floating IPs enabled for this Load Balancer NAT rule. A "floating” IP is reassigned to a secondary server in case the primary server fails. Required to configure a SQL AlwaysOn Availability Group. Defaults to false.
   - `idle_timeout_in_minutes`: Specifies the idle timeout in minutes for TCP connections. Valid values are between 4 and 30 minutes. Defaults to 4 minutes.
   - `load_distribution`: Specifies the load balancing distribution type to be used by the Load Balancer. Possible values are: Default – The load balancer is configured to use a 5 tuple hash to map traffic to available servers. SourceIP – The load balancer is configured to use a 2 tuple hash to map traffic to available servers. SourceIPProtocol – The load balancer is configured to use a 3 tuple hash to map traffic to available servers. Also known as Session Persistence, where the options are called None, Client IP and Client IP and Protocol respectively.
@@ -560,11 +560,11 @@ variable "lb_rules" {
     lb_rule_1 = {
       name                               = "myHTTPRule"
       frontend_ip_configuration_name     = "myFrontend"
-      backend_address_pool_resource_names = ["myBackendPool"]
+      backend_address_pool_object_names = ["myBackendPool"]
       protocol = "Tcp" # default
       frontend_port = 80
       backend_port = 80
-      probe_resource_name                = "myHealthProbe"
+      probe_object_name                = "tcp1"
       idle_timeout_in_minutes = 15
       enable_tcp_reset = true
     }
@@ -609,7 +609,7 @@ variable "lb_outbound_rules" {
     name                               = optional(string)
     frontend_ip_configurations         = optional(list(object({ name = optional(string) })))
     backend_address_pool_resource_id   = optional(string)
-    backend_address_pool_resource_name = optional(string)
+    backend_address_pool_object_name   = optional(string)
     protocol                           = optional(string, "Tcp")
     enable_tcp_reset                   = optional(bool, false)
     number_of_allocated_outbound_ports = optional(number, 1024)
@@ -624,7 +624,7 @@ variable "lb_outbound_rules" {
   - `name`: (Optional) The name of the Load Balancer rule. Changing this forces a new resource to be created.
   - `frontend_ip_configuration_name`: (Optional) The list of names of the frontend IP configuration to which the rule is associated with
   - `backend_address_pool_resource_id`: (Optional) An ID that references a Backend Address Pool over which this Load Balancing Rule operates. Multiple backend pools only valid if Gateway SKU
-  - `backend_address_pool_resource_name`: (Optional) A name that references a Backend Address Pool over which this Load Balancing Rule operates. Multiple backend pools only valid if Gateway SKU
+  - `backend_address_pool_object_name`: (Optional) A name that references a Backend Address Pool over which this Load Balancing Rule operates. Multiple backend pools only valid if Gateway SKU
   - `protocol`: (Optional) The transport protocol for the external endpoint. Possible values are All, Tcp, or Udp.
   - `enable_tcp_reset`: A boolean to determine if TCP Reset is enabled for this Load Balancer rule. Defaults to false.
   - `number_of_allocated_outbound_ports`: (Optional) 
