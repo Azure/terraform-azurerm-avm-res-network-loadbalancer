@@ -35,7 +35,7 @@ resource "azurerm_lb_backend_address_pool_address" "this" {
   for_each = { for be_pool_address in var.backend_address_pool_addresses : be_pool_address.name => be_pool_address }
 
   name                    = each.value.name
-  backend_address_pool_id = azurerm_lb_backend_address_pool.this[each.value.backend_address_pool_resource_name].id
+  backend_address_pool_id = azurerm_lb_backend_address_pool.this[each.value.backend_address_pool_object_name].id
   virtual_network_id      = var.backend_address_pool_configuration
   ip_address              = each.value.ip_address
 }
@@ -62,7 +62,7 @@ resource "azurerm_lb_rule" "this" {
   protocol                       = each.value.protocol
   frontend_port                  = each.value.frontend_port
   backend_port                   = each.value.backend_port
-  backend_address_pool_ids       = each.value.backend_address_pool_resource_ids != null || each.value.backend_address_pool_resource_names != null ? coalesce(each.value.backend_address_pool_resource_ids, [for x in each.value.backend_address_pool_resource_names : azurerm_lb_backend_address_pool.this[x].id if length(each.value.backend_address_pool_resource_names) > 0]) : null
+  backend_address_pool_ids       = each.value.backend_address_pool_resource_ids != null || each.value.backend_address_pool_object_names != null ? coalesce(each.value.backend_address_pool_resource_ids, [for x in each.value.backend_address_pool_object_names : azurerm_lb_backend_address_pool.this[x].id if length(each.value.backend_address_pool_object_names) > 0]) : null
   probe_id                       = coalesce(azurerm_lb_probe.this[each.value.probe_object_name].id, each.value.probe_resource_id)
   enable_floating_ip             = each.value.enable_floating_ip
   idle_timeout_in_minutes        = each.value.idle_timeout_in_minutes
@@ -83,7 +83,7 @@ resource "azurerm_lb_nat_rule" "this" {
   backend_port                   = each.value.backend_port
   frontend_port_start            = each.value.frontend_port_start
   frontend_port_end              = each.value.frontend_port_end
-  backend_address_pool_id        = each.value.backend_address_pool_resource_id != null || each.value.backend_address_pool_resource_name != null ? coalesce(each.value.backend_address_pool_resource_id, azurerm_lb_backend_address_pool.this[each.value.backend_address_pool_resource_name].id) : null
+  backend_address_pool_id        = each.value.backend_address_pool_resource_id != null || each.value.backend_address_pool_object_name != null ? coalesce(each.value.backend_address_pool_resource_id, azurerm_lb_backend_address_pool.this[each.value.backend_address_pool_object_name].id) : null
   idle_timeout_in_minutes        = each.value.idle_timeout_in_minutes
   enable_floating_ip             = each.value.enable_floating_ip
   enable_tcp_reset               = each.value.enable_tcp_reset
@@ -95,7 +95,7 @@ resource "azurerm_lb_outbound_rule" "this" {
 
   loadbalancer_id          = azurerm_lb.this.id
   name                     = coalesce(each.value.name, "outbound-rule-${var.name}")
-  backend_address_pool_id  = coalesce(each.value.backend_address_pool_resource_id, azurerm_lb_backend_address_pool.this[each.value.backend_address_pool_resource_name].id)
+  backend_address_pool_id  = coalesce(each.value.backend_address_pool_resource_id, azurerm_lb_backend_address_pool.this[each.value.backend_address_pool_object_name].id)
   protocol                 = each.value.protocol
   enable_tcp_reset         = each.value.enable_tcp_reset
   allocated_outbound_ports = each.value.number_of_allocated_outbound_ports

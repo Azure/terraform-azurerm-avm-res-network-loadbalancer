@@ -64,11 +64,10 @@ resource "azurerm_subnet" "example" {
 module "loadbalancer" {
 
   source = "../../"
-
   # source = "Azure/avm-res-network-loadbalancer/azurerm"
   # version = 0.1.0
 
-  enable_telemetry = false # var.enable_telemetry
+  enable_telemetry = var.enable_telemetry
 
   name                = "default-lb"
   location            = azurerm_resource_group.this.location
