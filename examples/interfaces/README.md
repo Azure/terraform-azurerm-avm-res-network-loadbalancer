@@ -198,7 +198,6 @@ Type: `bool`
 
 Default: `true`
 
-
 ## Outputs
 
 No outputs.
