@@ -1,40 +1,3 @@
-### Telemetry Toggle
-variable "enable_telemetry" {
-  type        = bool
-  default     = true
-  description = <<DESCRIPTION
-  This variable controls whether or not telemetry is enabled for the module.
-  For more information see https://aka.ms/avm/telemetry.
-  If it is set to false, then no telemetry will be collected.
-  DESCRIPTION
-}
-
-### Required Variables
-variable "resource_group_name" {
-  type        = string
-  nullable    = false
-  description = <<DESCRIPTION
-  The name of the resource group where the load balancer will be deployed.
-  DESCRIPTION
-}
-
-variable "name" {
-  type        = string
-  nullable    = false
-  description = <<DESCRIPTION
-  The name of the load balancer.
-  DESCRIPTION
-}
-
-variable "location" {
-  type        = string
-  nullable    = false
-  description = <<DESCRIPTION
-  The Azure region where the resources should be deployed.
-  The full list of Azure regions can be found at: https://azure.microsoft.com/regions
-  DESCRIPTION
-}
-
 variable "frontend_ip_configurations" {
   type = map(object({
     name                                   = optional(string)
@@ -79,7 +42,6 @@ variable "frontend_ip_configurations" {
       marketplace_partner_resource_id          = optional(string, null)
     })), {})
   }))
-
   description = <<DESCRIPTION
   A map of objects that builds frontend ip configurations for the load balancer. 
   You need at least one frontend ip configuration to deploy a load balancer.
@@ -141,6 +103,7 @@ variable "frontend_ip_configurations" {
   }
   ```
   DESCRIPTION
+
   # validation {
   #   condition = length([for obj in var.frontend_ip_configurations :
   #     true
@@ -155,126 +118,58 @@ variable "frontend_ip_configurations" {
   }
 }
 
-### Optional Variables
-variable "edge_zone" {
+variable "location" {
   type        = string
-  default     = null
   description = <<DESCRIPTION
-  Specifies the Edge Zone within the Azure Region where this Public IP and Load Balancer should exist.
-  Changing this forces new resources to be created.
+  The Azure region where the resources should be deployed.
+  The full list of Azure regions can be found at: https://azure.microsoft.com/regions
   DESCRIPTION
+  nullable    = false
 }
 
-variable "sku" {
+variable "name" {
   type        = string
-  default     = "Standard"
   description = <<DESCRIPTION
-  The SKU of the Azure Load Balancer. 
-  Accepted values are `Basic` and `Standard`.
-  Microsoft recommends `Standard` for production workloads.
+  The name of the load balancer.
   DESCRIPTION
-  validation {
-    condition     = contains(["Basic", "Gateway", "Standard"], var.sku)
-    error_message = "The acceptable values for `sku` are `Basic`, `Gateway`, or `Standard`"
-  }
+  nullable    = false
 }
 
-variable "sku_tier" {
+### Required Variables
+variable "resource_group_name" {
   type        = string
-  default     = "Regional"
   description = <<DESCRIPTION
-  String parameter that specifies the SKU tier of this Load Balancer. 
-  Possible values are `Global` and `Regional`. 
-  Defaults to `Regional`. 
-  Changing this forces a new resource to be created.
+  The name of the resource group where the load balancer will be deployed.
   DESCRIPTION
-  validation {
-    condition     = contains(["Global", "Regional"], var.sku_tier)
-    error_message = "The acceptable values for `sku_tier` are Global or Regional"
-  }
+  nullable    = false
 }
 
-# Public Ip Configuration - 1 per LB and (N) Ip Configurations
-variable "public_ip_address_configuration" {
-  type = object({
-    resource_group_name              = optional(string)
-    allocation_method                = optional(string, "Static")
-    ddos_protection_mode             = optional(string, "VirtualNetworkInherited")
-    ddos_protection_plan_resource_id = optional(string)
-    domain_name_label                = optional(string)
-    idle_timeout_in_minutes          = optional(number, 4)
-    ip_tags                          = optional(map(string))
-    ip_version                       = optional(string, "IPv4")
-    public_ip_prefix_resource_id     = optional(string)
-    reverse_fqdn                     = optional(string)
-    sku                              = optional(string, "Standard")
-    sku_tier                         = optional(string, "Regional")
-    tags                             = optional(map(any), {})
-  })
+variable "backend_address_pool_addresses" {
+  type = map(object({
+    name                             = optional(string)
+    backend_address_pool_object_name = optional(string)
+    ip_address                       = optional(string)
+  }))
   default = {
 
   }
   description = <<DESCRIPTION
-  An object variable that configures the settings that will be the same for all public IPs for this Load Balancer
+  A map of backend address pool addresses to associate with the backend address pool
 
-  - `allocation_method`: (Optional) The allocation method for this IP address. Possible valuse are `Static` or `Dynamic`
-  - `resource_group_name`: (Optional) Specifies the resource group to deploy all of the public IP addresses to be created
-  - `ddos_protection_mode`: (Optional) The DDoS protection mode of the public IP. Possible values are `Disabled`, `Enabled`, and `VirtualNetworkInherited`. Defaults to `VirtualNetworkInherited`.
-  - `ddos_protection_plan_resource_id`: (Optional) The ID of DDoS protection plan associated with the public IP
-  - `domain_name_label`: (Optional) The label for the Domain Name. This will be used to make up the FQDN. If a domain name label is specified, an A DNS record is created for the public IP in the Microsoft Azure DNS system.
-  - `idle_timeout_in_minutes`: (Optional) Specifies the timeout for the TCP idle connection. The value can be set between 4 and 30 minutes.
-  - `ip_tags`: (Optional) A mapping of IP tags to assign to the public IP. Changing this forces a new resource to be created.
-  - `ip_version`: (Optional) The version of IP to use for the Public IPs. Possible valuse are `IPv4` or `IPv6`. Changing this forces a new resource to be created.
-  - `public_ip_prefix_resource_id`: (Optional) If specified then public IP address allocated will be provided from the public IP prefix resource. Changing this forces a new resource to be created.
-  - `reverse_fqdn`: (Optional) A fully qualified domain name that resolves to this public IP address. If the reverseFqdn is specified, then a PTR DNS record is created pointing from the IP address in the in-addr.arpa domain to the reverse FQDN.
-  - `sku`: (Optional) The SKU of the Public IP. Accepted values are `Basic` and `Standard`. Defaults to `Standard`. Changing this forces a new resource to be created.
-  - `sku_tier`: (Optional) The SKU Tier that should be used for the Public IP. Possible values are `Regional` and `Global`. Defaults to `Regional`. Changing this forces a new resource to be created.
-  - `tags`: (Optional) The collection of tags to be assigned to all every Public IP.
+  - `name`: (Optional) The name of the backend address pool address, if adding an address. Changing this forces a new backend address pool address to be created.
+  - `backend_address_pool_object_name`: (Optional) The name of the backend address pool object within the virtual network. Changing this forces a new backend address pool address to be created.
+  - `ip_address`: (Optional) The static IP address which should be allocated to the backend address pool.
 
-  Example Input:
   ```terraform
-  # Standard Regional IPv4 Public IP address Configuration
-  public_ip_address_configuration = {
-    allocation_method = "Static"
-    ddos_protection_mode = "VirtualNetworkInherited"
-    idle_timeout_in_minutes = 30
-    ip_version = "IPv4"
-    sku_tier = "Regional"
+  backend_address_pool_addresses = {
+    address1 = {
+      name                      = "backend_vm_address"
+      backend_address_pool_object_name = "bepool_1"
+      ip_address                = "10.10.1.5"
+    }
   }
   ```
   DESCRIPTION
-  validation {
-    condition     = contains(["Dynamic", "Static"], var.public_ip_address_configuration.allocation_method)
-    error_message = "The acceptable value for `allocation_method` are `Dynamic` or `Static`"
-  }
-  validation {
-    condition     = contains(["Disabled", "Enabled", "VirtualNetworkInherited"], var.public_ip_address_configuration.ddos_protection_mode)
-    error_message = "The acceptable value for `ddos_protection_mode` are `Disabled`, `Enabled` or `VirtualNetworkInherited`"
-  }
-  validation {
-    condition     = (contains(["Disabled", "VirtualNetworkInherited"], var.public_ip_address_configuration.ddos_protection_mode) && var.public_ip_address_configuration.ddos_protection_plan_resource_id == null) || (contains(["Enabled"], var.public_ip_address_configuration.ddos_protection_mode) && var.public_ip_address_configuration.ddos_protection_plan_resource_id != null)
-    error_message = "A `ddos_protection_plan_resource_id` can only be set when `ddos_protection_mode` is set to `Enabled`"
-  }
-  validation {
-    condition     = var.public_ip_address_configuration.idle_timeout_in_minutes >= 4 && var.public_ip_address_configuration.idle_timeout_in_minutes <= 30
-    error_message = "The value for `idle_timeout_in_minutes` must be between 4 and 30"
-  }
-  validation {
-    condition     = contains(["IPv4", "IPv6"], var.public_ip_address_configuration.ip_version)
-    error_message = "The accepted values for `ip_version` are `IPv4` or `IPv6`"
-  }
-  validation {
-    condition     = (contains(["IPv4", "IPv6"], var.public_ip_address_configuration.ip_version) && var.public_ip_address_configuration.allocation_method == "Static") || (contains(["IPv4"], var.public_ip_address_configuration.ip_version) && var.public_ip_address_configuration.allocation_method == "Dynamic")
-    error_message = "Only Static `allocation_method` supported for `IPv6`"
-  }
-  validation {
-    condition     = contains(["Basic", "Standard"], var.public_ip_address_configuration.sku)
-    error_message = "The acceptable values for `sku` are `Basic` or `Standard`"
-  }
-  validation {
-    condition     = contains(["Global", "Regional"], var.public_ip_address_configuration.sku_tier)
-    error_message = "The acceptable values for `sku_tier` are `Global` or `Regional`"
-  }
 }
 
 variable "backend_address_pool_configuration" {
@@ -307,42 +202,138 @@ variable "backend_address_pools" {
   DESCRIPTION
 }
 
-/* 
-variable "tunnel_interface_configurations" {
+variable "diagnostic_settings" {
   type = map(object({
-    identifier = optional(string)
-    type = optional(string, "None")
-    protocol = optional(string, "None")
-    port = optional(number, 12345)
-  }))
-  default = {
-
-  }
-}
- */
-
-variable "backend_address_pool_addresses" {
-  type = map(object({
-    name                             = optional(string)
-    backend_address_pool_object_name = optional(string)
-    ip_address                       = optional(string)
+    name                                     = optional(string, null)
+    log_categories                           = optional(set(string), [])
+    log_groups                               = optional(set(string), ["allLogs"])
+    metric_categories                        = optional(set(string), ["AllMetrics"])
+    log_analytics_destination_type           = optional(string, null)
+    workspace_resource_id                    = optional(string, null)
+    storage_account_resource_id              = optional(string, null)
+    event_hub_authorization_rule_resource_id = optional(string, null)
+    event_hub_name                           = optional(string, null)
+    marketplace_partner_resource_id          = optional(string, null)
   }))
   default = {
 
   }
   description = <<DESCRIPTION
-  A map of backend address pool addresses to associate with the backend address pool
+  A map of objects that manage a Diagnostic Setting.
 
-  - `name`: (Optional) The name of the backend address pool address, if adding an address. Changing this forces a new backend address pool address to be created.
-  - `backend_address_pool_object_name`: (Optional) The name of the backend address pool object within the virtual network. Changing this forces a new backend address pool address to be created.
-  - `ip_address`: (Optional) The static IP address which should be allocated to the backend address pool.
+  - `name`: (Optional) The name of the diagnostic setting.
+  - `log_groups`: (Optional) A set of log groups. Defaults to a set containing "allLogs".
+  - `metric_categories`: (Optional) A set of metric categories. Defaults to a set containing "AllMetrics".
+  - `log_analytics_destination_type`: (Optional) The destination type for log analytics. Defaults to "Dedicated".
+  - `workspace_resource_id`: (Optional) The resource ID of the workspace. Defaults to null. This is a required field if `storage_account_resource_id`, `event_hub_authorization_rule_resource_id`, and `marketplace_partner_resource_id` are not set.
+  - `storage_account_resource_id`: (Optional) The resource ID of the storage account. Defaults to null. This is a required field if `workspace_resource_id`, `event_hub_authorization_rule_resource_id`, and `marketplace_partner_resource_id` are not set.
+  - `event_hub_authorization_rule_resource_id`: (Optional) The resource ID of the event hub authorization rule. Defaults to null. This is a required field if `workspace_resource_id`, `storage_account_resource_id`, and `marketplace_partner_resource_id` are not set.
+  - `event_hub_name`: (Optional) The name of the event hub. Defaults to null.
+  - `marketplace_partner_resource_id`: (Optional) The resource ID of the marketplace partner. Defaults to null. This is a required field if `workspace_resource_id`, `storage_account_resource_id`, and `event_hub_authorization_rule_resource_id` are not set.
+
+  Please note that at least one of `workspace_resource_id`, `storage_account_resource_id`, `marketplace_partner_resource_id`, or `event_hub_authorization_rule_resource_id` must be set.
 
   ```terraform
-  backend_address_pool_addresses = {
-    address1 = {
-      name                      = "backend_vm_address"
-      backend_address_pool_object_name = "bepool_1"
-      ip_address                = "10.10.1.5"
+  diagnostic_settings = {
+    diag_setting_1 = {
+      name                                     = "diagSetting1"
+      log_groups                               = ["allLogs"]
+      metric_categories                        = ["AllMetrics"]
+      log_analytics_destination_type           = "Dedicated"
+      workspace_resource_id                    = "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.OperationalInsights/workspaces/{workspaceName}"
+      storage_account_resource_id              = "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Storage/storageAccounts/{storageAccountName}"
+      event_hub_authorization_rule_resource_id = "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.EventHub/namespaces/{namespaceName}/eventhubs/{eventHubName}/authorizationrules/{authorizationRuleName}"
+      event_hub_name                           = "{eventHubName}"
+      marketplace_partner_resource_id          = "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/{partnerResourceProvider}/{partnerResourceType}/{partnerResourceName}"
+    }
+  }
+  ```
+  DESCRIPTION
+  nullable    = false
+
+  # validation {
+  #   condition     = alltrue([for _, v in var.diagnostic_settings : contains(["Dedicated", "AzureDiagnostics"], v.log_analytics_destination_type)])
+  #   error_message = "Log analytics destination type must be one of: 'Dedicated', 'AzureDiagnostics'."
+  # }
+  validation {
+    condition = alltrue(
+      [
+        for _, v in var.diagnostic_settings :
+        v.workspace_resource_id != null || v.storage_account_resource_id != null || v.event_hub_authorization_rule_resource_id != null || v.marketplace_partner_resource_id != null
+      ]
+    )
+    error_message = "At least one of `workspace_resource_id`, `storage_account_resource_id`, `marketplace_partner_resource_id`, or `event_hub_authorization_rule_resource_id`, must be set."
+  }
+}
+
+### Optional Variables
+variable "edge_zone" {
+  type        = string
+  default     = null
+  description = <<DESCRIPTION
+  Specifies the Edge Zone within the Azure Region where this Public IP and Load Balancer should exist.
+  Changing this forces new resources to be created.
+  DESCRIPTION
+}
+
+### Telemetry Toggle
+variable "enable_telemetry" {
+  type        = bool
+  default     = true
+  description = <<DESCRIPTION
+  This variable controls whether or not telemetry is enabled for the module.
+  For more information see https://aka.ms/avm/telemetry.
+  If it is set to false, then no telemetry will be collected.
+  DESCRIPTION
+}
+
+variable "frontend_subnet_resource_id" {
+  type        = string
+  default     = null
+  description = <<DESCRIPTION
+  (Optional) The frontend subnet id to use when in private mode. Can be used for all ip configurations that will use the same subnet. `frontend_private_ip_subnet_resource_id` can be set per frontend configuration for private ip.
+  DESCRIPTION
+}
+
+variable "lb_nat_pools" {
+  type = map(object({
+    name                           = optional(string)
+    frontend_ip_configuration_name = optional(string)
+    protocol                       = optional(string, "Tcp")
+    frontend_port_start            = optional(number, 3000)
+    frontend_port_end              = optional(number, 3389)
+    backend_port                   = optional(number, 3389)
+    idle_timeout_in_minutes        = optional(number, 4)
+    enable_floating_ip             = optional(bool, false)
+    enable_tcp_reset               = optional(bool, false)
+  }))
+  default = {
+
+  }
+  description = <<DESCRIPTION
+  A map of objects that define the inbound NAT rules for a Load Balancer. Each object has the following
+
+  - `name`: (Optional) The name of the Load Balancer rule. Changing this forces a new resource to be created.
+  - `frontend_ip_configuration_name`: (Optional) The name of the frontend IP configuration to which the rule is associated with
+  - `protocol`: (Optional) The transport protocol for the external endpoint. Possible values are All, Tcp, or Udp.
+  - `frontend_port_start`: (Optional) The first port number in the range of external ports that will be used to provide Inbound NAT to NICs associated with this Load Balancer. Possible values range between 1 and 65534, inclusive.
+  - `frontend_port_end`: (Optional) The last port number in the range of external ports that will be used to provide Inbound NAT to NICs associated with this Load Balancer. Possible values range between 1 and 65534, inclusive.
+  - `backend_port`: (Optional) The port used for the internal endpoint. Possible values range between 1 and 65535, inclusive.
+  - `idle_timeout_in_minutes`: (Optional) Specifies the idle timeout in minutes for TCP connections. Valid values are between 4 and 30 minutes. Defaults to 4 minutes.
+  - `enable_floating_ip`: (Optional) A boolean parameter to determine if there are floating IPs enabled for this Load Balancer NAT rule. A "floating” IP is reassigned to a secondary server in case the primary server fails. Required to configure a SQL AlwaysOn Availability Group. Defaults to false.
+  - `enable_tcp_reset`: (Optional) A boolean to determine if TCP Reset is enabled for this Load Balancer rule. Defaults to false.
+  
+  ```terraform
+  lb_nat_pools = {
+    lb_nat_pool_1 = {
+      resource_group_name            = azurerm_resource_group.example.name
+      loadbalancer_id                = azurerm_lb.example.id
+      name                           = "SampleApplicationPool"
+      protocol                       = "Tcp"
+      frontend_port_start            = 80
+      frontend_port_end              = 81
+      backend_port                   = 8080
+      frontend_ip_configuration_name = "PublicIPAddress"
     }
   }
   ```
@@ -395,6 +386,7 @@ variable "lb_nat_rules" {
   }
   ```
   DESCRIPTION
+
   validation {
     condition = length([for obj in var.lb_nat_rules :
       true
@@ -431,6 +423,47 @@ variable "lb_nat_rules" {
     if obj.idle_timeout_in_minutes >= 4 && obj.idle_timeout_in_minutes <= 30]) == length(var.lb_nat_rules)
     error_message = "The value for `idle_timeout_in_minutes` must be between 4 and 30"
   }
+}
+
+variable "lb_outbound_rules" {
+  type = map(object({
+    name                               = optional(string)
+    frontend_ip_configurations         = optional(list(object({ name = optional(string) })))
+    backend_address_pool_resource_id   = optional(string)
+    backend_address_pool_object_name   = optional(string)
+    protocol                           = optional(string, "Tcp")
+    enable_tcp_reset                   = optional(bool, false)
+    number_of_allocated_outbound_ports = optional(number, 1024)
+    idle_timeout_in_minutes            = optional(number, 4)
+  }))
+  default = {
+
+  }
+  description = <<DESCRIPTION
+  A map of objects that define the outbound rules for a Load Balancer. Each object is identified by a unique key in the map and has the following properties:
+  
+  - `name`: (Optional) The name of the Load Balancer rule. Changing this forces a new resource to be created.
+  - `frontend_ip_configuration_name`: (Optional) The list of names of the frontend IP configuration to which the rule is associated with
+  - `backend_address_pool_resource_id`: (Optional) An ID that references a Backend Address Pool over which this Load Balancing Rule operates. Multiple backend pools only valid if Gateway SKU
+  - `backend_address_pool_object_name`: (Optional) A name that references a Backend Address Pool over which this Load Balancing Rule operates. Multiple backend pools only valid if Gateway SKU
+  - `protocol`: (Optional) The transport protocol for the external endpoint. Possible values are All, Tcp, or Udp.
+  - `enable_tcp_reset`: A boolean to determine if TCP Reset is enabled for this Load Balancer rule. Defaults to false.
+  - `number_of_allocated_outbound_ports`: (Optional) 
+  - `idle_timeout_in_minutes`: Specifies the idle timeout in minutes for TCP connections. Valid values are between 4 and 30 minutes. Defaults to 4 minutes.
+  
+  ```terraform
+  lb_outbound_rules = {
+    lb_outbound_rule_1 = {
+      name = "outbound_rule_1"
+      frontend_ip_configurations = [
+        {
+          name = "frontend_1"
+        }
+      ]
+    }
+  }
+  ```
+  DESCRIPTION
 }
 
 variable "lb_probes" {
@@ -484,6 +517,7 @@ variable "lb_probes" {
   }
   ```
   DESCRIPTION
+
   validation {
     condition = length([for obj in var.lb_probes :
       true
@@ -572,6 +606,7 @@ variable "lb_rules" {
 
   ```
   DESCRIPTION
+
   validation {
     condition = length([for obj in var.lb_rules :
       true
@@ -604,162 +639,117 @@ variable "lb_rules" {
   }
 }
 
-variable "lb_outbound_rules" {
-  type = map(object({
-    name                               = optional(string)
-    frontend_ip_configurations         = optional(list(object({ name = optional(string) })))
-    backend_address_pool_resource_id   = optional(string)
-    backend_address_pool_object_name   = optional(string)
-    protocol                           = optional(string, "Tcp")
-    enable_tcp_reset                   = optional(bool, false)
-    number_of_allocated_outbound_ports = optional(number, 1024)
-    idle_timeout_in_minutes            = optional(number, 4)
-  }))
+variable "lock" {
+  type = object({
+    name = optional(string, null)
+    kind = optional(string, "None")
+  })
   default = {
 
   }
   description = <<DESCRIPTION
-  A map of objects that define the outbound rules for a Load Balancer. Each object is identified by a unique key in the map and has the following properties:
-  
-  - `name`: (Optional) The name of the Load Balancer rule. Changing this forces a new resource to be created.
-  - `frontend_ip_configuration_name`: (Optional) The list of names of the frontend IP configuration to which the rule is associated with
-  - `backend_address_pool_resource_id`: (Optional) An ID that references a Backend Address Pool over which this Load Balancing Rule operates. Multiple backend pools only valid if Gateway SKU
-  - `backend_address_pool_object_name`: (Optional) A name that references a Backend Address Pool over which this Load Balancing Rule operates. Multiple backend pools only valid if Gateway SKU
-  - `protocol`: (Optional) The transport protocol for the external endpoint. Possible values are All, Tcp, or Udp.
-  - `enable_tcp_reset`: A boolean to determine if TCP Reset is enabled for this Load Balancer rule. Defaults to false.
-  - `number_of_allocated_outbound_ports`: (Optional) 
-  - `idle_timeout_in_minutes`: Specifies the idle timeout in minutes for TCP connections. Valid values are between 4 and 30 minutes. Defaults to 4 minutes.
-  
+  An object that sets a lock for the Load Balancer.
+
+  - `name`: The name of the lock
+  - `kind`: The type of lock to be created. Accepted values are `CanNotDelete`, `ReadOnly`, `None`. Defaults to None if kind is not set.
+
   ```terraform
-  lb_outbound_rules = {
-    lb_outbound_rule_1 = {
-      name = "outbound_rule_1"
-      frontend_ip_configurations = [
-        {
-          name = "frontend_1"
-        }
-      ]
-    }
+  # Delete Lock for the Load Balancer
+  lock = {
+    name = "lock-{resourcename}"
+    kind = "CanNotDelete"
   }
   ```
   DESCRIPTION
-}
 
-variable "lb_nat_pools" {
-  type = map(object({
-    name                           = optional(string)
-    frontend_ip_configuration_name = optional(string)
-    protocol                       = optional(string, "Tcp")
-    frontend_port_start            = optional(number, 3000)
-    frontend_port_end              = optional(number, 3389)
-    backend_port                   = optional(number, 3389)
-    idle_timeout_in_minutes        = optional(number, 4)
-    enable_floating_ip             = optional(bool, false)
-    enable_tcp_reset               = optional(bool, false)
-  }))
-  default = {
-
-  }
-  description = <<DESCRIPTION
-  A map of objects that define the inbound NAT rules for a Load Balancer. Each object has the following
-
-  - `name`: (Optional) The name of the Load Balancer rule. Changing this forces a new resource to be created.
-  - `frontend_ip_configuration_name`: (Optional) The name of the frontend IP configuration to which the rule is associated with
-  - `protocol`: (Optional) The transport protocol for the external endpoint. Possible values are All, Tcp, or Udp.
-  - `frontend_port_start`: (Optional) The first port number in the range of external ports that will be used to provide Inbound NAT to NICs associated with this Load Balancer. Possible values range between 1 and 65534, inclusive.
-  - `frontend_port_end`: (Optional) The last port number in the range of external ports that will be used to provide Inbound NAT to NICs associated with this Load Balancer. Possible values range between 1 and 65534, inclusive.
-  - `backend_port`: (Optional) The port used for the internal endpoint. Possible values range between 1 and 65535, inclusive.
-  - `idle_timeout_in_minutes`: (Optional) Specifies the idle timeout in minutes for TCP connections. Valid values are between 4 and 30 minutes. Defaults to 4 minutes.
-  - `enable_floating_ip`: (Optional) A boolean parameter to determine if there are floating IPs enabled for this Load Balancer NAT rule. A "floating” IP is reassigned to a secondary server in case the primary server fails. Required to configure a SQL AlwaysOn Availability Group. Defaults to false.
-  - `enable_tcp_reset`: (Optional) A boolean to determine if TCP Reset is enabled for this Load Balancer rule. Defaults to false.
-  
-  ```terraform
-  lb_nat_pools = {
-    lb_nat_pool_1 = {
-      resource_group_name            = azurerm_resource_group.example.name
-      loadbalancer_id                = azurerm_lb.example.id
-      name                           = "SampleApplicationPool"
-      protocol                       = "Tcp"
-      frontend_port_start            = 80
-      frontend_port_end              = 81
-      backend_port                   = 8080
-      frontend_ip_configuration_name = "PublicIPAddress"
-    }
-  }
-  ```
-  DESCRIPTION
-}
-
-variable "frontend_subnet_resource_id" {
-  type        = string
-  default     = null
-  description = <<DESCRIPTION
-  (Optional) The frontend subnet id to use when in private mode. Can be used for all ip configurations that will use the same subnet. `frontend_private_ip_subnet_resource_id` can be set per frontend configuration for private ip.
-  DESCRIPTION
-}
-
-variable "diagnostic_settings" {
-  type = map(object({
-    name                                     = optional(string, null)
-    log_categories                           = optional(set(string), [])
-    log_groups                               = optional(set(string), ["allLogs"])
-    metric_categories                        = optional(set(string), ["AllMetrics"])
-    log_analytics_destination_type           = optional(string, null)
-    workspace_resource_id                    = optional(string, null)
-    storage_account_resource_id              = optional(string, null)
-    event_hub_authorization_rule_resource_id = optional(string, null)
-    event_hub_name                           = optional(string, null)
-    marketplace_partner_resource_id          = optional(string, null)
-  }))
-  default = {
-
-  }
-  nullable = false
-
-  # validation {
-  #   condition     = alltrue([for _, v in var.diagnostic_settings : contains(["Dedicated", "AzureDiagnostics"], v.log_analytics_destination_type)])
-  #   error_message = "Log analytics destination type must be one of: 'Dedicated', 'AzureDiagnostics'."
-  # }
   validation {
-    condition = alltrue(
-      [
-        for _, v in var.diagnostic_settings :
-        v.workspace_resource_id != null || v.storage_account_resource_id != null || v.event_hub_authorization_rule_resource_id != null || v.marketplace_partner_resource_id != null
-      ]
-    )
-    error_message = "At least one of `workspace_resource_id`, `storage_account_resource_id`, `marketplace_partner_resource_id`, or `event_hub_authorization_rule_resource_id`, must be set."
+    condition     = contains(["CanNotDelete", "ReadOnly", "None"], var.lock.kind)
+    error_message = "Lock type must be one of: CanNotDelete, ReadOnly, None."
+  }
+}
+
+# Public Ip Configuration - 1 per LB and (N) Ip Configurations
+variable "public_ip_address_configuration" {
+  type = object({
+    resource_group_name              = optional(string)
+    allocation_method                = optional(string, "Static")
+    ddos_protection_mode             = optional(string, "VirtualNetworkInherited")
+    ddos_protection_plan_resource_id = optional(string)
+    domain_name_label                = optional(string)
+    idle_timeout_in_minutes          = optional(number, 4)
+    ip_tags                          = optional(map(string))
+    ip_version                       = optional(string, "IPv4")
+    public_ip_prefix_resource_id     = optional(string)
+    reverse_fqdn                     = optional(string)
+    sku                              = optional(string, "Standard")
+    sku_tier                         = optional(string, "Regional")
+    tags                             = optional(map(any), {})
+  })
+  default = {
+
   }
   description = <<DESCRIPTION
-  A map of objects that manage a Diagnostic Setting.
+  An object variable that configures the settings that will be the same for all public IPs for this Load Balancer
 
-  - `name`: (Optional) The name of the diagnostic setting.
-  - `log_groups`: (Optional) A set of log groups. Defaults to a set containing "allLogs".
-  - `metric_categories`: (Optional) A set of metric categories. Defaults to a set containing "AllMetrics".
-  - `log_analytics_destination_type`: (Optional) The destination type for log analytics. Defaults to "Dedicated".
-  - `workspace_resource_id`: (Optional) The resource ID of the workspace. Defaults to null. This is a required field if `storage_account_resource_id`, `event_hub_authorization_rule_resource_id`, and `marketplace_partner_resource_id` are not set.
-  - `storage_account_resource_id`: (Optional) The resource ID of the storage account. Defaults to null. This is a required field if `workspace_resource_id`, `event_hub_authorization_rule_resource_id`, and `marketplace_partner_resource_id` are not set.
-  - `event_hub_authorization_rule_resource_id`: (Optional) The resource ID of the event hub authorization rule. Defaults to null. This is a required field if `workspace_resource_id`, `storage_account_resource_id`, and `marketplace_partner_resource_id` are not set.
-  - `event_hub_name`: (Optional) The name of the event hub. Defaults to null.
-  - `marketplace_partner_resource_id`: (Optional) The resource ID of the marketplace partner. Defaults to null. This is a required field if `workspace_resource_id`, `storage_account_resource_id`, and `event_hub_authorization_rule_resource_id` are not set.
+  - `allocation_method`: (Optional) The allocation method for this IP address. Possible valuse are `Static` or `Dynamic`
+  - `resource_group_name`: (Optional) Specifies the resource group to deploy all of the public IP addresses to be created
+  - `ddos_protection_mode`: (Optional) The DDoS protection mode of the public IP. Possible values are `Disabled`, `Enabled`, and `VirtualNetworkInherited`. Defaults to `VirtualNetworkInherited`.
+  - `ddos_protection_plan_resource_id`: (Optional) The ID of DDoS protection plan associated with the public IP
+  - `domain_name_label`: (Optional) The label for the Domain Name. This will be used to make up the FQDN. If a domain name label is specified, an A DNS record is created for the public IP in the Microsoft Azure DNS system.
+  - `idle_timeout_in_minutes`: (Optional) Specifies the timeout for the TCP idle connection. The value can be set between 4 and 30 minutes.
+  - `ip_tags`: (Optional) A mapping of IP tags to assign to the public IP. Changing this forces a new resource to be created.
+  - `ip_version`: (Optional) The version of IP to use for the Public IPs. Possible valuse are `IPv4` or `IPv6`. Changing this forces a new resource to be created.
+  - `public_ip_prefix_resource_id`: (Optional) If specified then public IP address allocated will be provided from the public IP prefix resource. Changing this forces a new resource to be created.
+  - `reverse_fqdn`: (Optional) A fully qualified domain name that resolves to this public IP address. If the reverseFqdn is specified, then a PTR DNS record is created pointing from the IP address in the in-addr.arpa domain to the reverse FQDN.
+  - `sku`: (Optional) The SKU of the Public IP. Accepted values are `Basic` and `Standard`. Defaults to `Standard`. Changing this forces a new resource to be created.
+  - `sku_tier`: (Optional) The SKU Tier that should be used for the Public IP. Possible values are `Regional` and `Global`. Defaults to `Regional`. Changing this forces a new resource to be created.
+  - `tags`: (Optional) The collection of tags to be assigned to all every Public IP.
 
-  Please note that at least one of `workspace_resource_id`, `storage_account_resource_id`, `marketplace_partner_resource_id`, or `event_hub_authorization_rule_resource_id` must be set.
-
+  Example Input:
   ```terraform
-  diagnostic_settings = {
-    diag_setting_1 = {
-      name                                     = "diagSetting1"
-      log_groups                               = ["allLogs"]
-      metric_categories                        = ["AllMetrics"]
-      log_analytics_destination_type           = "Dedicated"
-      workspace_resource_id                    = "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.OperationalInsights/workspaces/{workspaceName}"
-      storage_account_resource_id              = "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Storage/storageAccounts/{storageAccountName}"
-      event_hub_authorization_rule_resource_id = "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.EventHub/namespaces/{namespaceName}/eventhubs/{eventHubName}/authorizationrules/{authorizationRuleName}"
-      event_hub_name                           = "{eventHubName}"
-      marketplace_partner_resource_id          = "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/{partnerResourceProvider}/{partnerResourceType}/{partnerResourceName}"
-    }
+  # Standard Regional IPv4 Public IP address Configuration
+  public_ip_address_configuration = {
+    allocation_method = "Static"
+    ddos_protection_mode = "VirtualNetworkInherited"
+    idle_timeout_in_minutes = 30
+    ip_version = "IPv4"
+    sku_tier = "Regional"
   }
   ```
   DESCRIPTION
+
+  validation {
+    condition     = contains(["Dynamic", "Static"], var.public_ip_address_configuration.allocation_method)
+    error_message = "The acceptable value for `allocation_method` are `Dynamic` or `Static`"
+  }
+  validation {
+    condition     = contains(["Disabled", "Enabled", "VirtualNetworkInherited"], var.public_ip_address_configuration.ddos_protection_mode)
+    error_message = "The acceptable value for `ddos_protection_mode` are `Disabled`, `Enabled` or `VirtualNetworkInherited`"
+  }
+  validation {
+    condition     = (contains(["Disabled", "VirtualNetworkInherited"], var.public_ip_address_configuration.ddos_protection_mode) && var.public_ip_address_configuration.ddos_protection_plan_resource_id == null) || (contains(["Enabled"], var.public_ip_address_configuration.ddos_protection_mode) && var.public_ip_address_configuration.ddos_protection_plan_resource_id != null)
+    error_message = "A `ddos_protection_plan_resource_id` can only be set when `ddos_protection_mode` is set to `Enabled`"
+  }
+  validation {
+    condition     = var.public_ip_address_configuration.idle_timeout_in_minutes >= 4 && var.public_ip_address_configuration.idle_timeout_in_minutes <= 30
+    error_message = "The value for `idle_timeout_in_minutes` must be between 4 and 30"
+  }
+  validation {
+    condition     = contains(["IPv4", "IPv6"], var.public_ip_address_configuration.ip_version)
+    error_message = "The accepted values for `ip_version` are `IPv4` or `IPv6`"
+  }
+  validation {
+    condition     = (contains(["IPv4", "IPv6"], var.public_ip_address_configuration.ip_version) && var.public_ip_address_configuration.allocation_method == "Static") || (contains(["IPv4"], var.public_ip_address_configuration.ip_version) && var.public_ip_address_configuration.allocation_method == "Dynamic")
+    error_message = "Only Static `allocation_method` supported for `IPv6`"
+  }
+  validation {
+    condition     = contains(["Basic", "Standard"], var.public_ip_address_configuration.sku)
+    error_message = "The acceptable values for `sku` are `Basic` or `Standard`"
+  }
+  validation {
+    condition     = contains(["Global", "Regional"], var.public_ip_address_configuration.sku_tier)
+    error_message = "The acceptable values for `sku_tier` are `Global` or `Regional`"
+  }
 }
 
 variable "role_assignments" {
@@ -806,31 +796,34 @@ variable "role_assignments" {
   DESCRIPTION
 }
 
-variable "lock" {
-  type = object({
-    name = optional(string, null)
-    kind = optional(string, "None")
-  })
-  default = {
-
-  }
+variable "sku" {
+  type        = string
+  default     = "Standard"
   description = <<DESCRIPTION
-  An object that sets a lock for the Load Balancer.
-
-  - `name`: The name of the lock
-  - `kind`: The type of lock to be created. Accepted values are `CanNotDelete`, `ReadOnly`, `None`. Defaults to None if kind is not set.
-
-  ```terraform
-  # Delete Lock for the Load Balancer
-  lock = {
-    name = "lock-{resourcename}"
-    kind = "CanNotDelete"
-  }
-  ```
+  The SKU of the Azure Load Balancer. 
+  Accepted values are `Basic` and `Standard`.
+  Microsoft recommends `Standard` for production workloads.
   DESCRIPTION
+
   validation {
-    condition     = contains(["CanNotDelete", "ReadOnly", "None"], var.lock.kind)
-    error_message = "Lock type must be one of: CanNotDelete, ReadOnly, None."
+    condition     = contains(["Basic", "Gateway", "Standard"], var.sku)
+    error_message = "The acceptable values for `sku` are `Basic`, `Gateway`, or `Standard`"
+  }
+}
+
+variable "sku_tier" {
+  type        = string
+  default     = "Regional"
+  description = <<DESCRIPTION
+  String parameter that specifies the SKU tier of this Load Balancer. 
+  Possible values are `Global` and `Regional`. 
+  Defaults to `Regional`. 
+  Changing this forces a new resource to be created.
+  DESCRIPTION
+
+  validation {
+    condition     = contains(["Global", "Regional"], var.sku_tier)
+    error_message = "The acceptable values for `sku_tier` are Global or Regional"
   }
 }
 

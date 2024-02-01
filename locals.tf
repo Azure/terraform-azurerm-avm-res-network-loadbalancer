@@ -1,6 +1,4 @@
 locals {
-  role_definition_resource_substring = "/providers/Microsoft.Authorization/roleDefinitions"
-
   pip_role_assignments = { for ra in flatten([
     for fe_k, fe_v in var.frontend_ip_configurations : [
       for rk, rv in fe_v.role_assignments : {
@@ -10,6 +8,7 @@ locals {
       }
     ]
   ]) : "${ra.frontend_key}-${ra.ra_key}" => ra }
+  role_definition_resource_substring = "/providers/Microsoft.Authorization/roleDefinitions"
 }
 
 locals {
