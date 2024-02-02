@@ -28,16 +28,15 @@ resource "azurerm_lb_backend_address_pool" "this" {
   loadbalancer_id    = azurerm_lb.this.id
   name               = each.value.name
   virtual_network_id = var.backend_address_pool_configuration
-  # to add functionality for tunnel interface
 }
 
 resource "azurerm_lb_backend_address_pool_address" "this" {
   for_each = { for be_pool_address in var.backend_address_pool_addresses : be_pool_address.name => be_pool_address }
 
-  name                    = each.value.name
   backend_address_pool_id = azurerm_lb_backend_address_pool.this[each.value.backend_address_pool_object_name].id
-  virtual_network_id      = var.backend_address_pool_configuration
+  name                    = each.value.name
   ip_address              = each.value.ip_address
+  virtual_network_id      = var.backend_address_pool_configuration
 }
 
 resource "azurerm_lb_probe" "this" {
@@ -45,60 +44,60 @@ resource "azurerm_lb_probe" "this" {
 
   loadbalancer_id     = azurerm_lb.this.id
   name                = coalesce(each.value.name, "probe-${var.name}")
-  protocol            = each.value.protocol
   port                = each.value.port
   interval_in_seconds = each.value.interval_in_seconds
-  probe_threshold     = each.value.probe_threshold
-  request_path        = (each.value.protocol == "Http" || each.value.protocol == "Https") ? each.value.request_path : null
   number_of_probes    = each.value.number_of_probes_before_removal
+  probe_threshold     = each.value.probe_threshold
+  protocol            = each.value.protocol
+  request_path        = (each.value.protocol == "Http" || each.value.protocol == "Https") ? each.value.request_path : null
 }
 
 resource "azurerm_lb_rule" "this" {
   for_each = var.lb_rules
 
+  backend_port                   = each.value.backend_port
+  frontend_ip_configuration_name = each.value.frontend_ip_configuration_name
+  frontend_port                  = each.value.frontend_port
   loadbalancer_id                = azurerm_lb.this.id
   name                           = coalesce(each.value.name, "rule-${var.name}")
-  frontend_ip_configuration_name = each.value.frontend_ip_configuration_name
   protocol                       = each.value.protocol
-  frontend_port                  = each.value.frontend_port
-  backend_port                   = each.value.backend_port
   backend_address_pool_ids       = each.value.backend_address_pool_resource_ids != null || each.value.backend_address_pool_object_names != null ? coalesce(each.value.backend_address_pool_resource_ids, [for x in each.value.backend_address_pool_object_names : azurerm_lb_backend_address_pool.this[x].id if length(each.value.backend_address_pool_object_names) > 0]) : null
-  probe_id                       = coalesce(azurerm_lb_probe.this[each.value.probe_object_name].id, each.value.probe_resource_id)
+  disable_outbound_snat          = each.value.disable_outbound_snat
   enable_floating_ip             = each.value.enable_floating_ip
+  enable_tcp_reset               = each.value.enable_tcp_reset
   idle_timeout_in_minutes        = each.value.idle_timeout_in_minutes
   load_distribution              = each.value.load_distribution
-  disable_outbound_snat          = each.value.disable_outbound_snat
-  enable_tcp_reset               = each.value.enable_tcp_reset
+  probe_id                       = coalesce(azurerm_lb_probe.this[each.value.probe_object_name].id, each.value.probe_resource_id)
 }
 
 resource "azurerm_lb_nat_rule" "this" {
   for_each = { for nat_rule in var.lb_nat_rules : nat_rule.name => nat_rule }
 
+  backend_port                   = each.value.backend_port
+  frontend_ip_configuration_name = each.value.frontend_ip_configuration_name
   loadbalancer_id                = azurerm_lb.this.id
   name                           = coalesce(each.value.name, "nat-rule-${var.name}")
-  resource_group_name            = var.resource_group_name
-  frontend_ip_configuration_name = each.value.frontend_ip_configuration_name
   protocol                       = each.value.protocol
-  frontend_port                  = each.value.frontend_port
-  backend_port                   = each.value.backend_port
-  frontend_port_start            = each.value.frontend_port_start
-  frontend_port_end              = each.value.frontend_port_end
+  resource_group_name            = var.resource_group_name
   backend_address_pool_id        = each.value.backend_address_pool_resource_id != null || each.value.backend_address_pool_object_name != null ? coalesce(each.value.backend_address_pool_resource_id, azurerm_lb_backend_address_pool.this[each.value.backend_address_pool_object_name].id) : null
-  idle_timeout_in_minutes        = each.value.idle_timeout_in_minutes
   enable_floating_ip             = each.value.enable_floating_ip
   enable_tcp_reset               = each.value.enable_tcp_reset
+  frontend_port                  = each.value.frontend_port
+  frontend_port_end              = each.value.frontend_port_end
+  frontend_port_start            = each.value.frontend_port_start
+  idle_timeout_in_minutes        = each.value.idle_timeout_in_minutes
 }
 
 # To create an outbound rule, the load balancer SKU must be standard and the frontend IP configuration must have at least one public IP address.
 resource "azurerm_lb_outbound_rule" "this" {
   for_each = { for outbound_rule in var.lb_outbound_rules : outbound_rule.name => outbound_rule }
 
+  backend_address_pool_id  = coalesce(each.value.backend_address_pool_resource_id, azurerm_lb_backend_address_pool.this[each.value.backend_address_pool_object_name].id)
   loadbalancer_id          = azurerm_lb.this.id
   name                     = coalesce(each.value.name, "outbound-rule-${var.name}")
-  backend_address_pool_id  = coalesce(each.value.backend_address_pool_resource_id, azurerm_lb_backend_address_pool.this[each.value.backend_address_pool_object_name].id)
   protocol                 = each.value.protocol
-  enable_tcp_reset         = each.value.enable_tcp_reset
   allocated_outbound_ports = each.value.number_of_allocated_outbound_ports
+  enable_tcp_reset         = each.value.enable_tcp_reset
   idle_timeout_in_minutes  = each.value.idle_timeout_in_minutes
 
   dynamic "frontend_ip_configuration" {
@@ -113,15 +112,15 @@ resource "azurerm_lb_outbound_rule" "this" {
 resource "azurerm_lb_nat_pool" "this" {
   for_each = { for nat_pool in var.lb_nat_pools : nat_pool.name => nat_pool }
 
-  resource_group_name            = var.resource_group_name
+  backend_port                   = each.value.backend_port
+  frontend_ip_configuration_name = each.value.frontend_ip_configuration_name
+  frontend_port_end              = each.value.frontend_port_end
+  frontend_port_start            = each.value.frontend_port_start
   loadbalancer_id                = azurerm_lb.this.id
   name                           = coalesce(each.value.name, "nat-pool-${var.name}")
-  frontend_ip_configuration_name = each.value.frontend_ip_configuration_name
   protocol                       = each.value.protocol
-  frontend_port_start            = each.value.frontend_port_start
-  frontend_port_end              = each.value.frontend_port_end
-  backend_port                   = each.value.backend_port
-  idle_timeout_in_minutes        = each.value.idle_timeout_in_minutes
+  resource_group_name            = var.resource_group_name
   floating_ip_enabled            = each.value.enable_floating_ip
+  idle_timeout_in_minutes        = each.value.idle_timeout_in_minutes
   tcp_reset_enabled              = each.value.enable_tcp_reset
 }
