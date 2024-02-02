@@ -85,15 +85,15 @@ module "loadbalancer" {
 
 }
 
-output "azurerm_lb" {
-  value       = module.loadbalancer.azurerm_lb
-  description = "Outputs the entire Azure Load Balancer resource"
-}
+# output "azurerm_lb" {
+#   value       = module.loadbalancer.azurerm_lb
+#   description = "Outputs the entire Azure Load Balancer resource"
+# }
 
-output "azurerm_public_ip" {
-  value       = module.loadbalancer.azurerm_public_ip
-  description = "Outputs each Public IP Address resource in it's entirety"
-}
+# output "azurerm_public_ip" {
+#   value       = module.loadbalancer.azurerm_public_ip
+#   description = "Outputs each Public IP Address resource in it's entirety"
+# }
 ```
 
 <!-- markdownlint-disable MD033 -->
@@ -145,15 +145,7 @@ Default: `true`
 
 ## Outputs
 
-The following outputs are exported:
-
-### <a name="output_azurerm_lb"></a> [azurerm\_lb](#output\_azurerm\_lb)
-
-Description: Outputs the entire Azure Load Balancer resource
-
-### <a name="output_azurerm_public_ip"></a> [azurerm\_public\_ip](#output\_azurerm\_public\_ip)
-
-Description: Outputs each Public IP Address resource in it's entirety
+No outputs.
 
 ## Modules
 

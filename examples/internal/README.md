@@ -117,10 +117,10 @@ module "loadbalancer" {
 
 }
 
-output "azurerm_lb" {
-  value       = module.loadbalancer.azurerm_lb
-  description = "Outputs the entire Azure Load Balancer resource"
-}
+# output "azurerm_lb" {
+#   value       = module.loadbalancer.azurerm_lb
+#   description = "Outputs the entire Azure Load Balancer resource"
+# }
 ```
 
 <!-- markdownlint-disable MD033 -->
@@ -172,11 +172,7 @@ Default: `true`
 
 ## Outputs
 
-The following outputs are exported:
-
-### <a name="output_azurerm_lb"></a> [azurerm\_lb](#output\_azurerm\_lb)
-
-Description: Outputs the entire Azure Load Balancer resource
+No outputs.
 
 ## Modules
 
