@@ -146,7 +146,10 @@ resource "azurerm_network_security_rule" "example_outbound" {
 module "gateway_loadbalancer" {
   source = "../.."
 
-  enable_telemetry = false
+  # source = "Azure/avm-res-network-loadbalancer/azurerm"
+  # version = 0.1.3
+
+  enable_telemetry = var.enable_telemetry
 
   name                = "gateway-lb"
   location            = azurerm_resource_group.example.location
@@ -218,7 +221,10 @@ module "gateway_loadbalancer" {
 module "standard_loadbalancer" {
   source = "../.."
 
-  enable_telemetry = false
+  # source = "Azure/avm-res-network-loadbalancer/azurerm"
+  # version = 0.1.3
+
+  enable_telemetry = var.enable_telemetry
 
   name                = "standard-lb"
   location            = azurerm_resource_group.example.location
@@ -253,7 +259,6 @@ module "standard_loadbalancer" {
   }
 
 }
-
 
 # # /*
 # # VM to test private endpoint connectivity
