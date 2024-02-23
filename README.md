@@ -226,11 +226,30 @@ Default: `null`
 Description:   A map of objects that creates one or more backend pools
 
   - `name`: (Optional) The name of the backend address pool to create
+  - `tunnel_interfaces`: (Optional) A map of objects that creates one or more tunnel interfaces for the backend pool
+    - `identifier`: (Optional) The identifier of the tunnel interface
+    - `type`: (Optional) The type of the tunnel interface
+    - `protocol`: (Optional) The protocol of the tunnel interface
+    - `port`: (Optional) The port of the tunnel interface
 
   ```terraform
   backend_address_pools = {
     pool1 = {
       name = "bepool1"
+      tunnel_interfaces = {
+        internal_tunnel = {
+          identifier = 800
+          type       = "Internal"
+          protocol   = "VXLAN"
+          port       = 10800
+        }
+        external_tunnel = {
+          identifier = 801
+          type       = "External"
+          protocol   = "VXLAN"
+          port       = 10801
+        }
+      }
     }
   }
 ```
