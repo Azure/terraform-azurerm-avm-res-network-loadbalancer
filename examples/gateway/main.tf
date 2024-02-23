@@ -216,7 +216,7 @@ module "standard_loadbalancer" {
   source = "../.."
 
   # source = "Azure/avm-res-network-loadbalancer/azurerm"
-  # version = 0.1.3
+  # version = 0.1.4
 
   enable_telemetry = var.enable_telemetry
 
