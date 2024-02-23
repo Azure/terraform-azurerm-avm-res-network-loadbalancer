@@ -1,23 +1,24 @@
 variable "frontend_ip_configurations" {
   type = map(object({
-    name                                   = optional(string)
-    frontend_private_ip_address            = optional(string)
-    frontend_private_ip_address_version    = optional(string)
-    frontend_private_ip_address_allocation = optional(string, "Dynamic")
-    frontend_private_ip_subnet_resource_id = optional(string)
-    public_ip_address_resource_name        = optional(string)
-    public_ip_address_resource_id          = optional(string)
-    public_ip_prefix_resource_id           = optional(string)
-    frontend_ip_zones                      = optional(set(string))
-    tags                                   = optional(map(any), {})
-    create_public_ip_address               = optional(bool, false)
-    new_public_ip_resource_group_name      = optional(string)
-    new_public_ip_location                 = optional(string)
-    inherit_lock                           = optional(bool, true)
-    lock_type_if_not_inherited             = optional(string, "None")
-    inherit_tags                           = optional(bool, true)
-    edge_zone                              = optional(string)
-    zones                                  = optional(list(string))
+    name                                               = optional(string)
+    frontend_private_ip_address                        = optional(string)
+    frontend_private_ip_address_version                = optional(string)
+    frontend_private_ip_address_allocation             = optional(string, "Dynamic")
+    frontend_private_ip_subnet_resource_id             = optional(string)
+    gateway_load_balancer_frontend_ip_configuration_id = optional(string)
+    public_ip_address_resource_name                    = optional(string)
+    public_ip_address_resource_id                      = optional(string)
+    public_ip_prefix_resource_id                       = optional(string)
+    frontend_ip_zones                                  = optional(set(string))
+    tags                                               = optional(map(any), {})
+    create_public_ip_address                           = optional(bool, false)
+    new_public_ip_resource_group_name                  = optional(string)
+    new_public_ip_location                             = optional(string)
+    inherit_lock                                       = optional(bool, true)
+    lock_type_if_not_inherited                         = optional(string, "None")
+    inherit_tags                                       = optional(bool, true)
+    edge_zone                                          = optional(string)
+    zones                                              = optional(list(string))
 
     role_assignments = optional(map(object({
       role_definition_id_or_name             = string
@@ -183,6 +184,12 @@ variable "backend_address_pool_configuration" {
 variable "backend_address_pools" {
   type = map(object({
     name = optional(string, "bepool-1")
+    tunnel_interfaces = optional(map(object({
+      identifier = optional(number)
+      type       = optional(string)
+      protocol   = optional(string)
+      port       = optional(number)
+    })), {})
   }))
   default = {
 
@@ -191,11 +198,30 @@ variable "backend_address_pools" {
   A map of objects that creates one or more backend pools
 
   - `name`: (Optional) The name of the backend address pool to create
+  - `tunnel_interfaces`: (Optional) A map of objects that creates one or more tunnel interfaces for the backend pool
+    - `identifier`: (Optional) The identifier of the tunnel interface
+    - `type`: (Optional) The type of the tunnel interface
+    - `protocol`: (Optional) The protocol of the tunnel interface
+    - `port`: (Optional) The port of the tunnel interface
 
   ```terraform
   backend_address_pools = {
     pool1 = {
       name = "bepool1"
+      tunnel_interfaces = {
+        internal_tunnel = {
+          identifier = 800
+          type       = "Internal"
+          protocol   = "VXLAN"
+          port       = 10800
+        }
+        external_tunnel = {
+          identifier = 801
+          type       = "External"
+          protocol   = "VXLAN"
+          port       = 10801
+        }
+      }
     }
   }
   ```
@@ -613,18 +639,18 @@ variable "lb_rules" {
     if contains(["Udp", "Tcp", "All"], obj.protocol)]) == length(var.lb_rules)
     error_message = "The accepted values for `protocol` are Udp, Tcp, or All"
   }
-  validation {
-    condition = length([for obj in var.lb_rules :
-      true
-    if obj.frontend_port >= 1 && obj.frontend_port <= 65534]) == length(var.lb_rules)
-    error_message = "The value for `frontend_port` must be between 1 and 65534"
-  }
-  validation {
-    condition = length([for obj in var.lb_rules :
-      true
-    if obj.backend_port >= 1 && obj.backend_port <= 65535]) == length(var.lb_rules)
-    error_message = "The value for `backend_port` must be between 1 and 65535"
-  }
+  # validation {
+  #   condition = length([for obj in var.lb_rules :
+  #     true
+  #   if obj.frontend_port >= 1 && obj.frontend_port <= 65534]) == length(var.lb_rules)
+  #   error_message = "The value for `frontend_port` must be between 1 and 65534"
+  # }
+  # validation {
+  #   condition = length([for obj in var.lb_rules :
+  #     true
+  #   if obj.backend_port >= 1 && obj.backend_port <= 65535]) == length(var.lb_rules)
+  #   error_message = "The value for `backend_port` must be between 1 and 65535"
+  # }
   validation {
     condition = length([for obj in var.lb_rules :
       true
@@ -801,7 +827,7 @@ variable "sku" {
   default     = "Standard"
   description = <<DESCRIPTION
   The SKU of the Azure Load Balancer. 
-  Accepted values are `Basic` and `Standard`.
+  Accepted values are `Basic`, `Standard`, and `Gateway`.
   Microsoft recommends `Standard` for production workloads.
   DESCRIPTION
 
