@@ -11,13 +11,14 @@ resource "azurerm_lb" "this" {
     for_each = var.frontend_ip_configurations
 
     content {
-      name                          = coalesce(frontend_ip_configuration.value.name, "frontend-${var.name}")
-      private_ip_address            = frontend_ip_configuration.value.frontend_private_ip_address
-      private_ip_address_allocation = frontend_ip_configuration.value.frontend_private_ip_address_allocation
-      private_ip_address_version    = frontend_ip_configuration.value.frontend_private_ip_address_version
-      public_ip_address_id          = frontend_ip_configuration.value.create_public_ip_address ? azurerm_public_ip.this[frontend_ip_configuration.key].id : frontend_ip_configuration.value.public_ip_address_resource_id
-      subnet_id                     = (var.frontend_subnet_resource_id == null || var.frontend_subnet_resource_id == "") && (frontend_ip_configuration.value.frontend_private_ip_subnet_resource_id == null || frontend_ip_configuration.value.frontend_private_ip_subnet_resource_id == "") ? null : coalesce(frontend_ip_configuration.value.frontend_private_ip_subnet_resource_id, var.frontend_subnet_resource_id)
-      zones                         = frontend_ip_configuration.value.frontend_ip_zones
+      name                                               = coalesce(frontend_ip_configuration.value.name, "frontend-${var.name}")
+      gateway_load_balancer_frontend_ip_configuration_id = frontend_ip_configuration.value.gateway_load_balancer_frontend_ip_configuration_id
+      private_ip_address                                 = frontend_ip_configuration.value.frontend_private_ip_address
+      private_ip_address_allocation                      = frontend_ip_configuration.value.frontend_private_ip_address_allocation
+      private_ip_address_version                         = frontend_ip_configuration.value.frontend_private_ip_address_version
+      public_ip_address_id                               = frontend_ip_configuration.value.create_public_ip_address ? azurerm_public_ip.this[frontend_ip_configuration.key].id : frontend_ip_configuration.value.public_ip_address_resource_id
+      subnet_id                                          = (var.frontend_subnet_resource_id == null || var.frontend_subnet_resource_id == "") && (frontend_ip_configuration.value.frontend_private_ip_subnet_resource_id == null || frontend_ip_configuration.value.frontend_private_ip_subnet_resource_id == "") ? null : coalesce(frontend_ip_configuration.value.frontend_private_ip_subnet_resource_id, var.frontend_subnet_resource_id)
+      zones                                              = frontend_ip_configuration.value.frontend_ip_zones
     }
   }
 }
@@ -28,6 +29,18 @@ resource "azurerm_lb_backend_address_pool" "this" {
   loadbalancer_id    = azurerm_lb.this.id
   name               = each.value.name
   virtual_network_id = var.backend_address_pool_configuration
+
+  dynamic "tunnel_interface" {
+    for_each = each.value.tunnel_interfaces
+
+    content {
+      identifier = tunnel_interface.value.identifier
+      port       = tunnel_interface.value.port
+      protocol   = tunnel_interface.value.protocol
+      type       = tunnel_interface.value.type
+    }
+
+  }
 }
 
 resource "azurerm_lb_backend_address_pool_address" "this" {
