@@ -100,7 +100,7 @@ module "loadbalancer" {
 
   # Virtual Network for Backend Address Pool(s) if using backend addresses
   # Leave empty if using network interfaces
-  # backend_address_pool_configuration = azurerm_virtual_network.example.id
+  backend_address_pool_configuration = azurerm_virtual_network.example.id
 
   # Backend Address Pool(s)
   backend_address_pools = {
@@ -110,29 +110,20 @@ module "loadbalancer" {
   }
 
   backend_address_pool_network_interfaces = {
-    node1 = {
-      backend_address_pool_object_name = "pool1"
-      ip_configuration_name            = "ipconfig1"
-      network_interface_resource_id    = azurerm_network_interface.example_1.id
-    }
-    node2 = {
-      backend_address_pool_object_name = "pool1"
-      ip_configuration_name            = "ipconfig1"
-      network_interface_resource_id    = azurerm_network_interface.example_2.id
-    }
+
   }
 
   backend_address_pool_addresses = {
-    # address1 = {
-    #   name = "${azurerm_network_interface.example.name}-ipconfig1" # must be unique if multiple addresses are used
-    #   backend_address_pool_object_name = "pool1"
-    #   ip_address = azurerm_network_interface.example_1.private_ip_address
-    # }
-    # address2 = {
-    #   name = "${azurerm_network_interface.example_2.name}-ipconfig1" # must be unique if multiple addresses are used
-    #   backend_address_pool_object_name = "pool1"
-    #   ip_address = azurerm_network_interface.example_2.private_ip_address
-    # }
+    address1 = {
+      name                             = "${azurerm_network_interface.example_1.name}-ipconfig1" # must be unique if multiple addresses are used
+      backend_address_pool_object_name = "pool1"
+      ip_address                       = azurerm_network_interface.example_1.private_ip_address
+    }
+    address2 = {
+      name                             = "${azurerm_network_interface.example_2.name}-ipconfig1" # must be unique if multiple addresses are used
+      backend_address_pool_object_name = "pool1"
+      ip_address                       = azurerm_network_interface.example_2.private_ip_address
+    }
   }
 
   # Health Probe(s)
