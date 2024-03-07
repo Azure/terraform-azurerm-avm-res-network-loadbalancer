@@ -58,7 +58,7 @@ resource "azurerm_network_interface" "example_1" {
   resource_group_name = azurerm_resource_group.this.name
 
   ip_configuration {
-    name                          = "ipconfig1" # -${module.naming.network_interface.name_unique}"
+    name                          = "ipconfig1"
     private_ip_address_allocation = "Dynamic"
     subnet_id                     = azurerm_subnet.example.id
   }
@@ -70,7 +70,7 @@ resource "azurerm_network_interface" "example_2" {
   resource_group_name = azurerm_resource_group.this.name
 
   ip_configuration {
-    name                          = "ipconfig1" # -${module.naming.network_interface.name_unique}"
+    name                          = "ipconfig1"
     private_ip_address_allocation = "Dynamic"
     subnet_id                     = azurerm_subnet.example.id
   }
@@ -151,5 +151,11 @@ module "loadbalancer" {
       enable_tcp_reset        = true
     }
   }
+
+  depends_on = [
+    # To ensure that the backend address pool is created before the network interfaces' ip addresses are associated
+    azurerm_network_interface.example_1,
+    azurerm_network_interface.example_2
+  ]
 
 }
