@@ -145,35 +145,6 @@ variable "resource_group_name" {
   nullable    = false
 }
 
-variable "backend_address_pool_network_interfaces" {
-  type = map(object({
-    backend_address_pool_object_name = optional(string)
-    ip_configuration_name = optional(string)
-    network_interface_resource_id = optional(string)
-  }))
-  default = {
-
-  }
-  description = <<DESCRIPTION
-  A map of objects that associates one or more backend address pool network interfaces
-
-  - `backend_address_pool_object_name`: (Optional) The name of the backend address pool object that this network interface should be associated with
-  - `ip_configuration_name`: (Optional) The name of the IP configuration that this network interface should be associated with
-  - `network_interface_resource_id`: (Optional) The ID of the network interface that should be associated with the backend address pool
-
-  ```terraform
-  backend_address_pool_network_interfaces = {
-    node1 = {
-      backend_address_pool_object_name = "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/loadBalancers/{loadBalancerName}/backendAddressPools/{backendAddressPoolName}"
-      ip_configuration_name = "ipconfig1"
-      network_interface_resource_id = "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/networkInterfaces/{networkInterfaceName}"
-    }
-  }
-  ```
-  DESCRIPTION
-
-}
-
 variable "backend_address_pool_addresses" {
   type = map(object({
     name                             = optional(string)
@@ -208,6 +179,34 @@ variable "backend_address_pool_configuration" {
   description = <<DESCRIPTION
   String variable that determines the target virtual network for potential backend pools.
   If using network interfaces, leave this variable empty.
+  DESCRIPTION
+}
+
+variable "backend_address_pool_network_interfaces" {
+  type = map(object({
+    backend_address_pool_object_name = optional(string)
+    ip_configuration_name            = optional(string)
+    network_interface_resource_id    = optional(string)
+  }))
+  default = {
+
+  }
+  description = <<DESCRIPTION
+  A map of objects that associates one or more backend address pool network interfaces
+
+  - `backend_address_pool_object_name`: (Optional) The name of the backend address pool object that this network interface should be associated with
+  - `ip_configuration_name`: (Optional) The name of the IP configuration that this network interface should be associated with
+  - `network_interface_resource_id`: (Optional) The ID of the network interface that should be associated with the backend address pool
+
+  ```terraform
+  backend_address_pool_network_interfaces = {
+    node1 = {
+      backend_address_pool_object_name = "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/loadBalancers/{loadBalancerName}/backendAddressPools/{backendAddressPoolName}"
+      ip_configuration_name = "ipconfig1"
+      network_interface_resource_id = "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/networkInterfaces/{networkInterfaceName}"
+    }
+  }
+  ```
   DESCRIPTION
 }
 
