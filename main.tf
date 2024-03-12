@@ -44,12 +44,30 @@ resource "azurerm_lb_backend_address_pool" "this" {
 }
 
 resource "azurerm_lb_backend_address_pool_address" "this" {
-  for_each = { for be_pool_address in var.backend_address_pool_addresses : be_pool_address.name => be_pool_address }
+  for_each = { for be_pool_address, be_pool_address_values in var.backend_address_pool_addresses : be_pool_address => be_pool_address_values }
 
   backend_address_pool_id = azurerm_lb_backend_address_pool.this[each.value.backend_address_pool_object_name].id
   name                    = each.value.name
   ip_address              = each.value.ip_address
   virtual_network_id      = var.backend_address_pool_configuration
+
+  depends_on = [
+    azurerm_lb.this,
+    azurerm_lb_backend_address_pool.this
+  ]
+}
+
+resource "azurerm_network_interface_backend_address_pool_association" "this" {
+  for_each = { for be_pool_association, be_pool_association_values in var.backend_address_pool_network_interfaces : be_pool_association => be_pool_association_values }
+
+  backend_address_pool_id = azurerm_lb_backend_address_pool.this[each.value.backend_address_pool_object_name].id
+  ip_configuration_name   = each.value.ip_configuration_name
+  network_interface_id    = each.value.network_interface_resource_id
+
+  depends_on = [
+    azurerm_lb.this,
+    azurerm_lb_backend_address_pool.this
+  ]
 }
 
 resource "azurerm_lb_probe" "this" {

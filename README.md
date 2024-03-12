@@ -38,6 +38,7 @@ The following resources are used by this module:
 - [azurerm_management_lock.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/management_lock) (resource)
 - [azurerm_monitor_diagnostic_setting.pip](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/monitor_diagnostic_setting) (resource)
 - [azurerm_monitor_diagnostic_setting.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/monitor_diagnostic_setting) (resource)
+- [azurerm_network_interface_backend_address_pool_association.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/network_interface_backend_address_pool_association) (resource)
 - [azurerm_public_ip.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/public_ip) (resource)
 - [azurerm_resource_group_template_deployment.telemetry](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group_template_deployment) (resource)
 - [azurerm_role_assignment.pip](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/role_assignment) (resource)
@@ -215,11 +216,42 @@ Default: `{}`
 
 ### <a name="input_backend_address_pool_configuration"></a> [backend\_address\_pool\_configuration](#input\_backend\_address\_pool\_configuration)
 
-Description:   String variable that determines the target virtual network for potential backend pools.
+Description:   String variable that determines the target virtual network for potential backend pools.  
+  If using network interfaces, leave this variable empty.
 
 Type: `string`
 
 Default: `null`
+
+### <a name="input_backend_address_pool_network_interfaces"></a> [backend\_address\_pool\_network\_interfaces](#input\_backend\_address\_pool\_network\_interfaces)
+
+Description:   A map of objects that associates one or more backend address pool network interfaces
+
+  - `backend_address_pool_object_name`: (Optional) The name of the backend address pool object that this network interface should be associated with
+  - `ip_configuration_name`: (Optional) The name of the IP configuration that this network interface should be associated with
+  - `network_interface_resource_id`: (Optional) The ID of the network interface that should be associated with the backend address pool
+
+  ```terraform
+  backend_address_pool_network_interfaces = {
+    node1 = {
+      backend_address_pool_object_name = "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/loadBalancers/{loadBalancerName}/backendAddressPools/{backendAddressPoolName}"
+      ip_configuration_name = "ipconfig1"
+      network_interface_resource_id = "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/networkInterfaces/{networkInterfaceName}"
+    }
+  }
+```
+
+Type:
+
+```hcl
+map(object({
+    backend_address_pool_object_name = optional(string)
+    ip_configuration_name            = optional(string)
+    network_interface_resource_id    = optional(string)
+  }))
+```
+
+Default: `{}`
 
 ### <a name="input_backend_address_pools"></a> [backend\_address\_pools](#input\_backend\_address\_pools)
 
