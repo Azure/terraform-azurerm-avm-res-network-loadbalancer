@@ -150,6 +150,7 @@ variable "backend_address_pool_addresses" {
     name                             = optional(string)
     backend_address_pool_object_name = optional(string)
     ip_address                       = optional(string)
+    virtual_network_resource_id      = optional(string)
   }))
   default = {
 
@@ -212,7 +213,8 @@ variable "backend_address_pool_network_interfaces" {
 
 variable "backend_address_pools" {
   type = map(object({
-    name = optional(string, "bepool-1")
+    name                        = optional(string, "bepool-1")
+    virtual_network_resource_id = optional(string)
     tunnel_interfaces = optional(map(object({
       identifier = optional(number)
       type       = optional(string)

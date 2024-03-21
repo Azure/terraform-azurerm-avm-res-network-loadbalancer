@@ -209,6 +209,7 @@ map(object({
     name                             = optional(string)
     backend_address_pool_object_name = optional(string)
     ip_address                       = optional(string)
+    virtual_network_resource_id      = optional(string)
   }))
 ```
 
@@ -290,7 +291,8 @@ Type:
 
 ```hcl
 map(object({
-    name = optional(string, "bepool-1")
+    name                        = optional(string, "bepool-1")
+    virtual_network_resource_id = optional(string)
     tunnel_interfaces = optional(map(object({
       identifier = optional(number)
       type       = optional(string)

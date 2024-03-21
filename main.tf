@@ -28,7 +28,7 @@ resource "azurerm_lb_backend_address_pool" "this" {
 
   loadbalancer_id    = azurerm_lb.this.id
   name               = each.value.name
-  virtual_network_id = var.backend_address_pool_configuration
+  virtual_network_id = coalesce(each.value.virtual_network_resource_id, var.backend_address_pool_configuration)
 
   dynamic "tunnel_interface" {
     for_each = each.value.tunnel_interfaces
@@ -49,7 +49,7 @@ resource "azurerm_lb_backend_address_pool_address" "this" {
   backend_address_pool_id = azurerm_lb_backend_address_pool.this[each.value.backend_address_pool_object_name].id
   name                    = each.value.name
   ip_address              = each.value.ip_address
-  virtual_network_id      = var.backend_address_pool_configuration
+  virtual_network_id      = coalesce(each.value.virtual_network_resource_id, var.backend_address_pool_configuration)
 
   depends_on = [
     azurerm_lb.this,
