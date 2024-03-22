@@ -146,13 +146,27 @@ module "loadbalancer" {
   # Load Balaner rule(s)
   lb_rules = {
     http1 = {
-      name                           = "myHTTPRule"
+      name                           = "primaryRule"
       frontend_ip_configuration_name = "myFrontend"
 
-      backend_address_pool_object_names = ["pool1", "pool2"]
+      backend_address_pool_object_names = ["pool1"]
       protocol                          = "Tcp"
       frontend_port                     = 80
       backend_port                      = 80
+
+      probe_object_name = "tcp1"
+
+      idle_timeout_in_minutes = 15
+      enable_tcp_reset        = true
+    }
+    http2 = {
+      name                           = "secondaryRule"
+      frontend_ip_configuration_name = "myFrontend"
+
+      backend_address_pool_object_names = ["pool2"]
+      protocol                          = "Tcp"
+      frontend_port                     = 81
+      backend_port                      = 81
 
       probe_object_name = "tcp1"
 
