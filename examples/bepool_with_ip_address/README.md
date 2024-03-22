@@ -87,7 +87,7 @@ module "loadbalancer" {
   source = "../../"
 
   # source = "Azure/avm-res-network-loadbalancer/azurerm"
-  # version = "0.1.6"
+  # version = "0.1.7"
 
   enable_telemetry = var.enable_telemetry
 
@@ -104,19 +104,19 @@ module "loadbalancer" {
     }
   }
 
+  # /*
   # Virtual Network for Backend Address Pool(s) if using backend addresses
-  # Leave empty if using network interfaces
+  # Use if using only backend addresses via private IP
+  # Leave empty if using network interfaces or mix of network interfaces and backend addresses
   backend_address_pool_configuration = azurerm_virtual_network.example.id
+  # */
 
   # Backend Address Pool(s)
   backend_address_pools = {
     pool1 = {
-      name = "myBackendPool"
+      name                        = "primaryPool"
+      virtual_network_resource_id = azurerm_virtual_network.example.id
     }
-  }
-
-  backend_address_pool_network_interfaces = {
-
   }
 
   backend_address_pool_addresses = {
@@ -124,12 +124,19 @@ module "loadbalancer" {
       name                             = "${azurerm_network_interface.example_1.name}-ipconfig1" # must be unique if multiple addresses are used
       backend_address_pool_object_name = "pool1"
       ip_address                       = azurerm_network_interface.example_1.private_ip_address
+      # virtual_network_resource_id      = azurerm_virtual_network.example.id
     }
     address2 = {
       name                             = "${azurerm_network_interface.example_2.name}-ipconfig1" # must be unique if multiple addresses are used
       backend_address_pool_object_name = "pool1"
       ip_address                       = azurerm_network_interface.example_2.private_ip_address
+      # virtual_network_resource_id      = azurerm_virtual_network.example.id
+
     }
+  }
+
+  backend_address_pool_network_interfaces = {
+
   }
 
   # Health Probe(s)
@@ -218,7 +225,19 @@ Default: `true`
 
 ## Outputs
 
-No outputs.
+The following outputs are exported:
+
+### <a name="output_azurerm_lb_backend_address_pool"></a> [azurerm\_lb\_backend\_address\_pool](#output\_azurerm\_lb\_backend\_address\_pool)
+
+Description: Outputs each backend address pool
+
+### <a name="output_resource"></a> [resource](#output\_resource)
+
+Description: Outputs the entire Azure Load Balancer resource
+
+### <a name="output_resource_id"></a> [resource\_id](#output\_resource\_id)
+
+Description: Outputs the entire Azure Load Balancer resource
 
 ## Modules
 

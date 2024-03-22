@@ -150,6 +150,7 @@ variable "backend_address_pool_addresses" {
     name                             = optional(string)
     backend_address_pool_object_name = optional(string)
     ip_address                       = optional(string)
+    virtual_network_resource_id      = optional(string)
   }))
   default = {
 
@@ -160,6 +161,7 @@ variable "backend_address_pool_addresses" {
   - `name`: (Optional) The name of the backend address pool address, if adding an address. Changing this forces a new backend address pool address to be created.
   - `backend_address_pool_object_name`: (Optional) The name of the backend address pool object within the virtual network. Changing this forces a new backend address pool address to be created.
   - `ip_address`: (Optional) The static IP address which should be allocated to the backend address pool.
+  - `virtual_network_resource_id`: (Optional) The ID of the virtual network that the backend address pool address should be associated with. Helps with mapping to correct backend pool.
 
   ```terraform
   backend_address_pool_addresses = {
@@ -177,7 +179,8 @@ variable "backend_address_pool_configuration" {
   type        = string
   default     = null
   description = <<DESCRIPTION
-  String variable that determines the target virtual network for potential backend pools.
+  String variable that determines the target virtual network for potential backend pools, at the load balancer level.
+  You can specify the `virutal_network_resource_id` at the pool level or backend address level.
   If using network interfaces, leave this variable empty.
   DESCRIPTION
 }
@@ -212,7 +215,8 @@ variable "backend_address_pool_network_interfaces" {
 
 variable "backend_address_pools" {
   type = map(object({
-    name = optional(string, "bepool-1")
+    name                        = optional(string, "bepool-1")
+    virtual_network_resource_id = optional(string)
     tunnel_interfaces = optional(map(object({
       identifier = optional(number)
       type       = optional(string)
@@ -227,6 +231,7 @@ variable "backend_address_pools" {
   A map of objects that creates one or more backend pools
 
   - `name`: (Optional) The name of the backend address pool to create
+  - `virtual_network_resource_id`: (Optional) The ID of the virtual network that the backend pool should be associated with. Sets pool to use only backend addresses via private IP. Leave empty if using network interfaces or mix of network interfaces and backend addresses.
   - `tunnel_interfaces`: (Optional) A map of objects that creates one or more tunnel interfaces for the backend pool
     - `identifier`: (Optional) The identifier of the tunnel interface
     - `type`: (Optional) The type of the tunnel interface
