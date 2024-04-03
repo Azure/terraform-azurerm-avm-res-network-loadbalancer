@@ -147,7 +147,7 @@ module "gateway_loadbalancer" {
   source = "../.."
 
   # source = "Azure/avm-res-network-loadbalancer/azurerm"
-  # version = "0.1.7"
+  # version = "0.2.0"
 
   enable_telemetry = var.enable_telemetry
 
@@ -165,6 +165,8 @@ module "gateway_loadbalancer" {
       name                                   = "gatewayFrontend-IP"
       frontend_private_ip_address_version    = "IPv4"
       frontend_private_ip_address_allocation = "Dynamic"
+      # zones = ["1", "2", "3"] # Zone-redundant
+      zones = ["None"] # Non-zonal
 
     }
   }

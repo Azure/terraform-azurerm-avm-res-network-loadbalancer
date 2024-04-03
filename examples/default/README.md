@@ -31,10 +31,20 @@ module "naming" {
   version = "0.3.0"
 }
 
+module "regions" {
+  source  = "Azure/regions/azurerm"
+  version = ">= 0.4.0"
+}
+
 # Helps pick a random region from the list of regions.
 resource "random_integer" "region_index" {
   max = length(local.azure_regions) - 1
   min = 0
+}
+
+resource "random_integer" "zone_index" {
+  max = length(module.regions.regions_by_name[local.azure_regions[random_integer.region_index.result]].zones) - 1
+  min = 1
 }
 
 # This is required for resource modules
@@ -61,12 +71,36 @@ resource "azurerm_subnet" "example" {
   virtual_network_name = azurerm_virtual_network.example.name
 }
 
+resource "azurerm_network_interface" "example_1" {
+  location            = azurerm_resource_group.this.location
+  name                = "${module.naming.network_interface.name_unique}-1"
+  resource_group_name = azurerm_resource_group.this.name
+
+  ip_configuration {
+    name                          = "ipconfig1"
+    private_ip_address_allocation = "Dynamic"
+    subnet_id                     = azurerm_subnet.example.id
+  }
+}
+
+resource "azurerm_network_interface" "example_2" {
+  location            = azurerm_resource_group.this.location
+  name                = "${module.naming.network_interface.name_unique}-2"
+  resource_group_name = azurerm_resource_group.this.name
+
+  ip_configuration {
+    name                          = "ipconfig1"
+    private_ip_address_allocation = "Dynamic"
+    subnet_id                     = azurerm_subnet.example.id
+  }
+}
+
 module "loadbalancer" {
 
   source = "../../"
 
   # source = "Azure/avm-res-network-loadbalancer/azurerm"
-  # version = "0.1.7"
+  # version = "0.2.0"
 
   enable_telemetry = var.enable_telemetry
 
@@ -74,26 +108,43 @@ module "loadbalancer" {
   location            = azurerm_resource_group.this.location
   resource_group_name = azurerm_resource_group.this.name
 
+  # Internal 
+  # Standard SKU 
+  # Regional 
+  # Zone-redundant
   frontend_ip_configurations = {
     frontend_configuration_1 = {
-      name = "myFrontend"
-      # Creates a public IP address
-      create_public_ip_address        = true
-      public_ip_address_resource_name = module.naming.public_ip.name_unique
+      name                                   = "myFrontend"
+      frontend_private_ip_subnet_resource_id = azurerm_subnet.example.id
+      # zones = ["1", "2", "3"] # Zone-redundant
+      # zones = ["None"] # Non-zonal
+    }
+  }
+
+  backend_address_pools = {
+    pool1 = {
+      name                        = "primaryPool"
+      virtual_network_resource_id = azurerm_virtual_network.example.id # set a virtual_network_resource_id if using backend_address_pool_addresses
+    }
+
+  }
+
+  backend_address_pool_addresses = {
+    address1 = {
+      name                             = "${azurerm_network_interface.example_1.name}-ipconfig1" # must be unique if multiple addresses are used
+      backend_address_pool_object_name = "pool1"
+      ip_address                       = azurerm_network_interface.example_1.private_ip_address
+      virtual_network_resource_id      = azurerm_virtual_network.example.id
+    }
+    address2 = {
+      name                             = "${azurerm_network_interface.example_2.name}-ipconfig1" # must be unique if multiple addresses are used
+      backend_address_pool_object_name = "pool1"
+      ip_address                       = azurerm_network_interface.example_2.private_ip_address
+      virtual_network_resource_id      = azurerm_virtual_network.example.id
     }
   }
 
 }
-
-# output "azurerm_lb" {
-#   value       = module.loadbalancer.azurerm_lb
-#   description = "Outputs the entire Azure Load Balancer resource"
-# }
-
-# output "azurerm_public_ip" {
-#   value       = module.loadbalancer.azurerm_public_ip
-#   description = "Outputs each Public IP Address resource in it's entirety"
-# }
 ```
 
 <!-- markdownlint-disable MD033 -->
@@ -119,10 +170,13 @@ The following providers are used by this module:
 
 The following resources are used by this module:
 
+- [azurerm_network_interface.example_1](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/network_interface) (resource)
+- [azurerm_network_interface.example_2](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/network_interface) (resource)
 - [azurerm_resource_group.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group) (resource)
 - [azurerm_subnet.example](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/subnet) (resource)
 - [azurerm_virtual_network.example](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network) (resource)
 - [random_integer.region_index](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/integer) (resource)
+- [random_integer.zone_index](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/integer) (resource)
 
 <!-- markdownlint-disable MD013 -->
 ## Required Inputs
@@ -145,7 +199,15 @@ Default: `true`
 
 ## Outputs
 
-No outputs.
+The following outputs are exported:
+
+### <a name="output_resource"></a> [resource](#output\_resource)
+
+Description: Outputs the entire Azure Load Balancer resource
+
+### <a name="output_resource_id"></a> [resource\_id](#output\_resource\_id)
+
+Description: Outputs each Public IP Address resource in it's entirety
 
 ## Modules
 
@@ -162,6 +224,12 @@ Version:
 Source: Azure/naming/azurerm
 
 Version: 0.3.0
+
+### <a name="module_regions"></a> [regions](#module\_regions)
+
+Source: Azure/regions/azurerm
+
+Version: >= 0.4.0
 
 <!-- markdownlint-disable-next-line MD041 -->
 ## Data Collection

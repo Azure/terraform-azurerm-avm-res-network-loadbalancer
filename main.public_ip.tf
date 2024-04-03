@@ -17,5 +17,5 @@ resource "azurerm_public_ip" "this" {
   sku                     = var.public_ip_address_configuration.sku
   sku_tier                = var.public_ip_address_configuration.sku_tier
   tags                    = each.value.inherit_tags ? merge(var.public_ip_address_configuration.tags, each.value.tags, var.tags) : merge(var.public_ip_address_configuration.tags, each.value.tags)
-  zones                   = each.value.frontend_ip_zones
+  zones                   = contains(each.value.zones, "None") ? null : each.value.zones
 }

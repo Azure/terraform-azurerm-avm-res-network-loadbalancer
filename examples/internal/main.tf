@@ -50,12 +50,24 @@ resource "azurerm_subnet" "example" {
   virtual_network_name = azurerm_virtual_network.example.name
 }
 
+resource "azurerm_network_interface" "example_1" {
+  location            = azurerm_resource_group.this.location
+  name                = "${module.naming.network_interface.name_unique}-1"
+  resource_group_name = azurerm_resource_group.this.name
+
+  ip_configuration {
+    name                          = "ipconfig1"
+    private_ip_address_allocation = "Dynamic"
+    subnet_id                     = azurerm_subnet.example.id
+  }
+}
+
 module "loadbalancer" {
 
   source = "../../"
 
   # source = "Azure/avm-res-network-loadbalancer/azurerm"
-  # version = "0.1.7"
+  # version = "0.2.0"
 
   enable_telemetry = var.enable_telemetry
 
@@ -70,9 +82,15 @@ module "loadbalancer" {
   # Frontend IP Configuration
   frontend_ip_configurations = {
     frontend_configuration_1 = {
-      name = "myFrontend"
+      name                                   = "myFrontend"
+      frontend_private_ip_subnet_resource_id = azurerm_subnet.example.id
+      # zones = ["1", "2", "3"] # Zone-redundant
+      # zones = ["None"] # Non-zonal
     }
   }
+
+  # Virtual Network for Backend Address Pool(s)
+  # backend_address_pool_configuration = azurerm_virtual_network.example.id
 
   # Backend Address Pool
   backend_address_pools = {
@@ -81,8 +99,14 @@ module "loadbalancer" {
     }
   }
 
-  # Virtual Network for Backend Address Pool(s)
-  backend_address_pool_configuration = azurerm_virtual_network.example.id
+  backend_address_pool_addresses = {
+    address1 = {
+      name                             = "${azurerm_network_interface.example_1.name}-ipconfig1" # must be unique if multiple addresses are used
+      backend_address_pool_object_name = "pool1"
+      ip_address                       = azurerm_network_interface.example_1.private_ip_address
+      virtual_network_resource_id      = azurerm_virtual_network.example.id
+    }
+  }
 
   # Health Probe(s)
   lb_probes = {
