@@ -18,7 +18,7 @@ resource "azurerm_lb" "this" {
       private_ip_address_version                         = frontend_ip_configuration.value.frontend_private_ip_address_version
       public_ip_address_id                               = frontend_ip_configuration.value.create_public_ip_address ? azurerm_public_ip.this[frontend_ip_configuration.key].id : frontend_ip_configuration.value.public_ip_address_resource_id
       subnet_id                                          = (var.frontend_subnet_resource_id == null || var.frontend_subnet_resource_id == "") && (frontend_ip_configuration.value.frontend_private_ip_subnet_resource_id == null || frontend_ip_configuration.value.frontend_private_ip_subnet_resource_id == "") ? null : coalesce(frontend_ip_configuration.value.frontend_private_ip_subnet_resource_id, var.frontend_subnet_resource_id)
-      zones                                              = frontend_ip_configuration.value.frontend_ip_zones
+      zones                                              = frontend_ip_configuration.value.create_public_ip_address ? null : (contains(frontend_ip_configuration.value.zones, "None") ? null : frontend_ip_configuration.value.zones)
     }
   }
 }

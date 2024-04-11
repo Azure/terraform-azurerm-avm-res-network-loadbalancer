@@ -63,7 +63,7 @@ Description:   A map of objects that builds frontend ip configurations for the l
   - `public_ip_address_resource_name`: (Optional) A string parameter that is the name of the public ip address to be created AND associated with the Load Balancer. Changing this forces a new Public IP to be created.
   - `public_ip_address_resource_id`: (Optional) A string parameter that is the ID of a public ip address which should associated with the Load Balancer.
   - `public_ip_prefix_resource_id`: (Optional) A string parameter that is the ID of a public IP prefixes which should be associated with the Load Balancer. Public IP prefix can only be used with outbound rules
-  - `frontend_ip_zones`: (Optional) A  set of strings that specifies a list of availability zones in which the IP address for this Load Balancer should be located.
+  - `frontend_private_ip_zones`: (Optional) A  set of strings that specifies a list of availability zones in which the private IP address for this Load Balancer should be located.
   - `tags`: (Optional) = A mapping of tags to assign to the individual public IP resource.
   - `create_public_ip_address`: (Optional) A boolean parameter to create a new public IP address resource for the Load Balancer
   - `new_public_ip_resource_group_name`: (Optional) A string for the name of the resource group to place the newly created public IP into. If null, will choose `location` from `public_ip_address_configuration` or `location` for the Load Balancer.
@@ -125,16 +125,16 @@ map(object({
     public_ip_address_resource_name                    = optional(string)
     public_ip_address_resource_id                      = optional(string)
     public_ip_prefix_resource_id                       = optional(string)
-    frontend_ip_zones                                  = optional(set(string))
-    tags                                               = optional(map(any), {})
-    create_public_ip_address                           = optional(bool, false)
-    new_public_ip_resource_group_name                  = optional(string)
-    new_public_ip_location                             = optional(string)
-    inherit_lock                                       = optional(bool, true)
-    lock_type_if_not_inherited                         = optional(string, "None")
-    inherit_tags                                       = optional(bool, true)
-    edge_zone                                          = optional(string)
-    zones                                              = optional(list(string))
+    # frontend_private_ip_zones                                  = optional(set(string), [1, 2, 3])
+    tags                              = optional(map(any), {})
+    create_public_ip_address          = optional(bool, false)
+    new_public_ip_resource_group_name = optional(string)
+    new_public_ip_location            = optional(string)
+    inherit_lock                      = optional(bool, true)
+    lock_type_if_not_inherited        = optional(string, "None")
+    inherit_tags                      = optional(bool, true)
+    edge_zone                         = optional(string)
+    zones                             = optional(list(string), ["1", "2", "3"])
 
     role_assignments = optional(map(object({
       role_definition_id_or_name             = string

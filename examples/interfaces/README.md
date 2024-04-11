@@ -76,7 +76,7 @@ module "loadbalancer" {
   source = "../../"
 
   # source = "Azure/avm-res-network-loadbalancer/azurerm"
-  # version = "0.1.7"
+  # version = "0.2.0"
 
   enable_telemetry = var.enable_telemetry
 
@@ -91,6 +91,8 @@ module "loadbalancer" {
 
       create_public_ip_address        = true
       public_ip_address_resource_name = module.naming.public_ip.name_unique
+      # zones = ["1", "2", "3"] # Zone-redundant
+      # zones = ["None"] # Non-zonal
       tags = {
         createdBy = "tf-infra-team"
       }
