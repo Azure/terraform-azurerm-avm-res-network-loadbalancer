@@ -131,7 +131,7 @@ map(object({
     new_public_ip_resource_group_name = optional(string)
     new_public_ip_location            = optional(string)
     inherit_lock                      = optional(bool, true)
-    lock_type_if_not_inherited        = optional(string, "None")
+    lock_type_if_not_inherited        = optional(string, null)
     inherit_tags                      = optional(bool, true)
     edge_zone                         = optional(string)
     zones                             = optional(list(string), ["1", "2", "3"])
@@ -347,7 +347,7 @@ map(object({
     log_categories                           = optional(set(string), [])
     log_groups                               = optional(set(string), ["allLogs"])
     metric_categories                        = optional(set(string), ["AllMetrics"])
-    log_analytics_destination_type           = optional(string, null)
+    log_analytics_destination_type           = optional(string, "Dedicated")
     workspace_resource_id                    = optional(string, null)
     storage_account_resource_id              = optional(string, null)
     event_hub_authorization_rule_resource_id = optional(string, null)
@@ -645,7 +645,7 @@ Default: `{}`
 Description:   An object that sets a lock for the Load Balancer.
 
   - `name`: The name of the lock
-  - `kind`: The type of lock to be created. Accepted values are `CanNotDelete`, `ReadOnly`, `None`. Defaults to None if kind is not set.
+  - `kind`: The type of lock to be created. Accepted values are `CanNotDelete` or `ReadOnly`. Defaults to None if kind is not set.
 
   ```terraform
   # Delete Lock for the Load Balancer
@@ -659,12 +659,12 @@ Type:
 
 ```hcl
 object({
+    kind = string
     name = optional(string, null)
-    kind = optional(string, "None")
   })
 ```
 
-Default: `{}`
+Default: `null`
 
 ### <a name="input_public_ip_address_configuration"></a> [public\_ip\_address\_configuration](#input\_public\_ip\_address\_configuration)
 
@@ -787,19 +787,11 @@ Default: `"Regional"`
 
 ### <a name="input_tags"></a> [tags](#input\_tags)
 
-Description:   A map of tags that will be applied to the Load Balancer.
+Description:   The tags to apply to the Load Balancer.
 
-  ```terraform
-  tags = {
-    key           = "value"
-    "another-key" = "another-value"
-    integers      = 123
-  }
-```
+Type: `map(string)`
 
-Type: `map(any)`
-
-Default: `{}`
+Default: `null`
 
 ## Outputs
 

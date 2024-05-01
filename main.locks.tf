@@ -1,9 +1,10 @@
 resource "azurerm_management_lock" "this" {
-  count = var.lock.kind != "None" ? 1 : 0
+  count = var.lock != null ? 1 : 0
 
   lock_level = var.lock.kind
   name       = coalesce(var.lock.name, "lock-${var.name}")
   scope      = azurerm_lb.this.id
+  notes      = var.lock.kind == "CanNotDelete" ? "Cannot delete the resource or its child resources." : "Cannot delete or modify the resource or its child resources."
 
   depends_on = [
     azurerm_lb.this,
@@ -20,7 +21,7 @@ resource "azurerm_management_lock" "this" {
 }
 
 resource "azurerm_management_lock" "pip" {
-  for_each = { for frontend, frontend_values in var.frontend_ip_configurations : frontend => frontend_values if frontend_values.create_public_ip_address && (frontend_values.lock_type_if_not_inherited != "None" || (frontend_values.inherit_lock && var.lock.kind != "None")) }
+  for_each = { for frontend, frontend_values in var.frontend_ip_configurations : frontend => frontend_values if frontend_values.create_public_ip_address && (frontend_values.lock_type_if_not_inherited != null || (frontend_values.inherit_lock && var.lock != null)) }
 
   lock_level = each.value.inherit_lock ? var.lock.kind : each.value.lock_type_if_not_inherited
   name       = "lock-${each.value.public_ip_address_resource_name}"

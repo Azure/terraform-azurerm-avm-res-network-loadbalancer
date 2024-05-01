@@ -218,7 +218,7 @@ module "standard_loadbalancer" {
   source = "../.."
 
   # source = "Azure/avm-res-network-loadbalancer/azurerm"
-  # version = 0.1.4
+  # version = 0.2.0
 
   enable_telemetry = var.enable_telemetry
 
@@ -242,11 +242,6 @@ module "standard_loadbalancer" {
       inherit_tags = true
 
     }
-
-  }
-
-  lock = {
-    kind = "None"
 
   }
 
