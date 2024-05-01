@@ -116,16 +116,16 @@ module "loadbalancer" {
     }
   }
 
-  lock = {
+  # lock = {
 
-    /*
-    kind = "ReadOnly"
-    */
+  #   /*
+  #   kind = "ReadOnly"
+  #   */
 
-    /*
-    kind = "CanNotDelete"
-    */
-  }
+  #   /*
+  #   kind = "CanNotDelete"
+  #   */
+  # }
 
   diagnostic_settings = {
     diagnostic_settings_1 = {

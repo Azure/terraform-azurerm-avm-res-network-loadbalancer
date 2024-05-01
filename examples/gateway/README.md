@@ -251,10 +251,6 @@ module "standard_loadbalancer" {
 
   }
 
-  lock = {
-
-  }
-
   tags = {
     environment = "dev-tf"
   }
