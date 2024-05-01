@@ -111,7 +111,6 @@ module "loadbalancer" {
   }
 
   lock = {
-    kind = "None"
 
     /*
     kind = "ReadOnly"
