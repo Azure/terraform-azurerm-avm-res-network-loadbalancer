@@ -21,7 +21,7 @@ resource "azurerm_management_lock" "this" {
 }
 
 resource "azurerm_management_lock" "pip" {
-  for_each = { for frontend, frontend_values in var.frontend_ip_configurations : frontend => frontend_values if frontend_values.create_public_ip_address && (frontend_values.lock_type_if_not_inherited != "None" || (frontend_values.inherit_lock && var.lock != null)) }
+  for_each = { for frontend, frontend_values in var.frontend_ip_configurations : frontend => frontend_values if frontend_values.create_public_ip_address && (frontend_values.lock_type_if_not_inherited != null || (frontend_values.inherit_lock && var.lock != null)) }
 
   lock_level = each.value.inherit_lock ? var.lock.kind : each.value.lock_type_if_not_inherited
   name       = "lock-${each.value.public_ip_address_resource_name}"

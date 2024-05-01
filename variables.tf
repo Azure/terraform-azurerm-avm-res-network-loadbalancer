@@ -15,7 +15,7 @@ variable "frontend_ip_configurations" {
     new_public_ip_resource_group_name = optional(string)
     new_public_ip_location            = optional(string)
     inherit_lock                      = optional(bool, true)
-    lock_type_if_not_inherited        = optional(string, "None")
+    lock_type_if_not_inherited        = optional(string, null)
     inherit_tags                      = optional(bool, true)
     edge_zone                         = optional(string)
     zones                             = optional(list(string), ["1", "2", "3"])
@@ -709,7 +709,7 @@ variable "lock" {
   An object that sets a lock for the Load Balancer.
 
   - `name`: The name of the lock
-  - `kind`: The type of lock to be created. Accepted values are `CanNotDelete`, `ReadOnly`, `None`. Defaults to None if kind is not set.
+  - `kind`: The type of lock to be created. Accepted values are `CanNotDelete` or `ReadOnly`. Defaults to None if kind is not set.
 
   ```terraform
   # Delete Lock for the Load Balancer
