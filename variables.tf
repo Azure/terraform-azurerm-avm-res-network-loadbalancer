@@ -268,7 +268,7 @@ variable "diagnostic_settings" {
     log_categories                           = optional(set(string), [])
     log_groups                               = optional(set(string), ["allLogs"])
     metric_categories                        = optional(set(string), ["AllMetrics"])
-    log_analytics_destination_type           = optional(string, null)
+    log_analytics_destination_type           = optional(string, "Dedicated")
     workspace_resource_id                    = optional(string, null)
     storage_account_resource_id              = optional(string, null)
     event_hub_authorization_rule_resource_id = optional(string, null)
@@ -311,10 +311,10 @@ variable "diagnostic_settings" {
   DESCRIPTION
   nullable    = false
 
-  # validation {
-  #   condition     = alltrue([for _, v in var.diagnostic_settings : contains(["Dedicated", "AzureDiagnostics"], v.log_analytics_destination_type)])
-  #   error_message = "Log analytics destination type must be one of: 'Dedicated', 'AzureDiagnostics'."
-  # }
+  validation {
+    condition     = alltrue([for _, v in var.diagnostic_settings : contains(["Dedicated", "AzureDiagnostics"], v.log_analytics_destination_type)])
+    error_message = "Log analytics destination type must be one of: 'Dedicated', 'AzureDiagnostics'."
+  }
   validation {
     condition = alltrue(
       [
@@ -701,12 +701,10 @@ variable "lb_rules" {
 
 variable "lock" {
   type = object({
+    kind = string
     name = optional(string, null)
-    kind = optional(string, "None")
   })
-  default = {
-
-  }
+  default     = null
   description = <<DESCRIPTION
   An object that sets a lock for the Load Balancer.
 
@@ -723,8 +721,8 @@ variable "lock" {
   DESCRIPTION
 
   validation {
-    condition     = contains(["CanNotDelete", "ReadOnly", "None"], var.lock.kind)
-    error_message = "Lock type must be one of: CanNotDelete, ReadOnly, None."
+    condition     = var.lock != null ? contains(["CanNotDelete", "ReadOnly"], var.lock.kind) : true
+    error_message = "Lock type must be one of: `CanNotDelete` or `ReadOnly`"
   }
 }
 
@@ -854,6 +852,7 @@ variable "role_assignments" {
   }
   ```
   DESCRIPTION
+  nullable    = false
 }
 
 variable "sku" {
@@ -888,19 +887,9 @@ variable "sku_tier" {
 }
 
 variable "tags" {
-  type = map(any)
-  default = {
-
-  }
+  type        = map(string)
+  default     = null
   description = <<DESCRIPTION
-  A map of tags that will be applied to the Load Balancer. 
-  
-  ```terraform
-  tags = {
-    key           = "value"
-    "another-key" = "another-value"
-    integers      = 123
-  }
-  ```
+  The tags to apply to the Load Balancer.
   DESCRIPTION
 }
