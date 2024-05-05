@@ -40,7 +40,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
   avmfix:
-    if: github.event.repository.name != 'terraform-azurerm-avm-template' && false
+    if: github.event.repository.name != 'terraform-azurerm-avm-template'
     name: avmfix
     runs-on: ubuntu-latest
     steps:
