@@ -121,6 +121,7 @@ module "loadbalancer" {
     }
   }
 
+  /*
   backend_address_pools = {
     pool1 = {
       name                        = "primaryPool"
@@ -128,6 +129,8 @@ module "loadbalancer" {
     }
 
   }
+  */
+  /*
 
   backend_address_pool_addresses = {
     address1 = {
@@ -143,6 +146,7 @@ module "loadbalancer" {
       virtual_network_resource_id      = azurerm_virtual_network.example.id
     }
   }
+  */
 
 }
 ```

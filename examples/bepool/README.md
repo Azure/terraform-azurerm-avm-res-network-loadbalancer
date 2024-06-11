@@ -113,6 +113,7 @@ module "loadbalancer" {
   backend_address_pool_configuration = azurerm_virtual_network.example.id
   */
 
+  /*
   # Backend Address Pool(s)
   backend_address_pools = {
     pool1 = {
@@ -124,7 +125,9 @@ module "loadbalancer" {
 
     }
   }
+  */
 
+  /*
   backend_address_pool_addresses = {
     address1 = {
       name                             = "${azurerm_network_interface.example_1.name}-ipconfig1" # must be unique if multiple addresses are used
@@ -133,7 +136,9 @@ module "loadbalancer" {
       virtual_network_resource_id      = azurerm_virtual_network.example.id
     }
   }
+  */
 
+  /*
   backend_address_pool_network_interfaces = {
     node1 = {
       backend_address_pool_object_name = "pool2"
@@ -142,6 +147,7 @@ module "loadbalancer" {
     }
 
   }
+  */
 
   # Health Probe(s)
   lb_probes = {
