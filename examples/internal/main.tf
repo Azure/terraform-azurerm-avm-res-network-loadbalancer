@@ -89,6 +89,7 @@ module "loadbalancer" {
     }
   }
 
+  /*
   # Virtual Network for Backend Address Pool(s)
   # backend_address_pool_configuration = azurerm_virtual_network.example.id
 
@@ -133,6 +134,7 @@ module "loadbalancer" {
       enable_tcp_reset        = true
     }
   }
+  */
 
 }
 
