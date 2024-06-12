@@ -106,13 +106,14 @@ module "loadbalancer" {
     }
   }
 
-  # /*
+  /*
   # Virtual Network for Backend Address Pool(s) if using backend addresses
   # Use if using only backend addresses via private IP
   # Leave empty if using network interfaces or mix of network interfaces and backend addresses
   backend_address_pool_configuration = azurerm_virtual_network.example.id
-  # */
+  
 
+  
   # Backend Address Pool(s)
   backend_address_pools = {
     pool1 = {
@@ -121,6 +122,7 @@ module "loadbalancer" {
     }
   }
 
+  
   backend_address_pool_addresses = {
     address1 = {
       name                             = "${azurerm_network_interface.example_1.name}-ipconfig1" # must be unique if multiple addresses are used
@@ -137,9 +139,11 @@ module "loadbalancer" {
     }
   }
 
+  
   backend_address_pool_network_interfaces = {
 
   }
+  
 
   # Health Probe(s)
   lb_probes = {
@@ -166,6 +170,7 @@ module "loadbalancer" {
       enable_tcp_reset        = true
     }
   }
+  */
 
   depends_on = [
     # To ensure that the backend address pool is created before the network interfaces' ip addresses are associated

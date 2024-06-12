@@ -35,7 +35,7 @@ variable "frontend_ip_configurations" {
       log_categories                           = optional(set(string), [])
       log_groups                               = optional(set(string), ["allLogs"])
       metric_categories                        = optional(set(string), ["AllMetrics"])
-      log_analytics_destination_type           = optional(string, null)
+      log_analytics_destination_type           = optional(string, "Dedicated")
       workspace_resource_id                    = optional(string, null)
       storage_account_resource_id              = optional(string, null)
       event_hub_authorization_rule_resource_id = optional(string, null)
@@ -819,6 +819,7 @@ variable "role_assignments" {
     condition                              = optional(string, null)
     condition_version                      = optional(string, null) # Valid values are 2.0
     delegated_managed_identity_resource_id = optional(string, null)
+    principal_type                         = optional(string, null)
   }))
   default = {
 
