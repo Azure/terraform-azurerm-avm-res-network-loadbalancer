@@ -67,7 +67,7 @@ module "loadbalancer" {
   source = "../../"
 
   # source = "Azure/avm-res-network-loadbalancer/azurerm"
-  # version = "0.2.1"
+  # version = "0.2.2"
 
   enable_telemetry = var.enable_telemetry
 
