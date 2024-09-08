@@ -39,7 +39,6 @@ resource "azurerm_lb_backend_address_pool" "this" {
       protocol   = tunnel_interface.value.protocol
       type       = tunnel_interface.value.type
     }
-
   }
 }
 
