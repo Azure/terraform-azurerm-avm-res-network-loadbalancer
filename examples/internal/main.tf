@@ -17,11 +17,6 @@ provider "azurerm" {
   }
 }
 
-provider "azurerm" {
-  features {
-  }
-}
-
 module "naming" {
   source  = "Azure/naming/azurerm"
   version = "0.3.0"
