@@ -4,28 +4,6 @@
 This deploys the module in its simplest form (Standard SKU Public Load Balancer).
 
 ```hcl
-# THIS IS CURRENTLY WORKING
-
-terraform {
-  required_version = "~> 1.5"
-  required_providers {
-    azurerm = {
-      source  = "hashicorp/azurerm"
-      version = "~> 3.7"
-    }
-    random = {
-      source  = "hashicorp/random"
-      version = "~> 3.5"
-    }
-  }
-}
-
-provider "azurerm" {
-  features {
-  }
-}
-
-
 module "naming" {
   source  = "Azure/naming/azurerm"
   version = "0.3.0"
@@ -47,23 +25,18 @@ resource "random_integer" "zone_index" {
   min = 1
 }
 
-# This is required for resource modules
-
-# Creates a resource group
-resource "azurerm_resource_group" "this" {
+resource "azurerm_resource_group" "example" {
   location = local.azure_regions[random_integer.region_index.result]
   name     = module.naming.resource_group.name_unique
 }
 
-# Creates a virtual network
 resource "azurerm_virtual_network" "example" {
   address_space       = ["10.1.0.0/16"]
-  location            = azurerm_resource_group.this.location
+  location            = azurerm_resource_group.example.location
   name                = module.naming.virtual_network.name_unique
-  resource_group_name = azurerm_resource_group.this.name
+  resource_group_name = azurerm_resource_group.example.name
 }
 
-# Creates a subnet
 resource "azurerm_subnet" "example" {
   address_prefixes     = ["10.1.1.0/26"]
   name                 = module.naming.subnet.name_unique
@@ -72,9 +45,9 @@ resource "azurerm_subnet" "example" {
 }
 
 resource "azurerm_network_interface" "example_1" {
-  location            = azurerm_resource_group.this.location
+  location            = azurerm_resource_group.example.location
   name                = "${module.naming.network_interface.name_unique}-1"
-  resource_group_name = azurerm_resource_group.this.name
+  resource_group_name = azurerm_resource_group.example.name
 
   ip_configuration {
     name                          = "ipconfig1"
@@ -84,9 +57,9 @@ resource "azurerm_network_interface" "example_1" {
 }
 
 resource "azurerm_network_interface" "example_2" {
-  location            = azurerm_resource_group.this.location
+  location            = azurerm_resource_group.example.location
   name                = "${module.naming.network_interface.name_unique}-2"
-  resource_group_name = azurerm_resource_group.this.name
+  resource_group_name = azurerm_resource_group.example.name
 
   ip_configuration {
     name                          = "ipconfig1"
@@ -105,8 +78,8 @@ module "loadbalancer" {
   enable_telemetry = var.enable_telemetry
 
   name                = "default-lb"
-  location            = azurerm_resource_group.this.location
-  resource_group_name = azurerm_resource_group.this.name
+  location            = azurerm_resource_group.example.location
+  resource_group_name = azurerm_resource_group.example.name
 
   # Internal 
   # Standard SKU 
@@ -156,9 +129,9 @@ module "loadbalancer" {
 
 The following requirements are needed by this module:
 
-- <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) (~> 1.5)
+- <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) (>= 1.7.0)
 
-- <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) (~> 3.7)
+- <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) (>= 3.70, < 4.0)
 
 - <a name="requirement_random"></a> [random](#requirement\_random) (~> 3.5)
 
@@ -168,7 +141,7 @@ The following resources are used by this module:
 
 - [azurerm_network_interface.example_1](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/network_interface) (resource)
 - [azurerm_network_interface.example_2](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/network_interface) (resource)
-- [azurerm_resource_group.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group) (resource)
+- [azurerm_resource_group.example](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group) (resource)
 - [azurerm_subnet.example](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/subnet) (resource)
 - [azurerm_virtual_network.example](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network) (resource)
 - [random_integer.region_index](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/integer) (resource)

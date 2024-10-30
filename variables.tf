@@ -863,6 +863,8 @@ variable "sku" {
   The SKU of the Azure Load Balancer. 
   Accepted values are `Basic`, `Standard`, and `Gateway`.
   Microsoft recommends `Standard` for production workloads.
+  `Basic` SKU is set to be retired 30 September 2025
+  > The `Microsoft.Network/AllowGatewayLoadBalancer` feature is required to be registered in order to use the `Gateway` SKU. The feature can only be registered by the Azure service team, please submit an Azure support ticket for that.
   DESCRIPTION
 
   validation {

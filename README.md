@@ -8,9 +8,9 @@ Module to deploy load balancers in Azure.
 
 The following requirements are needed by this module:
 
-- <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) (>= 1.5.2)
+- <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) (>= 1.7.0)
 
-- <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) (>= 3.71.0)
+- <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) (>= 3.71.0, < 5.0.0)
 
 - <a name="requirement_modtm"></a> [modtm](#requirement\_modtm) (~> 0.3)
 
@@ -766,6 +766,8 @@ Default: `{}`
 Description:   The SKU of the Azure Load Balancer.   
   Accepted values are `Basic`, `Standard`, and `Gateway`.  
   Microsoft recommends `Standard` for production workloads.
+  `Basic` SKU is set to be retired 30 September 2025
+  > The `Microsoft.Network/AllowGatewayLoadBalancer` feature is required to be registered in order to use the `Gateway` SKU. The feature can only be registered by the Azure service team, please submit an Azure support ticket for that.
 
 Type: `string`
 
