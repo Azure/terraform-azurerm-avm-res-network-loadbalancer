@@ -3,15 +3,16 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = ">= 3.71.0, < 5.0.0"
-    }
-    modtm = {
-      source  = "azure/modtm"
-      version = "~> 0.3"
+      version = ">= 3.70, < 4.0"
     }
     random = {
       source  = "hashicorp/random"
-      version = ">= 3.5.0"
+      version = "~> 3.5"
     }
+  }
+}
+
+provider "azurerm" {
+  features {
   }
 }

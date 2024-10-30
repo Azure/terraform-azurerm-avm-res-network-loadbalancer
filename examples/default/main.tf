@@ -1,25 +1,3 @@
-# THIS IS CURRENTLY WORKING
-
-terraform {
-  required_version = ">= 1.7.0"
-  required_providers {
-    azurerm = {
-      source  = "hashicorp/azurerm"
-      version = "~> 4.0"
-    }
-    random = {
-      source  = "hashicorp/random"
-      version = "~> 3.5"
-    }
-  }
-}
-
-provider "azurerm" {
-  features {
-  }
-}
-
-
 module "naming" {
   source  = "Azure/naming/azurerm"
   version = "0.3.0"
@@ -41,23 +19,18 @@ resource "random_integer" "zone_index" {
   min = 1
 }
 
-# This is required for resource modules
-
-# Creates a resource group
-resource "azurerm_resource_group" "this" {
+resource "azurerm_resource_group" "example" {
   location = local.azure_regions[random_integer.region_index.result]
   name     = module.naming.resource_group.name_unique
 }
 
-# Creates a virtual network
 resource "azurerm_virtual_network" "example" {
   address_space       = ["10.1.0.0/16"]
-  location            = azurerm_resource_group.this.location
+  location            = azurerm_resource_group.example.location
   name                = module.naming.virtual_network.name_unique
-  resource_group_name = azurerm_resource_group.this.name
+  resource_group_name = azurerm_resource_group.example.name
 }
 
-# Creates a subnet
 resource "azurerm_subnet" "example" {
   address_prefixes     = ["10.1.1.0/26"]
   name                 = module.naming.subnet.name_unique
@@ -66,9 +39,9 @@ resource "azurerm_subnet" "example" {
 }
 
 resource "azurerm_network_interface" "example_1" {
-  location            = azurerm_resource_group.this.location
+  location            = azurerm_resource_group.example.location
   name                = "${module.naming.network_interface.name_unique}-1"
-  resource_group_name = azurerm_resource_group.this.name
+  resource_group_name = azurerm_resource_group.example.name
 
   ip_configuration {
     name                          = "ipconfig1"
@@ -78,9 +51,9 @@ resource "azurerm_network_interface" "example_1" {
 }
 
 resource "azurerm_network_interface" "example_2" {
-  location            = azurerm_resource_group.this.location
+  location            = azurerm_resource_group.example.location
   name                = "${module.naming.network_interface.name_unique}-2"
-  resource_group_name = azurerm_resource_group.this.name
+  resource_group_name = azurerm_resource_group.example.name
 
   ip_configuration {
     name                          = "ipconfig1"
@@ -99,8 +72,8 @@ module "loadbalancer" {
   enable_telemetry = var.enable_telemetry
 
   name                = "default-lb"
-  location            = azurerm_resource_group.this.location
-  resource_group_name = azurerm_resource_group.this.name
+  location            = azurerm_resource_group.example.location
+  resource_group_name = azurerm_resource_group.example.name
 
   # Internal 
   # Standard SKU 

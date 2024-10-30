@@ -5,11 +5,11 @@ This deploys the module in its simplest form (Standard SKU Public Load Balancer)
 
 ```hcl
 terraform {
-  required_version = "~> 1.5"
+  required_version = ">= 1.7.0"
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "~> 3.7"
+      version = ">= 3.70, < 4.0"
     }
     random = {
       source  = "hashicorp/random"
@@ -152,9 +152,9 @@ module "loadbalancer" {
 
 The following requirements are needed by this module:
 
-- <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) (~> 1.5)
+- <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) (>= 1.7.0)
 
-- <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) (~> 3.7)
+- <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) (>= 3.70, < 4.0)
 
 - <a name="requirement_random"></a> [random](#requirement\_random) (~> 3.5)
 
