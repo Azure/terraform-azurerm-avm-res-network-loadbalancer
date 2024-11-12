@@ -688,8 +688,8 @@ variable "lb_rules" {
   validation {
     condition = length([for obj in var.lb_rules :
       true
-    if obj.idle_timeout_in_minutes >= 4 && obj.idle_timeout_in_minutes <= 30]) == length(var.lb_rules)
-    error_message = "The value for `idle_timeout_in_minutes` must be between 4 and 30"
+    if obj.idle_timeout_in_minutes >= 4 && obj.idle_timeout_in_minutes <= 100]) == length(var.lb_rules)
+    error_message = "The value for `idle_timeout_in_minutes` must be between 4 and 100"
   }
   validation {
     condition = length([for obj in var.lb_rules :
