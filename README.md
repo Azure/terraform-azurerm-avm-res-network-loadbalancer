@@ -387,7 +387,7 @@ Description:   A map of objects that define the inbound NAT rules for a Load Bal
 
   - `name`: (Optional) The name of the Load Balancer rule. Changing this forces a new resource to be created.
   - `frontend_ip_configuration_name`: (Optional) The name of the frontend IP configuration to which the rule is associated with
-  - `protocol`: (Optional) The transport protocol for the external endpoint. Possible values are All, Tcp, or Udp.
+  - `protocol`: (Optional) The transport protocol for the external endpoint. Possible values are All, Tcp, or Udp. To enable High availability ports feature, set protocol = "All", frontend_port = 0 and backend_port = 0. 
   - `frontend_port_start`: (Optional) The first port number in the range of external ports that will be used to provide Inbound NAT to NICs associated with this Load Balancer. Possible values range between 1 and 65534, inclusive.
   - `frontend_port_end`: (Optional) The last port number in the range of external ports that will be used to provide Inbound NAT to NICs associated with this Load Balancer. Possible values range between 1 and 65534, inclusive.
   - `backend_port`: (Optional) The port used for the internal endpoint. Possible values range between 1 and 65535, inclusive.
