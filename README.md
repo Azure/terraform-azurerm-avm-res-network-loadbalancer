@@ -387,7 +387,7 @@ Description:   A map of objects that define the inbound NAT rules for a Load Bal
 
   - `name`: (Optional) The name of the Load Balancer rule. Changing this forces a new resource to be created.
   - `frontend_ip_configuration_name`: (Optional) The name of the frontend IP configuration to which the rule is associated with
-  - `protocol`: (Optional) The transport protocol for the external endpoint. Possible values are All, Tcp, or Udp. To enable High availability ports feature, set protocol = "All", frontend_port = 0 and backend_port = 0. 
+  - `protocol`: (Optional) The transport protocol for the external endpoint. Possible values are All, Tcp, or Udp.
   - `frontend_port_start`: (Optional) The first port number in the range of external ports that will be used to provide Inbound NAT to NICs associated with this Load Balancer. Possible values range between 1 and 65534, inclusive.
   - `frontend_port_end`: (Optional) The last port number in the range of external ports that will be used to provide Inbound NAT to NICs associated with this Load Balancer. Possible values range between 1 and 65534, inclusive.
   - `backend_port`: (Optional) The port used for the internal endpoint. Possible values range between 1 and 65535, inclusive.
@@ -583,7 +583,7 @@ Description:   A list of objects that specifies the Load Balancer rules for the 
 
   - `name`: (Optional) The name of the Load Balancer rule. Changing this forces a new resource to be created.
   - `frontend_ip_configuration_name`: (Optional) The name of the frontend IP configuration to which the rule is associated with
-  - `protocol`: (Optional) The transport protocol for the external endpoint. Possible values are All, Tcp, or Udp.
+  - `protocol`: (Optional) The transport protocol for the external endpoint. Possible values are `All`, `Tcp`, or `Udp`. To enable the High availability ports feature, set `protocol = "All"`, `frontend_port = 0` and `backend_port = 0`.
   - `frontend_port`: (Optional) The port for the external endpoint. Port numbers for each Rule must be unique within the Load Balancer. Possible values range between 0 and 65534, inclusive.
   - `backend_port`: (Optional) The port used for internal connections on the endpoint. Possible values range between 0 and 65535, inclusive.
   - `backend_address_pool_resource_ids`: (Optional) A list of IDs that reference to a Backend Address Pool over which this Load Balancing Rule operates. Multiple backend pools only valid if Gateway SKU
