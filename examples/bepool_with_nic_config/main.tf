@@ -77,17 +77,7 @@ resource "azurerm_network_interface" "example_2" {
 }
 
 module "loadbalancer" {
-
   source = "../../"
-
-  # source = "Azure/avm-res-network-loadbalancer/azurerm"
-  # version = "0.2.2"
-
-  enable_telemetry = var.enable_telemetry
-
-  name                = "default-lb"
-  location            = azurerm_resource_group.this.location
-  resource_group_name = azurerm_resource_group.this.name
 
   frontend_ip_configurations = {
     frontend_configuration_1 = {
@@ -99,79 +89,8 @@ module "loadbalancer" {
       # zones = ["None"] # Non-zonal
     }
   }
-
-  /*
-  # Virtual Network for Backend Address Pool(s) if using backend addresses
-  # Leave empty if using network interfaces
-  # backend_address_pool_configuration = azurerm_virtual_network.example.id
-
-  # Backend Address Pool(s)
-  
-  backend_address_pools = {
-    pool1 = {
-      name = "myBackendPool"
-    }
-  }
-
-  
-  backend_address_pool_network_interfaces = {
-    node1 = {
-      backend_address_pool_object_name = "pool1"
-      ip_configuration_name            = "ipconfig1"
-      network_interface_resource_id    = azurerm_network_interface.example_1.id
-    }
-    node2 = {
-      backend_address_pool_object_name = "pool1"
-      ip_configuration_name            = "ipconfig1"
-      network_interface_resource_id    = azurerm_network_interface.example_2.id
-    }
-  }
-  
-  
-  backend_address_pool_addresses = {
-    # address1 = {
-    #   name = "${azurerm_network_interface.example.name}-ipconfig1" # must be unique if multiple addresses are used
-    #   backend_address_pool_object_name = "pool1"
-    #   ip_address = azurerm_network_interface.example_1.private_ip_address
-    # }
-    # address2 = {
-    #   name = "${azurerm_network_interface.example_2.name}-ipconfig1" # must be unique if multiple addresses are used
-    #   backend_address_pool_object_name = "pool1"
-    #   ip_address = azurerm_network_interface.example_2.private_ip_address
-    # }
-  }
-  
-
-  # Health Probe(s)
-  lb_probes = {
-    tcp1 = {
-      name     = "myHealthProbe"
-      protocol = "Tcp"
-    }
-  }
-
-  # Load Balaner rule(s)
-  lb_rules = {
-    http1 = {
-      name                           = "myHTTPRule"
-      frontend_ip_configuration_name = "myFrontend"
-
-      backend_address_pool_object_names = ["pool1"]
-      protocol                          = "Tcp"
-      frontend_port                     = 80
-      backend_port                      = 80
-
-      probe_object_name = "tcp1"
-
-      idle_timeout_in_minutes = 15
-      enable_tcp_reset        = true
-    }
-  }
-  */
-
-  # depends_on = [ 
-  #   azurerm_network_interface.example_1, 
-  #   azurerm_network_interface.example_2 
-  # ]
-
+  location            = azurerm_resource_group.this.location
+  name                = "default-lb"
+  resource_group_name = azurerm_resource_group.this.name
+  enable_telemetry    = var.enable_telemetry
 }

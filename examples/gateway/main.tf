@@ -136,20 +136,6 @@ resource "azurerm_network_security_rule" "example_outbound" {
 module "gateway_loadbalancer" {
   source = "../.."
 
-  # source = "Azure/avm-res-network-loadbalancer/azurerm"
-  # version = "0.2.2"
-
-  enable_telemetry = var.enable_telemetry
-
-  name                = "gateway-lb"
-  location            = azurerm_resource_group.example.location
-  resource_group_name = azurerm_resource_group.example.name
-
-  sku      = "Gateway"
-  sku_tier = "Regional"
-
-  frontend_subnet_resource_id = azurerm_subnet.example.id
-
   frontend_ip_configurations = {
     frontend_configuration_1 = {
       name                                   = "gatewayFrontend-IP"
@@ -160,7 +146,10 @@ module "gateway_loadbalancer" {
 
     }
   }
-
+  location                           = azurerm_resource_group.example.location
+  name                               = "gateway-lb"
+  resource_group_name                = azurerm_resource_group.example.name
+  backend_address_pool_configuration = azurerm_virtual_network.example.id
   backend_address_pools = {
     pool_1 = {
       name = "lb-backend-pool"
@@ -180,9 +169,8 @@ module "gateway_loadbalancer" {
       }
     }
   }
-
-  backend_address_pool_configuration = azurerm_virtual_network.example.id
-
+  enable_telemetry            = var.enable_telemetry
+  frontend_subnet_resource_id = azurerm_subnet.example.id
   # Health Probe(s)
   lb_probes = {
     probe_1 = {
@@ -190,7 +178,6 @@ module "gateway_loadbalancer" {
       protocol = "Tcp"
     }
   }
-
   lb_rules = {
     rule_1 = {
       name                           = "lb-rule"
@@ -207,20 +194,12 @@ module "gateway_loadbalancer" {
       enable_tcp_reset        = false
     }
   }
-
+  sku      = "Gateway"
+  sku_tier = "Regional"
 }
 
 module "standard_loadbalancer" {
   source = "../.."
-
-  # source = "Azure/avm-res-network-loadbalancer/azurerm"
-  # version = 0.2.2
-
-  enable_telemetry = var.enable_telemetry
-
-  name                = "standard-lb"
-  location            = azurerm_resource_group.example.location
-  resource_group_name = azurerm_resource_group.example.name
 
   frontend_ip_configurations = {
     frontend_configuration_1 = {
@@ -240,11 +219,13 @@ module "standard_loadbalancer" {
     }
 
   }
-
+  location            = azurerm_resource_group.example.location
+  name                = "standard-lb"
+  resource_group_name = azurerm_resource_group.example.name
+  enable_telemetry    = var.enable_telemetry
   tags = {
     environment = "dev-tf"
   }
-
 }
 
 # # /*
