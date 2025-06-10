@@ -77,17 +77,7 @@ resource "azurerm_network_interface" "example_2" {
 }
 
 module "loadbalancer" {
-
   source = "../../"
-
-  # source = "Azure/avm-res-network-loadbalancer/azurerm"
-  # version = "0.2.2"
-
-  enable_telemetry = var.enable_telemetry
-
-  name                = "bepool-lb"
-  location            = azurerm_resource_group.this.location
-  resource_group_name = azurerm_resource_group.this.name
 
   frontend_ip_configurations = {
     frontend_configuration_1 = {
@@ -99,95 +89,14 @@ module "loadbalancer" {
       # zones = ["None"] # Non-zonal
     }
   }
-
-  /*
-  # Virtual Network for Backend Address Pool(s) if using backend addresses
-  # Use if using only backend addresses via private IPs in all pools
-  # Leave empty if using backend pools with network interfaces or backend pools with a mix of network interfaces and backend addresses
-  backend_address_pool_configuration = azurerm_virtual_network.example.id
-
-
-  
-  # Backend Address Pool(s)
-  backend_address_pools = {
-    pool1 = {
-      name                        = "primaryPool"
-      virtual_network_resource_id = azurerm_virtual_network.example.id # set a virtual_network_resource_id if using backend_address_pool_addresses
-    }
-    pool2 = {
-      name = "secondaryPool"
-
-    }
-  }
-  
-
-  
-  backend_address_pool_addresses = {
-    address1 = {
-      name                             = "${azurerm_network_interface.example_1.name}-ipconfig1" # must be unique if multiple addresses are used
-      backend_address_pool_object_name = "pool1"
-      ip_address                       = azurerm_network_interface.example_1.private_ip_address
-      virtual_network_resource_id      = azurerm_virtual_network.example.id
-    }
-  }
-  
-
-  
-  backend_address_pool_network_interfaces = {
-    node1 = {
-      backend_address_pool_object_name = "pool2"
-      ip_configuration_name            = "ipconfig1"
-      network_interface_resource_id    = azurerm_network_interface.example_2.id
-    }
-
-  }
-  
-
-  # Health Probe(s)
-  lb_probes = {
-    tcp1 = {
-      name     = "myHealthProbe"
-      protocol = "Tcp"
-    }
-  }
-
-  # Load Balaner rule(s)
-  lb_rules = {
-    http1 = {
-      name                           = "primaryRule"
-      frontend_ip_configuration_name = "myFrontend"
-
-      backend_address_pool_object_names = ["pool1"]
-      protocol                          = "Tcp"
-      frontend_port                     = 80
-      backend_port                      = 80
-
-      probe_object_name = "tcp1"
-
-      idle_timeout_in_minutes = 15
-      enable_tcp_reset        = true
-    }
-    http2 = {
-      name                           = "secondaryRule"
-      frontend_ip_configuration_name = "myFrontend"
-
-      backend_address_pool_object_names = ["pool2"]
-      protocol                          = "Tcp"
-      frontend_port                     = 81
-      backend_port                      = 81
-
-      probe_object_name = "tcp1"
-
-      idle_timeout_in_minutes = 15
-      enable_tcp_reset        = true
-    }
-  }
-  */
+  location            = azurerm_resource_group.this.location
+  name                = "bepool-lb"
+  resource_group_name = azurerm_resource_group.this.name
+  enable_telemetry    = var.enable_telemetry
 
   depends_on = [
     # To ensure that the backend address pool is created before the network interfaces' ip addresses are associated
     azurerm_network_interface.example_1,
     azurerm_network_interface.example_2
   ]
-
 }

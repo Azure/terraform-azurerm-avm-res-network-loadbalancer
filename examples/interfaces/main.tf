@@ -66,18 +66,7 @@ data "azurerm_role_definition" "example" {
 
 
 module "loadbalancer" {
-
   source = "../../"
-
-  # source = "Azure/avm-res-network-loadbalancer/azurerm"
-  # version = "0.2.2"
-
-  enable_telemetry = var.enable_telemetry
-
-  name                = "interfaces-lb"
-  location            = azurerm_resource_group.example.location
-  resource_group_name = azurerm_resource_group.example.name
-
 
   frontend_ip_configurations = {
     frontend_configuration_1 = {
@@ -109,32 +98,22 @@ module "loadbalancer" {
       }
     }
   }
-
-  # lock = {
-
-  #   /*
-  #   kind = "ReadOnly"
-  #   */
-
-  #   /*
-  #   kind = "CanNotDelete"
-  #   */
-  # }
-
+  location            = azurerm_resource_group.example.location
+  name                = "interfaces-lb"
+  resource_group_name = azurerm_resource_group.example.name
   diagnostic_settings = {
     diagnostic_settings_1 = {
       name                  = "diag_settings_1"
       workspace_resource_id = azurerm_log_analytics_workspace.example.id
     }
   }
-
+  enable_telemetry = var.enable_telemetry
   role_assignments = {
     role_assignment_1 = {
       role_definition_id_or_name = data.azurerm_role_definition.example.name
       principal_id               = data.azurerm_client_config.this.object_id
     }
   }
-
   tags = {
     environment = "dev-tf"
   }

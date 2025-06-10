@@ -503,7 +503,7 @@ variable "lb_outbound_rules" {
   A map of objects that define the outbound rules for a Load Balancer. Each object is identified by a unique key in the map and has the following properties:
   
   - `name`: (Optional) The name of the Load Balancer rule. Changing this forces a new resource to be created.
-  - `frontend_ip_configuration_name`: (Optional) The list of names of the frontend IP configuration to which the rule is associated with
+  - `frontend_ip_configurations`: (Optional) The list of names of the frontend IP configuration to which the rule is associated with
   - `backend_address_pool_resource_id`: (Optional) An ID that references a Backend Address Pool over which this Load Balancing Rule operates. Multiple backend pools only valid if Gateway SKU
   - `backend_address_pool_object_name`: (Optional) A name that references a Backend Address Pool over which this Load Balancing Rule operates. Multiple backend pools only valid if Gateway SKU
   - `protocol`: (Optional) The transport protocol for the external endpoint. Possible values are All, Tcp, or Udp.

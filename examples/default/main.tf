@@ -63,17 +63,7 @@ resource "azurerm_network_interface" "example_2" {
 }
 
 module "loadbalancer" {
-
   source = "../../"
-
-  # source = "Azure/avm-res-network-loadbalancer/azurerm"
-  # version = "0.2.2"
-
-  enable_telemetry = var.enable_telemetry
-
-  name                = "default-lb"
-  location            = azurerm_resource_group.example.location
-  resource_group_name = azurerm_resource_group.example.name
 
   # Internal 
   # Standard SKU 
@@ -87,32 +77,8 @@ module "loadbalancer" {
       # zones = ["None"] # Non-zonal
     }
   }
-
-  /*
-  backend_address_pools = {
-    pool1 = {
-      name                        = "primaryPool"
-      virtual_network_resource_id = azurerm_virtual_network.example.id # set a virtual_network_resource_id if using backend_address_pool_addresses
-    }
-
-  }
-  */
-  /*
-
-  backend_address_pool_addresses = {
-    address1 = {
-      name                             = "${azurerm_network_interface.example_1.name}-ipconfig1" # must be unique if multiple addresses are used
-      backend_address_pool_object_name = "pool1"
-      ip_address                       = azurerm_network_interface.example_1.private_ip_address
-      virtual_network_resource_id      = azurerm_virtual_network.example.id
-    }
-    address2 = {
-      name                             = "${azurerm_network_interface.example_2.name}-ipconfig1" # must be unique if multiple addresses are used
-      backend_address_pool_object_name = "pool1"
-      ip_address                       = azurerm_network_interface.example_2.private_ip_address
-      virtual_network_resource_id      = azurerm_virtual_network.example.id
-    }
-  }
-  */
-
+  location            = azurerm_resource_group.example.location
+  name                = "default-lb"
+  resource_group_name = azurerm_resource_group.example.name
+  enable_telemetry    = var.enable_telemetry
 }
