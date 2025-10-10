@@ -51,7 +51,7 @@ The following input variables are required:
 
 ### <a name="input_frontend_ip_configurations"></a> [frontend\_ip\_configurations](#input\_frontend\_ip\_configurations)
 
-Description:   A map of objects that builds frontend ip configurations for the load balancer.   
+Description:   A map of objects that builds frontend ip configurations for the load balancer.  
   You need at least one frontend ip configuration to deploy a load balancer.
 
   - `name`: (Optional) The name of the frontend IP configuration. Changing this forces a new resource to be created
@@ -766,10 +766,10 @@ Default: `{}`
 
 ### <a name="input_sku"></a> [sku](#input\_sku)
 
-Description:   The SKU of the Azure Load Balancer.   
-  Accepted values are `Basic`, `Standard`, and `Gateway`.  
+Description:   The SKU of the Azure Load Balancer.  
+  Accepted values are `Standard` and `Gateway`.  
   Microsoft recommends `Standard` for production workloads.
-  `Basic` SKU is set to be retired 30 September 2025
+  `Basic` SKU Load Balancer was retired 30 September 2025.
   > The `Microsoft.Network/AllowGatewayLoadBalancer` feature is required to be registered in order to use the `Gateway` SKU. The feature can only be registered by the Azure service team, please submit an Azure support ticket for that.
 
 Type: `string`
@@ -778,9 +778,9 @@ Default: `"Standard"`
 
 ### <a name="input_sku_tier"></a> [sku\_tier](#input\_sku\_tier)
 
-Description:   String parameter that specifies the SKU tier of this Load Balancer.   
-  Possible values are `Global` and `Regional`.   
-  Defaults to `Regional`.   
+Description:   String parameter that specifies the SKU tier of this Load Balancer.  
+  Possible values are `Global` and `Regional`.  
+  Defaults to `Regional`.  
   Changing this forces a new resource to be created.
 
 Type: `string`
