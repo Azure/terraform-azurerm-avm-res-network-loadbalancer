@@ -44,13 +44,13 @@ variable "frontend_ip_configurations" {
     })), {})
   }))
   description = <<DESCRIPTION
-  A map of objects that builds frontend ip configurations for the load balancer. 
+  A map of objects that builds frontend ip configurations for the load balancer.
   You need at least one frontend ip configuration to deploy a load balancer.
 
   - `name`: (Optional) The name of the frontend IP configuration. Changing this forces a new resource to be created
   - `frontend_private_ip_address`: (Optional) A string parameter that is the private IP address to assign to the Load Balancer. The last one and first four IPs in any range are reserved and cannot be manually assigned.
   - `frontend_private_ip_address_version`: (Optional) A string parameter that is the version of IP that the private IP address is. Possible values are IPv4 or IPv6
-  - `frontend_private_ip_address_allocation`: (Optional) A string parameter that is the allocation method for the private IP address used by this Load Balancer. Possible values include `Dynamic` or `Static`. If value is set to `Static`, then user must provide `frontend_private_ip_address` as parameter. 
+  - `frontend_private_ip_address_allocation`: (Optional) A string parameter that is the allocation method for the private IP address used by this Load Balancer. Possible values include `Dynamic` or `Static`. If value is set to `Static`, then user must provide `frontend_private_ip_address` as parameter.
   - `frontend_private_ip_subnet_resource_id`: (Optional) A string parameter that is the ID of the subnet which should be associated with the IP configuration. If desired to use the same subnet for each frontend ip configuration, use frontend_subnet_resource_id, or use frontend_vnet_name and frontend_subnet_name. If for public ip configuration, leave parameter empty/null.
   - `public_ip_address_resource_name`: (Optional) A string parameter that is the name of the public ip address to be created AND associated with the Load Balancer. Changing this forces a new Public IP to be created.
   - `public_ip_address_resource_id`: (Optional) A string parameter that is the ID of a public ip address which should associated with the Load Balancer.
@@ -383,7 +383,7 @@ variable "lb_nat_pools" {
   - `idle_timeout_in_minutes`: (Optional) Specifies the idle timeout in minutes for TCP connections. Valid values are between 4 and 30 minutes. Defaults to 4 minutes.
   - `enable_floating_ip`: (Optional) A boolean parameter to determine if there are floating IPs enabled for this Load Balancer NAT rule. A "floating” IP is reassigned to a secondary server in case the primary server fails. Required to configure a SQL AlwaysOn Availability Group. Defaults to false.
   - `enable_tcp_reset`: (Optional) A boolean to determine if TCP Reset is enabled for this Load Balancer rule. Defaults to false.
-  
+
   ```terraform
   lb_nat_pools = {
     lb_nat_pool_1 = {
@@ -455,8 +455,8 @@ variable "lb_nat_rules" {
     error_message = "The accepted values for `protocol` are Udp, Tcp, or All"
   }
   # validation {
-  #   condition = length([for obj in var.lb_nat_rules : 
-  #   true 
+  #   condition = length([for obj in var.lb_nat_rules :
+  #   true
   #   if (obj.frontend_port == null && obj.protocol == "All") || (obj.frontend_port >= 1 && obj.frontend_port <= 65534)]) == length(var.lb_nat_rules)
   #   error_message = "The value for `frontend_port` must be between 1 and 65534 if protocol not set to All"
   # }
@@ -467,14 +467,14 @@ variable "lb_nat_rules" {
     error_message = "The value for `backend_port` must be between 1 65535 if protocol not set to All"
   }
   # validation {
-  #   condition = length([for obj in var.lb_nat_rules : 
-  #   true 
+  #   condition = length([for obj in var.lb_nat_rules :
+  #   true
   #   if obj.frontend_port_start == null || (obj.frontend_port_start >= 1 && obj.frontend_port_start <= 65534)]) == length(var.lb_nat_rules)
   #   error_message = "The value for `frontend_port_start` must be between 1 and 65534"
   # }
   # validation {
-  #   condition = length([for obj in var.lb_nat_rules : 
-  #   true 
+  #   condition = length([for obj in var.lb_nat_rules :
+  #   true
   #   if obj.frontend_port_end == null || (obj.frontend_port_end >= 1 && obj.frontend_port_end <= 65534)]) == length(var.lb_nat_rules)
   #   error_message = "The value for `frontend_port_end` must be between 1 and 65534"
   # }
@@ -502,16 +502,16 @@ variable "lb_outbound_rules" {
   }
   description = <<DESCRIPTION
   A map of objects that define the outbound rules for a Load Balancer. Each object is identified by a unique key in the map and has the following properties:
-  
+
   - `name`: (Optional) The name of the Load Balancer rule. Changing this forces a new resource to be created.
   - `frontend_ip_configurations`: (Optional) The list of names of the frontend IP configuration to which the rule is associated with
   - `backend_address_pool_resource_id`: (Optional) An ID that references a Backend Address Pool over which this Load Balancing Rule operates. Multiple backend pools only valid if Gateway SKU
   - `backend_address_pool_object_name`: (Optional) A name that references a Backend Address Pool over which this Load Balancing Rule operates. Multiple backend pools only valid if Gateway SKU
   - `protocol`: (Optional) The transport protocol for the external endpoint. Possible values are All, Tcp, or Udp.
   - `enable_tcp_reset`: A boolean to determine if TCP Reset is enabled for this Load Balancer rule. Defaults to false.
-  - `number_of_allocated_outbound_ports`: (Optional) 
+  - `number_of_allocated_outbound_ports`: (Optional)
   - `idle_timeout_in_minutes`: Specifies the idle timeout in minutes for TCP connections. Valid values are between 4 and 30 minutes. Defaults to 4 minutes.
-  
+
   ```terraform
   lb_outbound_rules = {
     lb_outbound_rule_1 = {
@@ -554,7 +554,7 @@ variable "lb_probes" {
 
   ```terraform
   # Each type of probe
-  lb_probes = { 
+  lb_probes = {
     probe1 = {
       name     = "probe_1"
       protocol = "Tcp"
@@ -861,16 +861,16 @@ variable "sku" {
   type        = string
   default     = "Standard"
   description = <<DESCRIPTION
-  The SKU of the Azure Load Balancer. 
-  Accepted values are `Basic`, `Standard`, and `Gateway`.
+  The SKU of the Azure Load Balancer.
+  Accepted values are `Standard` and `Gateway`.
   Microsoft recommends `Standard` for production workloads.
-  `Basic` SKU is set to be retired 30 September 2025
+  `Basic` SKU Load Balancer was retired 30 September 2025.
   > The `Microsoft.Network/AllowGatewayLoadBalancer` feature is required to be registered in order to use the `Gateway` SKU. The feature can only be registered by the Azure service team, please submit an Azure support ticket for that.
   DESCRIPTION
 
   validation {
-    condition     = contains(["Basic", "Gateway", "Standard"], var.sku)
-    error_message = "The acceptable values for `sku` are `Basic`, `Gateway`, or `Standard`"
+    condition     = contains(["Standard", "Gateway"], var.sku)
+    error_message = "The acceptable values for `sku` are: `Standard` and `Gateway`"
   }
 }
 
@@ -878,9 +878,9 @@ variable "sku_tier" {
   type        = string
   default     = "Regional"
   description = <<DESCRIPTION
-  String parameter that specifies the SKU tier of this Load Balancer. 
-  Possible values are `Global` and `Regional`. 
-  Defaults to `Regional`. 
+  String parameter that specifies the SKU tier of this Load Balancer.
+  Possible values are `Global` and `Regional`.
+  Defaults to `Regional`.
   Changing this forces a new resource to be created.
   DESCRIPTION
 
