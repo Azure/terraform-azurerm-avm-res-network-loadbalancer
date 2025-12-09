@@ -5,7 +5,7 @@ module "naming" {
 
 module "regions" {
   source  = "Azure/regions/azurerm"
-  version = ">= 0.4.0"
+  version = "0.8.2"
 }
 
 # Helps pick a random region from the list of regions.
@@ -65,9 +65,9 @@ resource "azurerm_network_interface" "example_2" {
 module "loadbalancer" {
   source = "../../"
 
-  # Internal 
-  # Standard SKU 
-  # Regional 
+  # Internal
+  # Standard SKU
+  # Regional
   # Zone-redundant
   frontend_ip_configurations = {
     frontend_configuration_1 = {
