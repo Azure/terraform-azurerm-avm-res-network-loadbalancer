@@ -51,7 +51,7 @@ The following input variables are required:
 
 ### <a name="input_frontend_ip_configurations"></a> [frontend\_ip\_configurations](#input\_frontend\_ip\_configurations)
 
-Description:   A map of objects that builds frontend ip configurations for the load balancer.   
+Description:   A map of objects that builds frontend ip configurations for the load balancer.  
   You need at least one frontend ip configuration to deploy a load balancer.
 
   - `name`: (Optional) The name of the frontend IP configuration. Changing this forces a new resource to be created
@@ -671,8 +671,8 @@ Description:   An object variable that configures the settings that will be the 
 
   - `allocation_method`: (Optional) The allocation method for this IP address. Possible valuse are `Static` or `Dynamic`
   - `resource_group_name`: (Optional) Specifies the resource group to deploy all of the public IP addresses to be created
-  - `ddos_protection_mode`: (Optional) The DDoS protection mode of the public IP. Possible values are `Disabled`, `Enabled`, and `VirtualNetworkInherited`. Defaults to `VirtualNetworkInherited`.
-  - `ddos_protection_plan_resource_id`: (Optional) The ID of DDoS protection plan associated with the public IP
+  - `ddos_protection_mode`: (Optional) The DDoS protection mode of the public IP. Possible values are `Disabled`, `Enabled`, and `VirtualNetworkInherited`. Defaults to `VirtualNetworkInherited`. If you wish to protect the public IP with an individual DDOS IP Protection Plan, set this to enabled and `ddos_protection_plan_resource_id` to `null`.
+  - `ddos_protection_plan_resource_id`: (Optional) The ID of DDoS protection plan associated with the public IP. If you wish to protect the public IP with an individual DDOS IP Protection Plan, set this to `null` and set `ddos_protection_mode` to `Enabled`.
   - `domain_name_label`: (Optional) The label for the Domain Name. This will be used to make up the FQDN. If a domain name label is specified, an A DNS record is created for the public IP in the Microsoft Azure DNS system.
   - `idle_timeout_in_minutes`: (Optional) Specifies the timeout for the TCP idle connection. The value can be set between 4 and 30 minutes.
   - `ip_tags`: (Optional) A mapping of IP tags to assign to the public IP. Changing this forces a new resource to be created.
@@ -766,7 +766,7 @@ Default: `{}`
 
 ### <a name="input_sku"></a> [sku](#input\_sku)
 
-Description:   The SKU of the Azure Load Balancer.   
+Description:   The SKU of the Azure Load Balancer.  
   Accepted values are `Basic`, `Standard`, and `Gateway`.  
   Microsoft recommends `Standard` for production workloads.
   `Basic` SKU is set to be retired 30 September 2025
@@ -778,9 +778,9 @@ Default: `"Standard"`
 
 ### <a name="input_sku_tier"></a> [sku\_tier](#input\_sku\_tier)
 
-Description:   String parameter that specifies the SKU tier of this Load Balancer.   
-  Possible values are `Global` and `Regional`.   
-  Defaults to `Regional`.   
+Description:   String parameter that specifies the SKU tier of this Load Balancer.  
+  Possible values are `Global` and `Regional`.  
+  Defaults to `Regional`.  
   Changing this forces a new resource to be created.
 
 Type: `string`
