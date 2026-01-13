@@ -51,7 +51,7 @@ The following input variables are required:
 
 ### <a name="input_frontend_ip_configurations"></a> [frontend\_ip\_configurations](#input\_frontend\_ip\_configurations)
 
-Description:   A map of objects that builds frontend ip configurations for the load balancer.
+Description:   A map of objects that builds frontend ip configurations for the load balancer.  
   You need at least one frontend ip configuration to deploy a load balancer.
 
   - `name`: (Optional) The name of the frontend IP configuration. Changing this forces a new resource to be created
@@ -162,7 +162,7 @@ map(object({
 
 ### <a name="input_location"></a> [location](#input\_location)
 
-Description:   The Azure region where the resources should be deployed.
+Description:   The Azure region where the resources should be deployed.  
   The full list of Azure regions can be found at: https://azure.microsoft.com/regions
 
 Type: `string`
@@ -217,8 +217,8 @@ Default: `{}`
 
 ### <a name="input_backend_address_pool_configuration"></a> [backend\_address\_pool\_configuration](#input\_backend\_address\_pool\_configuration)
 
-Description:   String variable that determines the target virtual network for potential backend pools, at the load balancer level.
-  You can specify the `virutal_network_resource_id` at the pool level or backend address level.
+Description:   String variable that determines the target virtual network for potential backend pools, at the load balancer level.  
+  You can specify the `virutal_network_resource_id` at the pool level or backend address level.  
   If using network interfaces, leave this variable empty.
 
 Type: `string`
@@ -359,7 +359,7 @@ Default: `{}`
 
 ### <a name="input_edge_zone"></a> [edge\_zone](#input\_edge\_zone)
 
-Description:   Specifies the Edge Zone within the Azure Region where this Public IP and Load Balancer should exist.
+Description:   Specifies the Edge Zone within the Azure Region where this Public IP and Load Balancer should exist.  
   Changing this forces new resources to be created.
 
 Type: `string`
@@ -368,8 +368,8 @@ Default: `null`
 
 ### <a name="input_enable_telemetry"></a> [enable\_telemetry](#input\_enable\_telemetry)
 
-Description: This variable controls whether or not telemetry is enabled for the module.
-For more information see <https://aka.ms/avm/telemetryinfo>.
+Description: This variable controls whether or not telemetry is enabled for the module.  
+For more information see <https://aka.ms/avm/telemetryinfo>.  
 If it is set to false, then no telemetry will be collected.
 
 Type: `bool`
@@ -526,7 +526,7 @@ Default: `{}`
 
 ### <a name="input_lb_probes"></a> [lb\_probes](#input\_lb\_probes)
 
-Description:   A list of objects that specify the Load Balancer probes to be created.
+Description:   A list of objects that specify the Load Balancer probes to be created.  
   Each object has 7 parameters:
 
   - `name`: (Optional) The name of the probe. Changing this forces a new probe resource to be created.
@@ -581,7 +581,7 @@ Default: `{}`
 
 ### <a name="input_lb_rules"></a> [lb\_rules](#input\_lb\_rules)
 
-Description:   A list of objects that specifies the Load Balancer rules for the Load Balancer.
+Description:   A list of objects that specifies the Load Balancer rules for the Load Balancer.  
   Each object has 14 parameters:
 
   - `name`: (Optional) The name of the Load Balancer rule. Changing this forces a new resource to be created.
@@ -766,8 +766,8 @@ Default: `{}`
 
 ### <a name="input_sku"></a> [sku](#input\_sku)
 
-Description:   The SKU of the Azure Load Balancer.
-  Accepted values are `Standard` and `Gateway`.
+Description:   The SKU of the Azure Load Balancer.  
+  Accepted values are `Standard` and `Gateway`.  
   Microsoft recommends `Standard` for production workloads.
   `Basic` SKU Load Balancer was retired 30 September 2025.
   > The `Microsoft.Network/AllowGatewayLoadBalancer` feature is required to be registered in order to use the `Gateway` SKU. The feature can only be registered by the Azure service team, please submit an Azure support ticket for that.
@@ -778,9 +778,9 @@ Default: `"Standard"`
 
 ### <a name="input_sku_tier"></a> [sku\_tier](#input\_sku\_tier)
 
-Description:   String parameter that specifies the SKU tier of this Load Balancer.
-  Possible values are `Global` and `Regional`.
-  Defaults to `Regional`.
+Description:   String parameter that specifies the SKU tier of this Load Balancer.  
+  Possible values are `Global` and `Regional`.  
+  Defaults to `Regional`.  
   Changing this forces a new resource to be created.
 
 Type: `string`

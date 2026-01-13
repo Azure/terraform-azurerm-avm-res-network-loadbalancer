@@ -128,8 +128,8 @@ The following input variables are optional (have default values):
 
 ### <a name="input_enable_telemetry"></a> [enable\_telemetry](#input\_enable\_telemetry)
 
-Description: This variable controls whether or not telemetry is enabled for the module.
-For more information see https://aka.ms/avm/telemetryinfo.
+Description: This variable controls whether or not telemetry is enabled for the module.  
+For more information see https://aka.ms/avm/telemetryinfo.  
 If it is set to false, then no telemetry will be collected.
 
 Type: `bool`
@@ -168,11 +168,7 @@ Version: 0.3.0
 
 Source: Azure/regions/azurerm
 
-<<<<<<< HEAD
 Version: 0.4.0
-=======
-Version: 0.8.2
->>>>>>> origin/main
 
 <!-- markdownlint-disable-next-line MD041 -->
 ## Data Collection
