@@ -12,7 +12,7 @@ module "naming" {
 
 module "regions" {
   source  = "Azure/regions/azurerm"
-  version = "0.8.2"
+  version = "0.4.0"
 }
 
 # Helps pick a random region from the list of regions.
@@ -168,7 +168,7 @@ Version: 0.3.0
 
 Source: Azure/regions/azurerm
 
-Version: 0.8.2
+Version: 0.4.0
 
 <!-- markdownlint-disable-next-line MD041 -->
 ## Data Collection

@@ -5,7 +5,7 @@ module "naming" {
 
 module "regions" {
   source  = "Azure/regions/azurerm"
-  version = "0.8.2"
+  version = "0.4.0"
 }
 
 # Helps pick a random region from the list of regions.
