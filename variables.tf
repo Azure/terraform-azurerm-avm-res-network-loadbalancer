@@ -752,8 +752,8 @@ variable "public_ip_address_configuration" {
 
   - `allocation_method`: (Optional) The allocation method for this IP address. Possible valuse are `Static` or `Dynamic`
   - `resource_group_name`: (Optional) Specifies the resource group to deploy all of the public IP addresses to be created
-  - `ddos_protection_mode`: (Optional) The DDoS protection mode of the public IP. Possible values are `Disabled`, `Enabled`, and `VirtualNetworkInherited`. Defaults to `VirtualNetworkInherited`.
-  - `ddos_protection_plan_resource_id`: (Optional) The ID of DDoS protection plan associated with the public IP
+  - `ddos_protection_mode`: (Optional) The DDoS protection mode of the public IP. Possible values are `Disabled`, `Enabled`, and `VirtualNetworkInherited`. Defaults to `VirtualNetworkInherited`. If you wish to protect the public IP with an individual DDOS IP Protection Plan, set this to enabled and `ddos_protection_plan_resource_id` to `null`.
+  - `ddos_protection_plan_resource_id`: (Optional) The ID of DDoS protection plan associated with the public IP. If you wish to protect the public IP with an individual DDOS IP Protection Plan, set this to `null` and set `ddos_protection_mode` to `Enabled`.
   - `domain_name_label`: (Optional) The label for the Domain Name. This will be used to make up the FQDN. If a domain name label is specified, an A DNS record is created for the public IP in the Microsoft Azure DNS system.
   - `idle_timeout_in_minutes`: (Optional) Specifies the timeout for the TCP idle connection. The value can be set between 4 and 30 minutes.
   - `ip_tags`: (Optional) A mapping of IP tags to assign to the public IP. Changing this forces a new resource to be created.
@@ -784,10 +784,6 @@ variable "public_ip_address_configuration" {
   validation {
     condition     = contains(["Disabled", "Enabled", "VirtualNetworkInherited"], var.public_ip_address_configuration.ddos_protection_mode)
     error_message = "The acceptable value for `ddos_protection_mode` are `Disabled`, `Enabled` or `VirtualNetworkInherited`"
-  }
-  validation {
-    condition     = (contains(["Disabled", "VirtualNetworkInherited"], var.public_ip_address_configuration.ddos_protection_mode) && var.public_ip_address_configuration.ddos_protection_plan_resource_id == null) || (contains(["Enabled"], var.public_ip_address_configuration.ddos_protection_mode) && var.public_ip_address_configuration.ddos_protection_plan_resource_id != null)
-    error_message = "A `ddos_protection_plan_resource_id` can only be set when `ddos_protection_mode` is set to `Enabled`"
   }
   validation {
     condition     = var.public_ip_address_configuration.idle_timeout_in_minutes >= 4 && var.public_ip_address_configuration.idle_timeout_in_minutes <= 30
