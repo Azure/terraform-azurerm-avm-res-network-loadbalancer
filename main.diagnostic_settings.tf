@@ -24,6 +24,7 @@ resource "azurerm_monitor_diagnostic_setting" "this" {
       category_group = enabled_log.value
     }
   }
+
   dynamic "metric" {
     for_each = each.value.metric_categories
 
@@ -59,6 +60,7 @@ resource "azurerm_monitor_diagnostic_setting" "pip" {
       category_group = enabled_log.value
     }
   }
+
   dynamic "metric" {
     for_each = each.value.diagnostic_setting.metric_categories
 
