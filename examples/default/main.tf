@@ -32,10 +32,10 @@ resource "azurerm_virtual_network" "example" {
 }
 
 resource "azurerm_subnet" "example" {
-  address_prefixes     = ["10.1.1.0/26"]
   name                 = module.naming.subnet.name_unique
   resource_group_name  = azurerm_virtual_network.example.resource_group_name
   virtual_network_name = azurerm_virtual_network.example.name
+  address_prefixes     = ["10.1.1.0/26"]
 }
 
 resource "azurerm_network_interface" "example_1" {

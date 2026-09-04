@@ -18,7 +18,6 @@ provider "azurerm" {
   }
 }
 
-
 module "naming" {
   source  = "Azure/naming/azurerm"
   version = "0.3.0"
@@ -31,7 +30,6 @@ resource "random_integer" "region_index" {
 }
 
 data "azurerm_client_config" "this" {}
-
 
 resource "azurerm_resource_group" "example" {
   location = local.azure_regions[random_integer.region_index.result]
@@ -46,10 +44,10 @@ resource "azurerm_virtual_network" "example" {
 }
 
 resource "azurerm_subnet" "example" {
-  address_prefixes     = ["10.1.1.0/26"]
   name                 = module.naming.subnet.name_unique
   resource_group_name  = azurerm_virtual_network.example.resource_group_name
   virtual_network_name = azurerm_virtual_network.example.name
+  address_prefixes     = ["10.1.1.0/26"]
 }
 
 resource "azurerm_log_analytics_workspace" "example" {
@@ -63,8 +61,6 @@ resource "azurerm_log_analytics_workspace" "example" {
 data "azurerm_role_definition" "example" {
   name = "Contributor"
 }
-
-
 
 module "loadbalancer" {
   source = "../../"
