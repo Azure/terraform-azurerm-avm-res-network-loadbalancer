@@ -52,10 +52,10 @@ resource "azurerm_virtual_network" "example" {
 
 # Azure Bastion
 resource "azurerm_subnet" "bastion_subnet" {
-  address_prefixes     = ["10.7.1.0/26"]
   name                 = "AzureBastionSubnet"
   resource_group_name  = azurerm_resource_group.example.name
   virtual_network_name = azurerm_virtual_network.example.name
+  address_prefixes     = ["10.7.1.0/26"]
 }
 
 resource "azurerm_bastion_host" "bastion" {
@@ -80,10 +80,10 @@ resource "azurerm_public_ip" "bastionpip" {
 
 # Creates a subnet
 resource "azurerm_subnet" "example" {
-  address_prefixes     = ["10.7.0.0/24"]
   name                 = "backend-${module.naming.subnet.name_unique}"
   resource_group_name  = azurerm_virtual_network.example.resource_group_name
   virtual_network_name = azurerm_virtual_network.example.name
+  address_prefixes     = ["10.7.0.0/24"]
 }
 
 # NAT Gateway
@@ -345,7 +345,6 @@ module "standard_loadbalancer" {
 #   }
 
 # }
-
 ```
 
 <!-- markdownlint-disable MD033 -->
