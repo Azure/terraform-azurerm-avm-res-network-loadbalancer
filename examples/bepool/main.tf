@@ -93,7 +93,7 @@ module "loadbalancer" {
   location            = azurerm_resource_group.this.location
   name                = "bepool-lb"
   resource_group_name = azurerm_resource_group.this.name
-  enable_telemetry    = var.enable_telemetry
+  enable_telemetry    = false
 
   depends_on = [
     # To ensure that the backend address pool is created before the network interfaces' ip addresses are associated

@@ -104,7 +104,7 @@ module "loadbalancer" {
       workspace_resource_id = azurerm_log_analytics_workspace.example.id
     }
   }
-  enable_telemetry = var.enable_telemetry
+  enable_telemetry = false
   role_assignments = {
     role_assignment_1 = {
       role_definition_id_or_name = data.azurerm_role_definition.example.name

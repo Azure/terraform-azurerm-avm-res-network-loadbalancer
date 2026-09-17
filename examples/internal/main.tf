@@ -76,7 +76,7 @@ module "loadbalancer" {
   location            = azurerm_resource_group.this.location
   name                = "internal-lb"
   resource_group_name = azurerm_resource_group.this.name
-  enable_telemetry    = var.enable_telemetry
+  enable_telemetry    = false
   # Virtual Network and Subnet for Internal LoadBalancer
   # frontend_vnet_resource_id   = azurerm_virtual_network.example.id
   frontend_subnet_resource_id = azurerm_subnet.example.id

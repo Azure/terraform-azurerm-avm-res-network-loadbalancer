@@ -87,7 +87,7 @@ module "loadbalancer" {
   location            = azurerm_resource_group.example.location
   name                = "default-lb"
   resource_group_name = azurerm_resource_group.example.name
-  enable_telemetry    = var.enable_telemetry
+  enable_telemetry    = false
   tags = {
     version = "x.y.z"
   }
