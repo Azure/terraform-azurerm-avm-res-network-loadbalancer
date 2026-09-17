@@ -177,7 +177,7 @@ module "gateway_loadbalancer" {
       }
     }
   }
-  enable_telemetry            = var.enable_telemetry
+  enable_telemetry            = false
   frontend_subnet_resource_id = azurerm_subnet.example.id
   # Health Probe(s)
   lb_probes = {
@@ -230,7 +230,7 @@ module "standard_loadbalancer" {
   location            = azurerm_resource_group.example.location
   name                = "standard-lb"
   resource_group_name = azurerm_resource_group.example.name
-  enable_telemetry    = var.enable_telemetry
+  enable_telemetry    = false
   tags = {
     environment = "dev-tf"
   }
