@@ -83,7 +83,7 @@ module "loadbalancer" {
   location            = azurerm_resource_group.this.location
   name                = "internal-lb"
   resource_group_name = azurerm_resource_group.this.name
-  enable_telemetry    = false
+  enable_telemetry    = var.enable_telemetry
   # Virtual Network and Subnet for Internal LoadBalancer
   # frontend_vnet_resource_id   = azurerm_virtual_network.example.id
   frontend_subnet_resource_id = azurerm_subnet.example.id
@@ -133,7 +133,7 @@ If it is set to false, then no telemetry will be collected.
 
 Type: `bool`
 
-Default: `true`
+Default: `false`
 
 ## Outputs
 

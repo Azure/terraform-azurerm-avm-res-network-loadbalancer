@@ -111,7 +111,7 @@ module "loadbalancer" {
       workspace_resource_id = azurerm_log_analytics_workspace.example.id
     }
   }
-  enable_telemetry = false
+  enable_telemetry = var.enable_telemetry
   role_assignments = {
     role_assignment_1 = {
       role_definition_id_or_name = data.azurerm_role_definition.example.name
@@ -164,7 +164,7 @@ If it is set to false, then no telemetry will be collected.
 
 Type: `bool`
 
-Default: `true`
+Default: `false`
 
 ## Outputs
 
