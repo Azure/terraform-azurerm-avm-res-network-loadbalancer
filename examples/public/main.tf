@@ -90,7 +90,7 @@ module "loadbalancer" {
   location            = azurerm_resource_group.this.location
   name                = "public-lb"
   resource_group_name = azurerm_resource_group.this.name
-  enable_telemetry    = false
+  enable_telemetry    = var.enable_telemetry
   public_ip_address_configuration = {
     ddos_protection_mode = "Enabled"
   }
