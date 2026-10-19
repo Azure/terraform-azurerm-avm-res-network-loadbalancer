@@ -26,8 +26,8 @@ provider "azurerm" {
 }
 
 module "naming" {
-  source  = "Azure/naming/azurerm"
-  version = "0.3.0"
+  source  = "Azure/avm-utl-naming/azure"
+  version = "0.2.0"
 }
 
 # This picks a random region from the list of regions.
@@ -151,9 +151,9 @@ Version:
 
 ### <a name="module_naming"></a> [naming](#module\_naming)
 
-Source: Azure/naming/azurerm
+Source: Azure/avm-utl-naming/azure
 
-Version: 0.3.0
+Version: 0.2.0
 
 <!-- markdownlint-disable-next-line MD041 -->
 ## Data Collection
