@@ -1,21 +1,111 @@
 locals {
-  pip_diagnostic_settings = { for ds in flatten([
-    for fe_k, fe_v in var.frontend_ip_configurations : [
-      for dk, dv in fe_v.diagnostic_settings : {
-        frontend_key       = fe_k
-        ds_key             = dk
-        diagnostic_setting = dv
+  resource_id = "${var.parent_id}/providers/Microsoft.Network/loadBalancers/${var.name}"
+  frontend_ids = {
+    for key, frontend in var.frontend_ip_configurations : key => "${local.resource_id}/frontendIPConfigurations/${coalesce(frontend.name, "frontend-${var.name}")}"
+  }
+  pool_ids = {
+    for key, pool in var.backend_address_pools : key => "${local.resource_id}/backendAddressPools/${pool.name}"
+  }
+  probe_ids = {
+    for key, probe in var.lb_probes : key => "${local.resource_id}/probes/${coalesce(probe.name, "probe-${var.name}")}"
+  }
+  frontend_properties = {
+    for key, frontend in var.frontend_ip_configurations : key => {
+      privateIPAddress          = frontend.frontend_private_ip_address
+      privateIPAllocationMethod = frontend.public_ip_address_resource_id != null || frontend.public_ip_prefix_resource_id != null ? null : frontend.frontend_private_ip_address_allocation
+      privateIPAddressVersion   = frontend.public_ip_address_resource_id != null || frontend.public_ip_prefix_resource_id != null ? null : coalesce(frontend.frontend_private_ip_address_version, "IPv4")
+      subnet                    = coalesce(frontend.frontend_private_ip_subnet_resource_id, var.frontend_subnet_resource_id, "unset") == "unset" ? null : { id = coalesce(frontend.frontend_private_ip_subnet_resource_id, var.frontend_subnet_resource_id) }
+      publicIPAddress           = frontend.public_ip_address_resource_id == null ? null : { id = frontend.public_ip_address_resource_id }
+      publicIPPrefix            = frontend.public_ip_prefix_resource_id == null ? null : { id = frontend.public_ip_prefix_resource_id }
+      gatewayLoadBalancer       = frontend.gateway_load_balancer_frontend_ip_configuration_id == null ? null : { id = frontend.gateway_load_balancer_frontend_ip_configuration_id }
+    }
+  }
+  backend_pool_properties = {
+    for key, pool in var.backend_address_pools : key => {
+      virtualNetwork = coalesce(pool.virtual_network_resource_id, var.backend_address_pool_configuration, "unset") == "unset" ? null : { id = coalesce(pool.virtual_network_resource_id, var.backend_address_pool_configuration) }
+      tunnelInterfaces = [
+        for tunnel in values(pool.tunnel_interfaces) : {
+          identifier = tunnel.identifier
+          port       = tunnel.port
+          protocol   = tunnel.protocol
+          type       = tunnel.type
+        }
+      ]
+      loadBalancerBackendAddresses = [
+        for address in values(var.backend_address_pool_addresses) : {
+          name = address.name
+          properties = {
+            ipAddress      = address.ip_address
+            virtualNetwork = coalesce(address.virtual_network_resource_id, pool.virtual_network_resource_id, var.backend_address_pool_configuration, "unset") == "unset" ? null : { id = coalesce(address.virtual_network_resource_id, pool.virtual_network_resource_id, var.backend_address_pool_configuration) }
+          }
+        } if address.backend_address_pool_object_name == key
+      ]
+    }
+  }
+  probe_properties = {
+    for key, probe in var.lb_probes : key => {
+      protocol          = probe.protocol
+      port              = probe.port
+      intervalInSeconds = probe.interval_in_seconds
+      numberOfProbes    = probe.number_of_probes_before_removal
+      probeThreshold    = probe.probe_threshold
+      requestPath       = probe.request_path
+    }
+  }
+  rule_properties = {
+    for key, rule in var.lb_rules : key => {
+      frontendIPConfiguration = { id = "${local.resource_id}/frontendIPConfigurations/${rule.frontend_ip_configuration_name}" }
+      backendAddressPools     = [for id in rule.backend_address_pool_resource_ids != null ? rule.backend_address_pool_resource_ids : [for key in coalesce(rule.backend_address_pool_object_names, []) : local.pool_ids[key]] : { id = id }]
+      probe                   = rule.probe_resource_id != null ? { id = rule.probe_resource_id } : rule.probe_object_name != null ? { id = local.probe_ids[rule.probe_object_name] } : null
+      protocol                = rule.protocol
+      frontendPort            = rule.frontend_port
+      backendPort             = rule.backend_port
+      enableFloatingIP        = rule.enable_floating_ip
+      idleTimeoutInMinutes    = rule.idle_timeout_in_minutes
+      loadDistribution        = rule.load_distribution
+      disableOutboundSnat     = rule.disable_outbound_snat
+      enableTcpReset          = rule.enable_tcp_reset
+    }
+  }
+  nat_rule_properties = {
+    for key, rule in var.lb_nat_rules : key => {
+      frontendIPConfiguration = { id = "${local.resource_id}/frontendIPConfigurations/${rule.frontend_ip_configuration_name}" }
+      backendAddressPool      = rule.backend_address_pool_resource_id != null ? { id = rule.backend_address_pool_resource_id } : rule.backend_address_pool_object_name != null ? { id = local.pool_ids[rule.backend_address_pool_object_name] } : null
+      protocol                = rule.protocol
+      frontendPort            = rule.frontend_port
+      frontendPortRangeStart  = rule.frontend_port_start
+      frontendPortRangeEnd    = rule.frontend_port_end
+      backendPort             = rule.backend_port
+      enableFloatingIP        = rule.enable_floating_ip
+      enableTcpReset          = rule.enable_tcp_reset
+      idleTimeoutInMinutes    = rule.idle_timeout_in_minutes
+    }
+  }
+  outbound_rule_properties = {
+    for key, rule in var.lb_outbound_rules : key => {
+      frontendIPConfigurations = [for frontend in rule.frontend_ip_configurations : { id = "${local.resource_id}/frontendIPConfigurations/${frontend.name}" }]
+      backendAddressPool       = { id = rule.backend_address_pool_resource_id != null ? rule.backend_address_pool_resource_id : local.pool_ids[rule.backend_address_pool_object_name] }
+      protocol                 = rule.protocol
+      allocatedOutboundPorts   = rule.number_of_allocated_outbound_ports
+      enableTcpReset           = rule.enable_tcp_reset
+      idleTimeoutInMinutes     = rule.idle_timeout_in_minutes
+    }
+  }
+  # NAT pools have no deployable ARM child type. Keep them inline, including
+  # minimal frontends on creation so their references resolve in the first PUT.
+  inbound_nat_pools = [
+    for key, pool in var.lb_nat_pools : {
+      name = coalesce(pool.name, "nat-pool-${var.name}")
+      properties = {
+        frontendIPConfiguration = { id = "${local.resource_id}/frontendIPConfigurations/${pool.frontend_ip_configuration_name}" }
+        protocol                = pool.protocol
+        frontendPortRangeStart  = pool.frontend_port_start
+        frontendPortRangeEnd    = pool.frontend_port_end
+        backendPort             = pool.backend_port
+        enableFloatingIP        = pool.enable_floating_ip
+        enableTcpReset          = pool.enable_tcp_reset
+        idleTimeoutInMinutes    = pool.idle_timeout_in_minutes
       }
-    ]
-  ]) : "${ds.frontend_key}-${ds.ds_key}" => ds }
-  pip_role_assignments = { for ra in flatten([
-    for fe_k, fe_v in var.frontend_ip_configurations : [
-      for rk, rv in fe_v.role_assignments : {
-        frontend_key    = fe_k
-        ra_key          = rk
-        role_assignment = rv
-      }
-    ]
-  ]) : "${ra.frontend_key}-${ra.ra_key}" => ra }
-  role_definition_resource_substring = "/providers/Microsoft.Authorization/roleDefinitions"
+    }
+  ]
 }

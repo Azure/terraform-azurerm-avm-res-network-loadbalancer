@@ -1,117 +1,110 @@
-terraform {
-  required_version = ">= 1.9, < 2.0"
+resource "random_id" "example" {
+  byte_length = 4
+}
 
-  required_providers {
-    azurerm = {
-      source  = "hashicorp/azurerm"
-      version = "~> 4.0"
-    }
-    random = {
-      source  = "hashicorp/random"
-      version = "~> 3.5"
+data "azapi_client_config" "current" {}
+
+resource "azapi_resource" "resource_group" {
+  location               = var.location
+  name                   = "rg-lb-complete-${random_id.example.hex}"
+  parent_id              = data.azapi_client_config.current.subscription_resource_id
+  type                   = "Microsoft.Resources/resourceGroups@2025-04-01"
+  response_export_values = []
+}
+
+resource "azapi_resource" "public_ip" {
+  location  = var.location
+  name      = "pip-${random_id.example.hex}"
+  parent_id = azapi_resource.resource_group.id
+  type      = "Microsoft.Network/publicIPAddresses@2025-01-01"
+  body = {
+    sku   = { name = "Standard", tier = "Regional" }
+    zones = ["1", "2", "3"]
+    properties = {
+      publicIPAllocationMethod = "Static"
+      publicIPAddressVersion   = "IPv4"
+      idleTimeoutInMinutes     = 10
+      ddosSettings             = { protectionMode = "VirtualNetworkInherited" }
+      dnsSettings              = { domainNameLabel = "lb-${random_id.example.hex}" }
+      ipTags                   = []
     }
   }
+  response_export_values = []
+  tags                   = { example = "load-balancer" }
 }
 
-provider "azurerm" {
-  features {
+resource "azapi_resource" "workspace" {
+  location  = var.location
+  name      = "log-${random_id.example.hex}"
+  parent_id = azapi_resource.resource_group.id
+  type      = "Microsoft.OperationalInsights/workspaces@2023-09-01"
+  body = {
+    properties = {
+      sku             = { name = "PerGB2018" }
+      retentionInDays = 30
+    }
   }
-}
-
-module "naming" {
-  source  = "Azure/avm-utl-naming/azure"
-  version = "0.2.0"
-}
-
-# Helps pick a random region from the list of regions.
-resource "random_integer" "region_index" {
-  max = length(local.azure_regions) - 1
-  min = 0
-}
-
-data "azurerm_client_config" "this" {}
-
-resource "azurerm_resource_group" "example" {
-  location = local.azure_regions[random_integer.region_index.result]
-  name     = module.naming.resource_group.name_unique
-}
-
-resource "azurerm_virtual_network" "example" {
-  location            = azurerm_resource_group.example.location
-  name                = module.naming.virtual_network.name_unique
-  resource_group_name = azurerm_resource_group.example.name
-  address_space       = ["10.1.0.0/16"]
-}
-
-resource "azurerm_subnet" "example" {
-  name                 = module.naming.subnet.name_unique
-  resource_group_name  = azurerm_virtual_network.example.resource_group_name
-  virtual_network_name = azurerm_virtual_network.example.name
-  address_prefixes     = ["10.1.1.0/26"]
-}
-
-resource "azurerm_log_analytics_workspace" "example" {
-  location            = azurerm_resource_group.example.location
-  name                = "law-test-001"
-  resource_group_name = azurerm_resource_group.example.name
-  retention_in_days   = 30
-  sku                 = "PerGB2018"
-}
-
-data "azurerm_role_definition" "example" {
-  name = "Contributor"
+  response_export_values = []
 }
 
 module "loadbalancer" {
   source = "../../"
 
   frontend_ip_configurations = {
-    frontend_configuration_1 = {
-      name = "myFrontend"
-
-      create_public_ip_address        = true
-      public_ip_address_resource_name = module.naming.public_ip.name_unique
-      # zones = ["1", "2", "3"] # Zone-redundant
-      # zones = ["None"] # Non-zonal
-      tags = {
-        createdBy = "tf-infra-team"
-      }
-
-      inherit_lock = true
-      inherit_tags = true
-
-      role_assignments = {
-        role_assignment_1 = {
-          role_definition_id_or_name = data.azurerm_role_definition.example.name
-          principal_id               = data.azurerm_client_config.this.object_id
-        }
-      }
-
-      diagnostic_settings = {
-        diagnotic_settings_1 = {
-          name                  = "pip-diag_settings_1"
-          workspace_resource_id = azurerm_log_analytics_workspace.example.id
-        }
-      }
-    }
+    public = { name = "public", public_ip_address_resource_id = azapi_resource.public_ip.id }
   }
-  location            = azurerm_resource_group.example.location
-  name                = "interfaces-lb"
-  resource_group_name = azurerm_resource_group.example.name
+  location              = var.location
+  name                  = "lb-${random_id.example.hex}"
+  parent_id             = azapi_resource.resource_group.id
+  backend_address_pools = { app = { name = "app" } }
   diagnostic_settings = {
-    diagnostic_settings_1 = {
-      name                  = "diag_settings_1"
-      workspace_resource_id = azurerm_log_analytics_workspace.example.id
+    metrics = {
+      workspace_resource_id = azapi_resource.workspace.id
+      metrics               = [{ category = "AllMetrics" }]
     }
   }
   enable_telemetry = var.enable_telemetry
-  role_assignments = {
-    role_assignment_1 = {
-      role_definition_id_or_name = data.azurerm_role_definition.example.name
-      principal_id               = data.azurerm_client_config.this.object_id
+  lb_nat_rules = {
+    ssh = {
+      name                             = "ssh"
+      frontend_ip_configuration_name   = "public"
+      frontend_port_start              = 50000
+      frontend_port_end                = 50100
+      backend_port                     = 22
+      backend_address_pool_object_name = "app"
     }
   }
-  tags = {
-    environment = "dev-tf"
+  lb_outbound_rules = {
+    internet = {
+      name                             = "internet"
+      frontend_ip_configurations       = [{ name = "public" }]
+      backend_address_pool_object_name = "app"
+      protocol                         = "All"
+      enable_tcp_reset                 = true
+    }
   }
+  lb_probes = {
+    http = { name = "http", protocol = "Http", port = 8080, request_path = "/health" }
+  }
+  lb_rules = {
+    web = {
+      name                              = "web"
+      frontend_ip_configuration_name    = "public"
+      frontend_port                     = 443
+      backend_port                      = 8080
+      backend_address_pool_object_names = ["app"]
+      probe_object_name                 = "http"
+      disable_outbound_snat             = true
+      enable_tcp_reset                  = true
+    }
+  }
+  lock = { kind = "CanNotDelete" }
+  role_assignments = {
+    reader = {
+      role_definition_id_or_name = "Reader"
+      principal_id               = data.azapi_client_config.current.object_id
+      principal_type             = "ServicePrincipal"
+    }
+  }
+  tags = { example = "interfaces" }
 }
