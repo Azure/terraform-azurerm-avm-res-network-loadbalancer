@@ -104,6 +104,9 @@ moved {
   to   = azapi_resource.diagnostic_settings
 }
 
+# Composed children own their gated imports and API defaults. The parent
+# forwards avm_managed_migration_enabled without duplicating child versions.
+
 import {
   for_each = var.avm_managed_migration_enabled ? var.migration_role_assignment_resource_ids : {}
   to       = azapi_resource.role_assignments[each.key]

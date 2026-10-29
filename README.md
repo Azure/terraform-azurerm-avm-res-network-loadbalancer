@@ -8,10 +8,10 @@ outbound rules and legacy VMSS NAT pools. Supports canonical diagnostics v2,
 RBAC, locks, tags, telemetry and AzAPI controls.
 
 **Implementation status:** this is an in-progress breaking migration, not a
-released or Azure-upgrade-validated implementation. The root currently performs
-one atomic load-balancer PUT. Writable pool/NAT child submodules are available
-separately but are not yet composed by the root. Resolving that composition
-without breaking coupled inline references remains a release blocker.
+released or Azure-upgrade-validated implementation. The root composes writable
+NAT child modules, and supports pool child modules when no parent-owned
+load/outbound rule references those pools. Inline-only child types and coupled
+pool/rule composition remain specification/API blockers, not approved deviations.
 
 ## ARM ownership
 
@@ -21,6 +21,23 @@ load balancer body, not invented child PUT resources. Backend addresses and NAT
 pools are also inline properties. Configured collections are authoritative;
 declare all existing members before adopting this version. Do not have another
 Terraform state manage the same LB collection.
+
+NAT rules are exceptions to inline ownership: the parent sends an empty creation
+placeholder and always preserves live `inboundNatRules` on updates using AzAPI's
+read-before-PUT behavior. It then composes `module.inbound_nat_rule[key]`.
+Set `backend_address_pool_child_modules_enabled = true` to likewise compose
+`module.backend_address_pool[key]` for NAT-only or unreferenced pools. A
+precondition rejects references from parent-owned load/outbound rules, including
+references supplied by ID, because they would precede child creation. The
+default `false` retains inline pools for those coupled cases; it does not claim
+TFRMNFR1 compliance. See [composition boundaries](docs/child-composition.md).
+
+Choose pool ownership before deployment. Adopting existing inline pools into
+child mode requires the migration flag for one apply. Do not switch back:
+removing a child module plans deletion of the pool, not a non-destructive handoff.
+Remove referencing NAT rules in a separate apply before removing their frontend
+or pool. Serialize all writers; a provider mutex does not protect another state,
+and AzAPI's preservation GET occurs before acquiring that mutex.
 
 SKU, tier and edge-zone changes retain explicit replacement triggers. Frontend
 collection changes do not force replacement of the entire LB. Unlike the
@@ -84,7 +101,11 @@ The supported source baseline under investigation is v0.5.0, commit
    replacement assignments under a lock.
 9. Save and inspect a migration plan. Expect a same-boundary LB provider move,
    lock/diagnostic provider moves, forgotten synthetic child/association/PIP
-   bindings, and RBAC imports. The LB body adopts existing inline children.
+   bindings, RBAC imports, and imports to `module.inbound_nat_rule[key].azapi_resource.this`.
+   In child-pool mode also expect imports to
+   `module.backend_address_pool[key].azapi_resource.this`. The migration flag
+   uses the new input keys and preserved Azure names, not old name-keyed addresses.
+   The LB body adopts the remaining inline children.
    There must be **zero unintended Azure deletes or replacements**. A forgotten
    binding is not an Azure deletion. Do not change unrelated infrastructure.
 10. Apply the inspected saved plan only after independent migration review.
@@ -198,6 +219,14 @@ map(object({
 ```
 
 Default: `{}`
+
+### <a name="input_backend_address_pool_child_modules_enabled"></a> [backend\_address\_pool\_child\_modules\_enabled](#input\_backend\_address\_pool\_child\_modules\_enabled)
+
+Description: Manage backend pools through single-instance child modules when no parent-owned load balancing or outbound rule references them. NAT rules can reference child-managed pools. Defaults to false to retain coupled inline rules; this residual ownership is not a claim of TFRMNFR1 compliance. Choose the owner before deployment. For existing pools, enable avm\_managed\_migration\_enabled for one adoption apply. Do not toggle back: child destruction would delete the live pools.
+
+Type: `bool`
+
+Default: `false`
 
 ### <a name="input_backend_address_pool_configuration"></a> [backend\_address\_pool\_configuration](#input\_backend\_address\_pool\_configuration)
 
@@ -313,11 +342,15 @@ Default: `null`
 ### <a name="input_ignore_body_changes"></a> [ignore\_body\_changes](#input\_ignore\_body\_changes)
 
 Description: Body-relative dot paths to ignore. Configuration for ignored paths is not sent to Azure; changes take effect after apply.  
-List indices are unsupported. LB collections are authoritative: do not independently manage the same collection in another module.
+List indices are unsupported. The parent always preserves live inboundNatRules and, in child-pool mode, backendAddressPools on updates. These safety paths are added to the consumer paths. Inline collections remain authoritative.
 - `network_load_balancers` - Additional LB paths.
 - `authorization_locks` - Lock paths.
 - `authorization_role_assignments` - RBAC paths.
 - `insights_diagnostic_settings` - Diagnostic paths.
+- `network_load_balancers_backend_address_pools` - Backend pool child controls.
+- `network_load_balancers_backend_address_pools.network_load_balancers_backend_address_pools` - Pool-relative ignored paths.
+- `network_load_balancers_inbound_nat_rules` - Inbound NAT child controls.
+- `network_load_balancers_inbound_nat_rules.network_load_balancers_inbound_nat_rules` - NAT-relative ignored paths.
 
 Type:
 
@@ -327,6 +360,12 @@ object({
     authorization_locks            = optional(list(string), [])
     authorization_role_assignments = optional(list(string), [])
     insights_diagnostic_settings   = optional(list(string), [])
+    network_load_balancers_backend_address_pools = optional(object({
+      network_load_balancers_backend_address_pools = optional(list(string), [])
+    }), {})
+    network_load_balancers_inbound_nat_rules = optional(object({
+      network_load_balancers_inbound_nat_rules = optional(list(string), [])
+    }), {})
   })
 ```
 
@@ -481,7 +520,12 @@ Description: AzAPI resource types and API versions.
 - `network_load_balancers` - Primary load balancer.
 - `authorization_locks` - Resource locks.
 - `authorization_role_assignments` - RBAC assignments.
-- `insights_diagnostic_settings` - Diagnostic settings (the API only provides a preview version).  
+- `insights_diagnostic_settings` - Diagnostic settings (the API only provides a preview version).
+- `network_load_balancers_backend_address_pools` - Backend pool child resource types.
+- `network_load_balancers_backend_address_pools.network_load_balancers_backend_address_pools` - Pool type/API override; default owned by the child.
+- `network_load_balancers_inbound_nat_rules` - Inbound NAT child resource types.
+- `network_load_balancers_inbound_nat_rules.network_load_balancers_inbound_nat_rules` - NAT type/API override; default owned by the child.
+
 Inline LB collections use the parent resource API version.
 
 Type:
@@ -492,6 +536,12 @@ object({
     authorization_locks            = optional(string, "Microsoft.Authorization/locks@2020-05-01")
     authorization_role_assignments = optional(string, "Microsoft.Authorization/roleAssignments@2022-04-01")
     insights_diagnostic_settings   = optional(string, "Microsoft.Insights/diagnosticSettings@2021-05-01-preview")
+    network_load_balancers_backend_address_pools = optional(object({
+      network_load_balancers_backend_address_pools = optional(string)
+    }), {})
+    network_load_balancers_inbound_nat_rules = optional(object({
+      network_load_balancers_inbound_nat_rules = optional(string)
+    }), {})
   })
 ```
 
@@ -644,6 +694,18 @@ The following Modules are called:
 Source: Azure/avm-utl-interfaces/azure
 
 Version: 0.9.0
+
+### <a name="module_backend_address_pool"></a> [backend\_address\_pool](#module\_backend\_address\_pool)
+
+Source: ./modules/backend-address-pool
+
+Version:
+
+### <a name="module_inbound_nat_rule"></a> [inbound\_nat\_rule](#module\_inbound\_nat\_rule)
+
+Source: ./modules/inbound-nat-rule
+
+Version:
 
 <!-- markdownlint-disable-next-line MD041 -->
 ## Data Collection

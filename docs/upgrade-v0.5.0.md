@@ -1,8 +1,9 @@
 # v0.5.0 to AzAPI — draft upgrade procedure
 
 **Not production-ready. No real-Azure migration or cleanup has been executed.**
-The root's atomic inline composition is an explicit outstanding design deviation
-from the requested writable-child submodule composition, not a completed gate.
+NAT rules are composed; pools can be composed when not referenced by parent-owned
+load/outbound rules. Remaining inline child types and coupled pool/rule ownership
+are unresolved specification/API blockers, not an approved blanket deviation.
 
 ## Baseline and target
 
@@ -26,11 +27,11 @@ move is claimed.
 |---|---|
 | `azurerm_lb.this` | `azapi_resource.this`, same-boundary provider `moved` |
 | LB inline frontend configurations | LB body's `frontendIPConfigurations`, preserved names |
-| `azurerm_lb_backend_address_pool.this[key]` | LB body's `backendAddressPools`; old binding forgotten, no ARM delete |
+| `azurerm_lb_backend_address_pool.this[key]` | Default: LB body's `backendAddressPools`. Child-pool mode: `module.backend_address_pool[key].azapi_resource.this`; old binding forgotten + gated import, no ARM delete |
 | `azurerm_lb_backend_address_pool_address.this[key]` | owning pool's `loadBalancerBackendAddresses`; synthetic binding forgotten |
 | `azurerm_lb_probe.this[key]` | LB body's `probes`; old binding forgotten |
 | `azurerm_lb_rule.this[key]` | LB body's `loadBalancingRules`; old binding forgotten |
-| `azurerm_lb_nat_rule.this[name]` | LB body's `inboundNatRules`; old binding forgotten |
+| `azurerm_lb_nat_rule.this[name]` | `module.inbound_nat_rule[input_key].azapi_resource.this`; old binding forgotten + gated import using preserved Azure name |
 | `azurerm_lb_outbound_rule.this[name]` | LB body's `outboundRules`; old binding forgotten |
 | `azurerm_lb_nat_pool.this[name]` | LB body's `inboundNatPools`; old binding forgotten |
 | `azurerm_network_interface_backend_address_pool_association.this[key]` | NIC owner; forgotten with destroy=false, no NIC action |
@@ -46,8 +47,41 @@ move is claimed.
 Pool IP addresses are authoritative. Inventory and configure all live IP-based
 members before conversion. NIC-based membership is not written by this module.
 Preservation during a parent PUT still requires state-backed Azure verification.
-All LB inline collections are authoritative; external children in those
-collections must be reconciled before using this draft.
+The parent preserves live NAT rules and, in child-pool mode, pools on every
+update. The remaining inline collections are authoritative. Reconcile all live
+members before using this draft.
+
+## Child adoption and ordering
+
+Set `avm_managed_migration_enabled = true` for the one upgrade apply. The module
+forgets released NAT bindings without deletion and imports their actual IDs at
+the new child destinations. Child-owned import declarations use each child's
+selected API version; the root forwards the migration flag and nested overrides.
+No generic collection-to-module `moved` block is claimed.
+For the nested fixture, the NAT destination is:
+
+```text
+module.workload["app"].module.load_balancer.module.inbound_nat_rule["admin"].azapi_resource.this
+```
+
+Default inline pools need no new import. If **no** parent-owned load/outbound rule
+references a configured pool, child-pool mode can adopt existing pools with the
+same migration flag. The analogous destination is:
+
+```text
+module.workload["app"].module.load_balancer.module.backend_address_pool["app"].azapi_resource.this
+```
+
+Never enable that flag on an empty deployment: imports require existing Azure
+objects. Do not remove a referenced pool/frontend and its NAT rule in one apply;
+first remove the NAT rule and verify convergence, then remove its dependencies.
+Do not toggle child-pool mode back to inline ownership: that requires a separately
+reviewed non-destructive state handoff. No such reverse procedure is validated.
+During destruction, lock removal and its delay precede the child modules; NAT
+destruction precedes child-pool destruction, which precedes parent destruction.
+Within one apply, parent-to-child dependencies prevent parent updates from racing
+their children. Cross-state writers must be frozen; AzAPI's internal mutex is not
+a distributed lock and its live preservation read happens before mutex acquisition.
 
 ## PIP adoption without replacement
 

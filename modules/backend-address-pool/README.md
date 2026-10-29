@@ -7,10 +7,17 @@ The caller owns cardinality. NIC membership belongs to the NIC-owning module.
 NIC references are omitted from writes; live preservation is not Azure-verified.
 IP-based addresses are authoritative.
 
-**Draft standalone module.** The root LB does not compose this module. Do not
-use it against an LB whose root configuration owns the same inline pools:
-that would introduce conflicting ownership. It is not a workaround for the
-root's outstanding composition design gate.
+The root composes this module when `backend_address_pool_child_modules_enabled`
+is true and no parent-owned load/outbound rule references the configured pools.
+It is also independently consumable; see `examples/child-resources`.
+The LB owner must preserve `properties.backendAddressPools` on every parent
+update. Do not combine this module with authoritative inline ownership of the
+same collection. The shared parent-ID mutex serializes child PUT/DELETE calls
+within one provider process, not across Terraform states or external writers.
+
+For adoption only, `avm_managed_migration_enabled` imports the existing named
+pool into `azapi_resource.this` using this child's selected API version. The
+root forwards that flag. Disable it after convergence; never use it for a new pool.
 
 <!-- markdownlint-disable MD033 -->
 ## Requirements
@@ -81,6 +88,14 @@ object({
 ## Optional Inputs
 
 The following input variables are optional (have default values):
+
+### <a name="input_avm_managed_migration_enabled"></a> [avm\_managed\_migration\_enabled](#input\_avm\_managed\_migration\_enabled)
+
+Description: Import an existing pool at parent\_id/backendAddressPools/name without deleting it. Enable only for adoption, never fresh creation; disable after convergence.
+
+Type: `bool`
+
+Default: `false`
 
 ### <a name="input_enable_telemetry"></a> [enable\_telemetry](#input\_enable\_telemetry)
 

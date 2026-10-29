@@ -4,6 +4,7 @@ resource "azapi_resource" "this" {
   type                   = var.resource_types.network_load_balancers_inbound_nat_rules
   body                   = { properties = var.properties }
   ignore_body_changes    = length(var.ignore_body_changes.network_load_balancers_inbound_nat_rules) > 0 ? var.ignore_body_changes.network_load_balancers_inbound_nat_rules : null
+  locks                  = [var.parent_id]
   response_export_values = []
   retry                  = var.retry
 

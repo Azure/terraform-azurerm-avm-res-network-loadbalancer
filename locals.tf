@@ -6,6 +6,10 @@ locals {
   pool_ids = {
     for key, pool in var.backend_address_pools : key => "${local.resource_id}/backendAddressPools/${pool.name}"
   }
+  parent_referenced_pool_ids = concat(
+    flatten([for rule in values(local.rule_properties) : [for pool in rule.backendAddressPools : pool.id]]),
+    [for rule in values(local.outbound_rule_properties) : rule.backendAddressPool.id],
+  )
   probe_ids = {
     for key, probe in var.lb_probes : key => "${local.resource_id}/probes/${coalesce(probe.name, "probe-${var.name}")}"
   }

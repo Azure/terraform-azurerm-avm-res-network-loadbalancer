@@ -46,6 +46,13 @@ variable "properties" {
   }
 }
 
+variable "avm_managed_migration_enabled" {
+  type        = bool
+  default     = false
+  description = "Import an existing rule at parent_id/inboundNatRules/name without deleting it. Enable only for adoption, never fresh creation; disable after convergence."
+  nullable    = false
+}
+
 variable "enable_telemetry" {
   type        = bool
   default     = true

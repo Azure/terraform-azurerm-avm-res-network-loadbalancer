@@ -4,15 +4,25 @@ variable "ignore_body_changes" {
     authorization_locks            = optional(list(string), [])
     authorization_role_assignments = optional(list(string), [])
     insights_diagnostic_settings   = optional(list(string), [])
+    network_load_balancers_backend_address_pools = optional(object({
+      network_load_balancers_backend_address_pools = optional(list(string), [])
+    }), {})
+    network_load_balancers_inbound_nat_rules = optional(object({
+      network_load_balancers_inbound_nat_rules = optional(list(string), [])
+    }), {})
   })
   default     = {}
   description = <<DESCRIPTION
 Body-relative dot paths to ignore. Configuration for ignored paths is not sent to Azure; changes take effect after apply.
-List indices are unsupported. LB collections are authoritative: do not independently manage the same collection in another module.
+List indices are unsupported. The parent always preserves live inboundNatRules and, in child-pool mode, backendAddressPools on updates. These safety paths are added to the consumer paths. Inline collections remain authoritative.
 - `network_load_balancers` - Additional LB paths.
 - `authorization_locks` - Lock paths.
 - `authorization_role_assignments` - RBAC paths.
 - `insights_diagnostic_settings` - Diagnostic paths.
+- `network_load_balancers_backend_address_pools` - Backend pool child controls.
+- `network_load_balancers_backend_address_pools.network_load_balancers_backend_address_pools` - Pool-relative ignored paths.
+- `network_load_balancers_inbound_nat_rules` - Inbound NAT child controls.
+- `network_load_balancers_inbound_nat_rules.network_load_balancers_inbound_nat_rules` - NAT-relative ignored paths.
 DESCRIPTION
   nullable    = false
 }
@@ -23,6 +33,12 @@ variable "resource_types" {
     authorization_locks            = optional(string, "Microsoft.Authorization/locks@2020-05-01")
     authorization_role_assignments = optional(string, "Microsoft.Authorization/roleAssignments@2022-04-01")
     insights_diagnostic_settings   = optional(string, "Microsoft.Insights/diagnosticSettings@2021-05-01-preview")
+    network_load_balancers_backend_address_pools = optional(object({
+      network_load_balancers_backend_address_pools = optional(string)
+    }), {})
+    network_load_balancers_inbound_nat_rules = optional(object({
+      network_load_balancers_inbound_nat_rules = optional(string)
+    }), {})
   })
   default     = {}
   description = <<DESCRIPTION
@@ -31,6 +47,11 @@ AzAPI resource types and API versions.
 - `authorization_locks` - Resource locks.
 - `authorization_role_assignments` - RBAC assignments.
 - `insights_diagnostic_settings` - Diagnostic settings (the API only provides a preview version).
+- `network_load_balancers_backend_address_pools` - Backend pool child resource types.
+- `network_load_balancers_backend_address_pools.network_load_balancers_backend_address_pools` - Pool type/API override; default owned by the child.
+- `network_load_balancers_inbound_nat_rules` - Inbound NAT child resource types.
+- `network_load_balancers_inbound_nat_rules.network_load_balancers_inbound_nat_rules` - NAT type/API override; default owned by the child.
+
 Inline LB collections use the parent resource API version.
 DESCRIPTION
   nullable    = false

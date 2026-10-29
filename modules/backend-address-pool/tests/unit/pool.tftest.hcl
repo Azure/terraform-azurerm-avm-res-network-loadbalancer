@@ -18,6 +18,10 @@ run "default_pool" {
     condition     = length(azapi_resource.this.body.properties.loadBalancerBackendAddresses) == 0 && length(azapi_resource.this.body.properties.tunnelInterfaces) == 0 && output.resource_id != null
     error_message = "Empty pool defaults and scalar ID output must be supported."
   }
+  assert {
+    condition     = azapi_resource.this.locks == tolist([var.parent_id]) && !contains(keys(azapi_resource.this.body.properties), "backendIPConfigurations")
+    error_message = "Pool operations must share the LB mutex and must not write NIC-owned back references."
+  }
 }
 run "pool_addresses_and_controls" {
   command = apply

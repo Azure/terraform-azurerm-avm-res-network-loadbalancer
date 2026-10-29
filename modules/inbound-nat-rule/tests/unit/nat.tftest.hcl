@@ -22,6 +22,10 @@ run "scalar_nat_defaults" {
     condition     = azapi_resource.this.body.properties.protocol == "Tcp" && azapi_resource.this.body.properties.frontendPort == 50000 && azapi_resource.this.body.properties.backendAddressPool == null && !azapi_resource.this.body.properties.enableTcpReset && output.resource_id != null
     error_message = "NAT v1 defaults and output must be supported."
   }
+  assert {
+    condition     = azapi_resource.this.locks == tolist([var.parent_id]) && !contains(keys(azapi_resource.this.body.properties), "backendIPConfiguration")
+    error_message = "NAT operations must share the LB mutex and omit read-only NIC back references."
+  }
 }
 run "range_nat_and_controls" {
   command = apply

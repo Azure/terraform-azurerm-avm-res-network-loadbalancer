@@ -6,10 +6,10 @@ outbound rules and legacy VMSS NAT pools. Supports canonical diagnostics v2,
 RBAC, locks, tags, telemetry and AzAPI controls.
 
 **Implementation status:** this is an in-progress breaking migration, not a
-released or Azure-upgrade-validated implementation. The root currently performs
-one atomic load-balancer PUT. Writable pool/NAT child submodules are available
-separately but are not yet composed by the root. Resolving that composition
-without breaking coupled inline references remains a release blocker.
+released or Azure-upgrade-validated implementation. The root composes writable
+NAT child modules, and supports pool child modules when no parent-owned
+load/outbound rule references those pools. Inline-only child types and coupled
+pool/rule composition remain specification/API blockers, not approved deviations.
 
 ## ARM ownership
 
@@ -19,6 +19,23 @@ load balancer body, not invented child PUT resources. Backend addresses and NAT
 pools are also inline properties. Configured collections are authoritative;
 declare all existing members before adopting this version. Do not have another
 Terraform state manage the same LB collection.
+
+NAT rules are exceptions to inline ownership: the parent sends an empty creation
+placeholder and always preserves live `inboundNatRules` on updates using AzAPI's
+read-before-PUT behavior. It then composes `module.inbound_nat_rule[key]`.
+Set `backend_address_pool_child_modules_enabled = true` to likewise compose
+`module.backend_address_pool[key]` for NAT-only or unreferenced pools. A
+precondition rejects references from parent-owned load/outbound rules, including
+references supplied by ID, because they would precede child creation. The
+default `false` retains inline pools for those coupled cases; it does not claim
+TFRMNFR1 compliance. See [composition boundaries](docs/child-composition.md).
+
+Choose pool ownership before deployment. Adopting existing inline pools into
+child mode requires the migration flag for one apply. Do not switch back:
+removing a child module plans deletion of the pool, not a non-destructive handoff.
+Remove referencing NAT rules in a separate apply before removing their frontend
+or pool. Serialize all writers; a provider mutex does not protect another state,
+and AzAPI's preservation GET occurs before acquiring that mutex.
 
 SKU, tier and edge-zone changes retain explicit replacement triggers. Frontend
 collection changes do not force replacement of the entire LB. Unlike the
@@ -82,7 +99,11 @@ The supported source baseline under investigation is v0.5.0, commit
    replacement assignments under a lock.
 9. Save and inspect a migration plan. Expect a same-boundary LB provider move,
    lock/diagnostic provider moves, forgotten synthetic child/association/PIP
-   bindings, and RBAC imports. The LB body adopts existing inline children.
+   bindings, RBAC imports, and imports to `module.inbound_nat_rule[key].azapi_resource.this`.
+   In child-pool mode also expect imports to
+   `module.backend_address_pool[key].azapi_resource.this`. The migration flag
+   uses the new input keys and preserved Azure names, not old name-keyed addresses.
+   The LB body adopts the remaining inline children.
    There must be **zero unintended Azure deletes or replacements**. A forgotten
    binding is not an Azure deletion. Do not change unrelated infrastructure.
 10. Apply the inspected saved plan only after independent migration review.

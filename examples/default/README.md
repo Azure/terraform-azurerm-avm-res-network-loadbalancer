@@ -6,6 +6,10 @@ Creates an isolated resource group, private load balancer and NIC using AzAPI.
 The NIC owns its IP configuration's backend pool memberships. The LB only
 exports pool IDs. This is a fresh-deployment example, not migration proof.
 
+The root enables backend-pool child modules because this example has no
+parent-owned load/outbound rule references. The NIC depends on the composed
+pool ID output, so its membership is assigned only after pool creation.
+
 ```hcl
 resource "random_id" "example" {
   byte_length = 4
@@ -44,11 +48,12 @@ module "loadbalancer" {
       frontend_private_ip_subnet_resource_id = "${azapi_resource.virtual_network.id}/subnets/backend"
     }
   }
-  location              = var.location
-  name                  = "lb-${random_id.example.hex}"
-  parent_id             = azapi_resource.resource_group.id
-  backend_address_pools = { app = { name = "app" } }
-  enable_telemetry      = var.enable_telemetry
+  location                                   = var.location
+  name                                       = "lb-${random_id.example.hex}"
+  parent_id                                  = azapi_resource.resource_group.id
+  backend_address_pool_child_modules_enabled = true
+  backend_address_pools                      = { app = { name = "app" } }
+  enable_telemetry                           = var.enable_telemetry
 }
 
 # The NIC owns its IP configurations and backend memberships.

@@ -50,6 +50,13 @@ variable "properties" {
   }
 }
 
+variable "avm_managed_migration_enabled" {
+  type        = bool
+  default     = false
+  description = "Import an existing pool at parent_id/backendAddressPools/name without deleting it. Enable only for adoption, never fresh creation; disable after convergence."
+  nullable    = false
+}
+
 variable "enable_telemetry" {
   type        = bool
   default     = true
