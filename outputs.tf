@@ -1,7 +1,7 @@
 output "backend_address_pool_resource_ids" {
-  depends_on  = [azapi_resource.this, module.backend_address_pool]
+  depends_on  = [azapi_resource.this]
   description = "Backend pool IDs keyed by backend_address_pools input keys. Pass these to the module that owns the NIC."
-  value       = var.backend_address_pool_child_modules_enabled ? { for key, pool in module.backend_address_pool : key => pool.resource_id } : local.pool_ids
+  value       = local.pool_ids
 }
 
 output "frontend_ip_configuration_resource_ids" {
@@ -11,8 +11,9 @@ output "frontend_ip_configuration_resource_ids" {
 }
 
 output "inbound_nat_rule_resource_ids" {
+  depends_on  = [azapi_resource.this]
   description = "NAT rule IDs keyed by lb_nat_rules input keys (not Azure rule names)."
-  value       = { for key, rule in module.inbound_nat_rule : key => rule.resource_id }
+  value       = { for key, rule in var.lb_nat_rules : key => "${local.resource_id}/inboundNatRules/${coalesce(rule.name, "nat-rule-${var.name}")}" }
 }
 
 output "load_balancing_rule_resource_ids" {

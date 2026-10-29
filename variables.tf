@@ -107,13 +107,6 @@ variable "backend_address_pool_addresses" {
   }
 }
 
-variable "backend_address_pool_child_modules_enabled" {
-  type        = bool
-  default     = false
-  description = "Manage backend pools through single-instance child modules when no parent-owned load balancing or outbound rule references them. NAT rules can reference child-managed pools. Defaults to false to retain coupled inline rules; this residual ownership is not a claim of TFRMNFR1 compliance. Choose the owner before deployment. For existing pools, enable avm_managed_migration_enabled for one adoption apply. Do not toggle back: child destruction would delete the live pools."
-  nullable    = false
-}
-
 variable "backend_address_pool_configuration" {
   type        = string
   default     = null

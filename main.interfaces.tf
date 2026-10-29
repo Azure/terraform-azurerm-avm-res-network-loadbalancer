@@ -101,8 +101,6 @@ resource "time_sleep" "lock_removal" {
     azapi_resource.this,
     azapi_resource.diagnostic_settings,
     azapi_resource.role_assignments,
-    module.backend_address_pool,
-    module.inbound_nat_rule,
   ]
 }
 

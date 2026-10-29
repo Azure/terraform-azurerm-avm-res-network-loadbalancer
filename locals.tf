@@ -6,10 +6,6 @@ locals {
   pool_ids = {
     for key, pool in var.backend_address_pools : key => "${local.resource_id}/backendAddressPools/${pool.name}"
   }
-  parent_referenced_pool_ids = concat(
-    flatten([for rule in values(local.rule_properties) : [for pool in rule.backendAddressPools : pool.id]]),
-    [for rule in values(local.outbound_rule_properties) : rule.backendAddressPool.id],
-  )
   probe_ids = {
     for key, probe in var.lb_probes : key => "${local.resource_id}/probes/${coalesce(probe.name, "probe-${var.name}")}"
   }
@@ -59,7 +55,7 @@ locals {
   rule_properties = {
     for key, rule in var.lb_rules : key => {
       frontendIPConfiguration = { id = "${local.resource_id}/frontendIPConfigurations/${rule.frontend_ip_configuration_name}" }
-      backendAddressPools     = [for id in rule.backend_address_pool_resource_ids != null ? rule.backend_address_pool_resource_ids : [for key in coalesce(rule.backend_address_pool_object_names, []) : local.pool_ids[key]] : { id = id }]
+      backendAddressPools     = [for id in sort(distinct(rule.backend_address_pool_resource_ids != null ? rule.backend_address_pool_resource_ids : [for key in coalesce(rule.backend_address_pool_object_names, []) : local.pool_ids[key]])) : { id = id }]
       probe                   = rule.probe_resource_id != null ? { id = rule.probe_resource_id } : rule.probe_object_name != null ? { id = local.probe_ids[rule.probe_object_name] } : null
       protocol                = rule.protocol
       frontendPort            = rule.frontend_port
@@ -87,7 +83,7 @@ locals {
   }
   outbound_rule_properties = {
     for key, rule in var.lb_outbound_rules : key => {
-      frontendIPConfigurations = [for frontend in rule.frontend_ip_configurations : { id = "${local.resource_id}/frontendIPConfigurations/${frontend.name}" }]
+      frontendIPConfigurations = [for name in sort(distinct([for frontend in rule.frontend_ip_configurations : frontend.name])) : { id = "${local.resource_id}/frontendIPConfigurations/${name}" }]
       backendAddressPool       = { id = rule.backend_address_pool_resource_id != null ? rule.backend_address_pool_resource_id : local.pool_ids[rule.backend_address_pool_object_name] }
       protocol                 = rule.protocol
       allocatedOutboundPorts   = rule.number_of_allocated_outbound_ports
@@ -95,8 +91,7 @@ locals {
       idleTimeoutInMinutes     = rule.idle_timeout_in_minutes
     }
   }
-  # NAT pools have no deployable ARM child type. Keep them inline, including
-  # minimal frontends on creation so their references resolve in the first PUT.
+  # All collections and their references are sent in the same complete LB PUT.
   inbound_nat_pools = [
     for key, pool in var.lb_nat_pools : {
       name = coalesce(pool.name, "nat-pool-${var.name}")

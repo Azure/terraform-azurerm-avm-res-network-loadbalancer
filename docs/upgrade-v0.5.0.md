@@ -1,9 +1,11 @@
 # v0.5.0 to AzAPI — draft upgrade procedure
 
 **Not production-ready. No real-Azure migration or cleanup has been executed.**
-NAT rules are composed; pools can be composed when not referenced by parent-owned
-load/outbound rules. Remaining inline child types and coupled pool/rule ownership
-are unresolved specification/API blockers, not an approved blanket deviation.
+The approved design manages **all LB child collections in the parent body**,
+including pools and NAT rules. One complete LB write avoids the parent-rule/
+separate-pool creation cycle and competing writes. There is no root ownership
+switch or object-only submodule. This practical design deliberately departs
+from current TFRMNFR1 composition requirements; full compliance is not claimed.
 
 ## Baseline and target
 
@@ -27,11 +29,11 @@ move is claimed.
 |---|---|
 | `azurerm_lb.this` | `azapi_resource.this`, same-boundary provider `moved` |
 | LB inline frontend configurations | LB body's `frontendIPConfigurations`, preserved names |
-| `azurerm_lb_backend_address_pool.this[key]` | Default: LB body's `backendAddressPools`. Child-pool mode: `module.backend_address_pool[key].azapi_resource.this`; old binding forgotten + gated import, no ARM delete |
+| `azurerm_lb_backend_address_pool.this[key]` | LB body's `backendAddressPools`; old binding forgotten with `destroy=false`, no ARM delete |
 | `azurerm_lb_backend_address_pool_address.this[key]` | owning pool's `loadBalancerBackendAddresses`; synthetic binding forgotten |
 | `azurerm_lb_probe.this[key]` | LB body's `probes`; old binding forgotten |
 | `azurerm_lb_rule.this[key]` | LB body's `loadBalancingRules`; old binding forgotten |
-| `azurerm_lb_nat_rule.this[name]` | `module.inbound_nat_rule[input_key].azapi_resource.this`; old binding forgotten + gated import using preserved Azure name |
+| `azurerm_lb_nat_rule.this[name]` | LB body's `inboundNatRules`, preserving Azure name; old binding forgotten with `destroy=false` |
 | `azurerm_lb_outbound_rule.this[name]` | LB body's `outboundRules`; old binding forgotten |
 | `azurerm_lb_nat_pool.this[name]` | LB body's `inboundNatPools`; old binding forgotten |
 | `azurerm_network_interface_backend_address_pool_association.this[key]` | NIC owner; forgotten with destroy=false, no NIC action |
@@ -47,41 +49,61 @@ move is claimed.
 Pool IP addresses are authoritative. Inventory and configure all live IP-based
 members before conversion. NIC-based membership is not written by this module.
 Preservation during a parent PUT still requires state-backed Azure verification.
-The parent preserves live NAT rules and, in child-pool mode, pools on every
-update. The remaining inline collections are authoritative. Reconcile all live
-members before using this draft.
+Every configured collection is authoritative, including pools and NAT rules.
+Reconcile all live members before using this draft. Read-only NIC back-references
+are excluded from the request; this is not live preservation proof.
 
-## Child adoption and ordering
+## Released child adoption and ordering
 
 Set `avm_managed_migration_enabled = true` for the one upgrade apply. The module
-forgets released NAT bindings without deletion and imports their actual IDs at
-the new child destinations. Child-owned import declarations use each child's
-selected API version; the root forwards the migration flag and nested overrides.
-No generic collection-to-module `moved` block is claimed.
-For the nested fixture, the NAT destination is:
+forgets released child bindings without deletion. The moved/imported LB adopts
+their complete configured properties in its body; no pool/NAT imports target root
+child modules. The migration flag gates captured-ID RBAC imports only. Never
+enable it on an empty deployment with role assignments: imports need existing
+objects. No generic collection-to-module `moved` block is claimed.
 
-```text
-module.workload["app"].module.load_balancer.module.inbound_nat_rule["admin"].azapi_resource.this
-```
+The nested parent destination is
+`module.workload["app"].module.load_balancer.azapi_resource.this`.
+Released NAT/pool addresses remain in the `removed { destroy = false }`
+declarations at that same LB module boundary. Stable input keys are not a
+substitute for preserving each resolved Azure child name.
 
-Default inline pools need no new import. If **no** parent-owned load/outbound rule
-references a configured pool, child-pool mode can adopt existing pools with the
-same migration flag. The analogous destination is:
+The lock removal barrier covers the parent, diagnostics and RBAC. Full destroy
+removes the lock, waits, then deletes the parent and its child collections.
+Selective updates under ReadOnly locks, and removals subject to applicable locks,
+need separately reviewed unlocking. Parent updates are complete PUTs, not an
+assurance that Azure permits every child edit or preserves every live relationship.
+Freeze cross-state writers and verify readback. A provider mutex is not a
+distributed lock. Remove references when removing their target from the body;
+test simultaneous collection changes in the isolated lab before production use.
 
-```text
-module.workload["app"].module.load_balancer.module.backend_address_pool["app"].azapi_resource.this
-```
+## Experimental child-composition draft to current draft
 
-Never enable that flag on an empty deployment: imports require existing Azure
-objects. Do not remove a referenced pool/frontend and its NAT rule in one apply;
-first remove the NAT rule and verify convergence, then remove its dependencies.
-Do not toggle child-pool mode back to inline ownership: that requires a separately
-reviewed non-destructive state handoff. No such reverse procedure is validated.
-During destruction, lock removal and its delay precede the child modules; NAT
-destruction precedes child-pool destruction, which precedes parent destruction.
-Within one apply, parent-to-child dependencies prevent parent updates from racing
-their children. Cross-state writers must be frozen; AzAPI's internal mutex is not
-a distributed lock and its live preservation read happens before mutex acquisition.
+This is **not** the released v0.5.0 path. Earlier unreleased drafts, including
+`96ca5f9ee924133b4f91ac4da8781bc30bfc8571`, called
+`module.backend_address_pool[key]` and `module.inbound_nat_rule[key]` in the root.
+The current module includes whole-call `removed` blocks with `destroy=false` for
+those two addresses. They forget all instances (including any draft telemetry
+bindings) without sending child DELETEs. The parent then adopts the complete
+configured collections. This procedure is implemented but not applied-state
+verified; do not assume ordinary removal of a module is harmless.
+
+Back up state and inventory names, properties, NIC memberships and telemetry
+deployments. Remove `backend_address_pool_child_modules_enabled` and the obsolete
+nested child `resource_types`/`ignore_body_changes` slots from configuration.
+Configure all pool/NAT properties in the root inputs; remove any former LB
+collection ignore paths so edits are managed. Keep names, SKU/tier, edge zone,
+role GUIDs and lock names unchanged. The stable external replacement object
+retains its old shape to avoid a trigger-shape change during this handoff.
+Inspect the saved plan for forgotten module bindings and a parent in-place
+update, **not child deletes or parent replacement**. Stop on destructive actions.
+No module-child imports belong in this plan. Inventory and explicitly clean up
+any forgotten draft telemetry deployments under separately approved scope;
+forgetting state does not delete Azure artifacts.
+
+Do not use these root-relative removals to retire standalone modules in another
+consumer. Their ownership transfer needs its own non-destructive state procedure.
+Never keep a standalone module writing collections now owned by this root.
 
 ## PIP adoption without replacement
 

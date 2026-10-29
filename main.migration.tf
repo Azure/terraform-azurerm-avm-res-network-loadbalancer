@@ -104,8 +104,22 @@ moved {
   to   = azapi_resource.diagnostic_settings
 }
 
-# Composed children own their gated imports and API defaults. The parent
-# forwards avm_managed_migration_enabled without duplicating child versions.
+# Experimental (unreleased) child-composition drafts only. Forget every keyed
+# instance without deleting Azure children; the complete LB body adopts them.
+# Standalone callers outside this root are not addressed by these declarations.
+removed {
+  from = module.backend_address_pool
+  lifecycle {
+    destroy = false
+  }
+}
+
+removed {
+  from = module.inbound_nat_rule
+  lifecycle {
+    destroy = false
+  }
+}
 
 import {
   for_each = var.avm_managed_migration_enabled ? var.migration_role_assignment_resource_ids : {}

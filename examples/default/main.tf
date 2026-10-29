@@ -35,12 +35,11 @@ module "loadbalancer" {
       frontend_private_ip_subnet_resource_id = "${azapi_resource.virtual_network.id}/subnets/backend"
     }
   }
-  location                                   = var.location
-  name                                       = "lb-${random_id.example.hex}"
-  parent_id                                  = azapi_resource.resource_group.id
-  backend_address_pool_child_modules_enabled = true
-  backend_address_pools                      = { app = { name = "app" } }
-  enable_telemetry                           = var.enable_telemetry
+  location              = var.location
+  name                  = "lb-${random_id.example.hex}"
+  parent_id             = azapi_resource.resource_group.id
+  backend_address_pools = { app = { name = "app" } }
+  enable_telemetry      = var.enable_telemetry
 }
 
 # The NIC owns its IP configurations and backend memberships.
