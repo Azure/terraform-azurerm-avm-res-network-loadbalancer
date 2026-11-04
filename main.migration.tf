@@ -8,6 +8,8 @@ moved {
 # endpoint after the parent adopts metadata. No pool import or second
 # azapi_resource owner is introduced. clear_backend_members initially stores
 # only an empty destroy-time request and performs no Azure write on creation.
+# The stateless write_backend_members action has no state/import and runs
+# before updater create/update. Existing partial binding addresses are unchanged.
 removed {
   from = azurerm_lb_backend_address_pool.this
   lifecycle {

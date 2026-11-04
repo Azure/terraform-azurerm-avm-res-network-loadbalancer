@@ -7,7 +7,7 @@ frontends, backend pool skeletons/tunnels, probes,
 load-balancing rules, inbound NAT rules, outbound rules and legacy NAT pools.
 There is no root child-composition switch, second pool lifecycle resource or
 object-only module. Explicit IP/frontend lists are never sent by the parent;
-one refreshing dedicated-endpoint updater owns each non-NIC pool's list.
+one coupled exact-action/refreshing-updater lifecycle owns each non-NIC pool's list.
 Configured empty lists remove explicit members at that endpoint.
 Inventory and declare the full desired collections before adopting an existing LB.
 
@@ -30,6 +30,14 @@ same parent write, but never includes writable or read-only member fields.
 It refreshes the configured list, does not ignore missing properties, and
 replays after parent updates through `replace_triggered_by`.
 Its deletion is a no-op, not pool deletion or membership cleanup.
+Before each updater create/update, a stateless AzAPI action PUTs the exact
+desired list plus the root's configured pool metadata. Unlike the updater,
+this action does not merge live named arrays. This prevents removed names and
+old positional member properties from being carried into a new request.
+The subsequent updater retains refresh/drift detection. This is one coupled
+list-owner lifecycle, not a second pool lifecycle resource. NIC pools have
+neither this action nor an updater. The action halts on failure and has the
+provider's fixed 30-minute timeout, without configurable retry/timeouts.
 
 `azapi_resource_action.clear_backend_members[pool_key]` is a distinct
 destroy-only fixed-empty PUT, not a refreshing owner. Dependency reversal
@@ -65,7 +73,7 @@ A type in a schema catalog is not evidence of child PUT/DELETE support.
 | Backend pool, inbound NAT rule | Independent GET/PUT/DELETE available | Complete parent LB body, deliberately not separate resources |
 | Frontend, probe, load rule, outbound rule | Child paths expose GET/list, no PUT/DELETE | Parent LB body |
 | Pool tunnel interfaces and metadata | Writable pool properties | Nested parent LB body |
-| Explicit IP / regional frontend members | Dedicated writable pool endpoint | One refreshing partial-field updater; fixed-empty destroy cleanup |
+| Explicit IP / regional frontend members | Dedicated writable pool endpoint | Coupled exact pre-write action and refreshing partial-field updater; fixed-empty destroy cleanup |
 | NAT pools | Parent inline property | Parent LB body |
 | NIC memberships | NIC IP-configuration properties; pool back-references read-only | NIC owner, never this module |
 

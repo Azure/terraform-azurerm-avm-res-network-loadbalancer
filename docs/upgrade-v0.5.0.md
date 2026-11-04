@@ -5,8 +5,8 @@ relationships but failed follow-up convergence; its cleanup completed. The
 normalization corrections still require independent live revalidation, including
 a real NIC-owner write. No live pass is claimed for this candidate.**
 The approved design manages **pool metadata and referencing rules in the parent
-body**, with explicit IP/frontend lists owned only by refreshing dedicated-pool
-endpoint updaters. The parent never sends member lists. This avoids the
+body**, with explicit IP/frontend lists managed by coupled exact-PUT actions
+and refreshing dedicated-pool endpoint updaters. The parent never sends member lists. This avoids the
 parent-rule/separate-pool bootstrap cycle without a second pool lifecycle
 resource. Fixed-empty destroy actions clear explicit lists before removal.
 There is no root ownership
@@ -75,7 +75,12 @@ objects. No generic collection-to-module `moved` block is claimed.
 
 New `azapi_update_resource.backend_members[pool_key]` bindings do not import or
 create a second pool. Their initial apply writes the existing dedicated endpoint
-after the parent has adopted/created metadata. The provider forgets these partial
+after the parent has adopted/created metadata. A stateless `before_create` /
+`before_update` action first sends the exact desired list, avoiding the pinned
+updater's named-array append behavior. The updater then observes/replays the
+corrected pool. The action has no state/import and creates no second lifecycle
+owner. Existing updater and cleanup addresses are unchanged from `ab278cc`;
+no new move/removed block is needed for this correction. The provider forgets these partial
 bindings without deleting anything. One `clear_backend_members[pool_key]`
 destroy action stores a fixed empty list on initial creation; no Azure call occurs
 then. No migration import is required for these partial updaters/actions.
@@ -83,6 +88,16 @@ On parent edits the updater binding is replaced and replays its desired list;
 such a binding replacement is not an Azure pool replacement. Inspect the actual
 plan to distinguish them. Existing IP members must all be declared, or this
 authoritative write can remove omitted members.
+
+The action uses the existing Terraform >=1.16 language surface and effective
+AzAPI >=2.13 root dependency. It shares the pool API override and mutex but
+has a fixed 30-minute provider timeout and no configurable retry/timeouts.
+Do not assume the updater's retry controls govern the action. Two PUTs per
+changed explicit pool are expected; there is no clear-all-before-restore stage.
+Candidate `ab278cc` passed fresh deployment/ordinary cleanup but failed
+nonempty frontend removal, and its migration was not started. Those results
+remain scoped to that SHA. This correction still requires independently applied
+v0.5.0-to-exact-candidate upgrade and ordinary destroy evidence.
 
 The nested parent destination is
 `module.workload["app"].module.load_balancer.azapi_resource.this`.

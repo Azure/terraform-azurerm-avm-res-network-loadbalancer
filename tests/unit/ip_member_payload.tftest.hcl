@@ -150,3 +150,46 @@ run "last_member_clear_payload" {
     time   = time
   }
 }
+
+run "restore_ip_after_empty" {
+  command = apply
+  variables {
+    backend_address_pool_addresses = {
+      static = { name = "static", backend_address_pool_object_name = "ip", ip_address = "10.40.1.10" }
+      second = { name = "second", backend_address_pool_object_name = "ip", ip_address = "10.40.1.11" }
+    }
+  }
+  assert {
+    condition     = length(azapi_update_resource.backend_members["ip"].body.properties.loadBalancerBackendAddresses) == 2 && length(azapi_update_resource.backend_members) == 1
+    error_message = "Restore both explicit IPs without adding writers for either native NIC pool."
+  }
+  providers = {
+    azapi  = azapi
+    random = random
+    time   = time
+  }
+}
+
+run "same_count_ip_rename_retarget_and_omit_vnet" {
+  command = apply
+  variables {
+    backend_address_pool_configuration = null
+    backend_address_pool_addresses = {
+      static = { name = "renamed", backend_address_pool_object_name = "ip", ip_address = "10.40.1.21", virtual_network_resource_id = null }
+      second = { name = "second", backend_address_pool_object_name = "ip", ip_address = "10.40.1.22" }
+    }
+  }
+  assert {
+    condition = (
+      { for a in local.backend_pool_members.ip : a.name => a.properties.ipAddress } == { renamed = "10.40.1.21", second = "10.40.1.22" } &&
+      alltrue([for a in local.backend_pool_members.ip : !contains(keys(a.properties), "virtualNetwork")]) &&
+      alltrue([for p in azapi_resource.this.body.properties.backendAddressPools : !contains(keys(p.properties), "loadBalancerBackendAddresses")])
+    )
+    error_message = "Same-count IP mutations and null VNet must not copy former member fields or move membership into the parent skeleton."
+  }
+  providers = {
+    azapi  = azapi
+    random = random
+    time   = time
+  }
+}

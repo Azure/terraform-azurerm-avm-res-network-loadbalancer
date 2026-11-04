@@ -31,7 +31,7 @@ variable "resource_types" {
   description = <<DESCRIPTION
 AzAPI resource types and API versions.
 - `network_load_balancers` - Primary load balancer.
-- `network_load_balancers_backend_address_pools` - Dedicated member endpoint, for both refreshing updates and destroy-time clearing.
+- `network_load_balancers_backend_address_pools` - Dedicated member endpoint for exact pre-write actions, refreshing updates and destroy-time clearing.
 - `authorization_locks` - Resource locks.
 - `authorization_role_assignments` - RBAC assignments.
 - `insights_diagnostic_settings` - Diagnostic settings (the API only provides a preview version).
@@ -76,5 +76,7 @@ Default per-operation timeouts applied to every `azapi` resource managed by the 
 - `delete` - (Optional) Timeout for delete operations.
 
 AzAPI 2.13 resource_action executes destroy-time requests using its create timeout. Configure create for the fixed-empty member cleanup; propagation of delete alone is not a guarantee of cleanup request timeout behavior.
+
+The stateless exact member pre-write action exposes no retry/timeouts in AzAPI 2.13 and uses its fixed 30-minute timeout. Resource retry and timeout controls do not govern that first PUT.
 DESCRIPTION
 }

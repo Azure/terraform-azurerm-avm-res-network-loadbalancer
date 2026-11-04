@@ -101,11 +101,15 @@ run "dedicated_owner_and_bootstrap" {
   assert {
     condition = (
       var.lock != null &&
+      can(regex("events\\s*=\\s*\\[before_create, before_update\\]", file("main.backend_members.tf"))) &&
+      strcontains(file("main.backend_members.tf"), "action.azapi_resource_action.write_backend_members[each.key]") &&
+      can(regex("on_failure\\s*=\\s*halt", file("main.backend_members.tf"))) &&
+      strcontains(file("main.backend_members.tf"), "properties = merge({ for key, value in local.backend_pool_properties[each.key] : key => value if value != null }, {") &&
       can(regex("replace_triggered_by\\s*=\\s*\\[azapi_resource.this\\]", file("main.backend_members.tf"))) &&
       strcontains(file("main.interfaces.tf"), "azapi_resource_action.clear_backend_members,") &&
       strcontains(file("main.interfaces.tf"), "azapi_update_resource.backend_members,")
     )
-    error_message = "Parent writes must replay the updater and the lock-removal barrier must cover updater and cleanup. This source guard is not a live graph test."
+    error_message = "Exact writes must precede refreshing-owner create/update, halt on failure, retain configured metadata and keep existing parent/cleanup ordering. This source guard is not provider request or live graph proof."
   }
   providers = {
     azapi  = azapi
@@ -140,6 +144,42 @@ run "clear_last_frontend" {
   assert {
     condition     = length(azapi_update_resource.backend_members["regions"].body.properties.loadBalancerBackendAddresses) == 0 && length(azapi_resource_action.clear_backend_members) == 1
     error_message = "Empty desired membership must be an authoritative [] with cleanup retained."
+  }
+  providers = {
+    azapi  = azapi
+    random = random
+    time   = time
+  }
+}
+
+run "restore_frontends_after_empty" {
+  command = apply
+  assert {
+    condition     = [for a in azapi_update_resource.backend_members["regions"].body.properties.loadBalancerBackendAddresses : a.name] == ["east", "west"]
+    error_message = "Restoring from [] must retain the refreshing owner and restore both configured frontend names."
+  }
+  providers = {
+    azapi  = azapi
+    random = random
+    time   = time
+  }
+}
+
+run "same_count_frontend_rename_retarget" {
+  command = apply
+  variables {
+    backend_address_pool_addresses = {
+      east = { name = "renamed", backend_address_pool_object_name = "regions", load_balancer_frontend_ip_configuration_resource_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/lab/providers/Microsoft.Network/loadBalancers/west/frontendIPConfigurations/other" }
+      west = { name = "west", backend_address_pool_object_name = "regions", load_balancer_frontend_ip_configuration_resource_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/lab/providers/Microsoft.Network/loadBalancers/east/frontendIPConfigurations/public" }
+    }
+  }
+  assert {
+    condition = (
+      [for a in local.backend_pool_members.regions : a.name] == ["renamed", "west"] &&
+      endswith(local.backend_pool_members.regions[0].properties.loadBalancerFrontendIPConfiguration.id, "/west/frontendIPConfigurations/other") &&
+      alltrue([for a in local.backend_pool_members.regions : !contains(keys(a.properties), "ipAddress") && !contains(keys(a.properties), "networkInterfaceIPConfiguration")])
+    )
+    error_message = "Same-cardinality frontend changes must be built from configuration without old synthesized IP or NIC properties."
   }
   providers = {
     azapi  = azapi

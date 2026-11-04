@@ -2,13 +2,71 @@
 
 ## Status
 
-**Implementation corrected; exact-candidate runtime proof still pending.**
+**Member-removal correction implemented; new exact-candidate proof pending.**
 The root now sends pool skeletons/metadata without any member list. A single
-refreshing `azapi_update_resource.backend_members[pool_key]` writes the
-authoritative IP/frontend list through the dedicated endpoint, including
+refreshing `azapi_update_resource.backend_members[pool_key]` is coupled to a
+stateless exact-PUT action at `before_create` and `before_update`. The action
+sends the authoritative IP/frontend list through the dedicated endpoint, including
 `[]` for last-member removal. A destroy-only fixed-empty action clears explicit
-lists before pool removal. Neither resource owns pool lifecycle or NICs.
-No blanket ignore has been added to mask the historical failure.
+lists before pool removal. None of these partial bindings owns pool lifecycle or NICs.
+No blanket ignore has been added to mask the historical failure. The action
+does not merge old member arrays. The updater subsequently reads/writes the
+corrected pool and retains configured-list drift detection.
+
+## Exact-candidate removal failure and correction
+
+On `ab278cc42f3023e2ea65814db1ab8845a771bd89`, the byte-verified multi-region
+example passed 18 creates, 21 independent membership checks, two refreshed
+no-op plans and ordinary 18-resource destroy with automatic fixed-empty clears.
+Parent tags, Global floating-IP and real NIC-owner updates also passed, with
+members present in parent responses before updater replay.
+
+Removing west from the Global pool **failed**: plan and configured state were
+east-only, apply returned success, but captured outgoing pool PUT contained
+east and west. Both Azure GETs returned both and a fresh plan repeated the
+update. Both fixtures cleaned up normally through that unchanged SHA.
+Migration was stopped before baseline deployment. These old-SHA passes and the
+failed removal remain distinct, not a pass for this correction.
+
+Pinned [AzAPI 2.13 merge code](https://github.com/Azure/terraform-provider-azapi/blob/v2.13.0/utils/json.go)
+appends unmatched old entries in named arrays. `ignore_missing_property=false`
+and `ignore_other_items_in_list` affect read shaping, not this write merge.
+Using `list_unique_id_property = "id"` is not a robust replacement: same-length
+positional merges can copy an old synthesized frontend IP or omitted VNet.
+No fake identity key or such fallback is used.
+
+The supported [stateless action](https://github.com/Azure/terraform-provider-azapi/blob/v2.13.0/internal/services/azapi_resource_action.go)
+serializes the configured body without reading/merging the target. Its exact
+PUT runs before each updater create/update, including drift-driven changes.
+The root's configured pool metadata accompanies the list so it is not silently
+dropped. There is no preliminary clear-all write, new pool lifecycle owner,
+state address change, ignored member drift or native NIC snapshot.
+The existing fixed-empty destroy cleanup remains separate and unchanged.
+
+Tradeoffs: two PUTs per changed explicit pool; stateless actions have a fixed
+30-minute provider timeout and no configurable retry/timeouts in AzAPI 2.13.
+Failure halts apply. These operations are not atomic; after a partial failure,
+inspect a refreshed plan before retrying. Terraform >=1.16 and the root's
+effective AzAPI >=2.13 dependencies already exist.
+
+An offline regression compiles against the exact upstream provider source
+(`cf3ecee858fa48c0aca95d0b995a8bfd4950c8ec`), invokes its real action and updater
+methods, and captures the real ARM HTTP serialization through a fail-closed
+in-memory transport. It exercises IP/Frontend 2→1→0→restore, same-count
+rename/retarget/reorder, omitted/null VNet, server-added fields, repeated Read
+shaping and external member drift. Run it separately from mocked Terraform tests:
+
+```powershell
+./tests/provider/Test-BackendMemberWrite.ps1 -Workspace <new-protected-external-directory>
+```
+
+Git and compatible Go are test-only prerequisites; only the pinned provider's
+existing dependency graph is used with `-mod=readonly`. No provider binary
+override, Azure authentication or real HTTP transport is used. This is provider
+request/refresh proof, not Azure persistence or Terraform's real apply graph.
+The managed unit and PR gates remain mandatory.
+
+## Earlier parent-endpoint investigation
 
 Diagnostic dedicated-endpoint experiments persisted explicit IP and real regional
 frontend members. A separate skeleton diagnostic preserved IP+VNet and actual
@@ -102,7 +160,8 @@ failure and preserve it. Verify unchanged NIC memberships/backlinks and IDs.
 
 The now-approved correction deliberately removes the entire member field from
 the parent instead of adding a competing list writer. Pool metadata/rules
-bootstrap together, then the refreshing endpoint owner writes members. Partial
+bootstrap together, then the exact pre-write action and refreshing updater
+manage members in their coupled lifecycle. Partial
 bindings require no second pool import. Parent edits replay that owner, while
 fixed-empty cleanup precedes removal. The lock barrier covers both bindings.
 Actual automatic pool removal/rename, metadata/rule mutation, LB replacement,
@@ -110,6 +169,8 @@ lock interaction, frontend teardown and v0.5.0 adoption must still be exercised
 on the frozen candidate. Stop on lost membership, repeated drift or failed
 cleanup; a mock pass cannot satisfy these gates.
 
-The new unit cases prove only payload construction for these mutations.
-They deliberately retain the historical expected-versus-observed mismatch;
-they do not simulate ARM persistence or convert the failed live case to PASS.
+The Terraform unit cases prove payload construction and mocked lifecycle
+configuration only. The separate pinned-provider regression proves serialization
+and provider refresh shaping against an in-memory sink. Neither proves Azure
+persistence or real Terraform apply ordering. Historical expected-versus-observed
+mismatches remain failures, never converted to PASS by these local tests.

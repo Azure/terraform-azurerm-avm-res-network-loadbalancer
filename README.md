@@ -9,8 +9,8 @@ RBAC, locks, tags, telemetry and AzAPI controls.
 
 **Implementation status:** this is a breaking migration draft, not a released
 or Azure-upgrade-validated implementation. The parent owns pool metadata and
-referencing rules; refreshing dedicated-endpoint updaters exclusively own
-explicit member lists. Fixed-empty destroy actions clear those lists before
+referencing rules; a coupled exact-PUT action and refreshing dedicated-endpoint
+updater exclusively manage each explicit member list. Fixed-empty destroy actions clear those lists before
 pool removal. This is not a claim of full AVM specification compliance or of
 exact-candidate Azure validation.
 
@@ -23,9 +23,13 @@ have writable endpoints, but splitting out pool lifecycle leaves parent rules
 needing pools before those separate children can exist. The parent therefore
 bootstraps and owns pool skeletons/metadata alongside rules. It never sends
 `loadBalancerBackendAddresses` or read-only `backendIPConfigurations`.
-A single `azapi_update_resource.backend_members[pool_key]` refreshes and writes
-the explicit member list at the dedicated pool endpoint. It is not a second
-pool lifecycle owner and does not own metadata or delete the pool.
+A single `azapi_update_resource.backend_members[pool_key]` refreshes the explicit
+member list. Its `before_create` / `before_update` stateless
+`action.azapi_resource_action.write_backend_members[pool_key]` first PUTs the
+exact desired list at the dedicated endpoint, together with the root's configured
+pool metadata. The updater then reads/writes that already-correct collection.
+These are one coupled partial-field lifecycle, not independently applied writers.
+Neither creates or deletes a pool. Pool metadata remains sourced from the parent.
 
 All configured collections are authoritative, including empty lists for removal,
 with explicit member lists owned separately (see below).
@@ -110,7 +114,11 @@ exclusively with the NIC owner; this does not adopt external IP members.
 
 `backend_address_type = "IP"` is the default. The desired member list is sent
 only through the dedicated endpoint and compared on refresh, with missing
-properties not ignored. Removing the last member sends `[]`. Parent changes
+properties not ignored. The updater alone merges named arrays and retains
+removed entries, so the stateless pre-write action is mandatory; it sends the
+desired list without reading/merging an old member list. No identity-key
+fallback, ignored drift or clear-all-before-repopulate sequence is used.
+The action halts apply on failure. Removing the last member sends `[]`. Parent changes
 recreate only the updater's partial Terraform binding and replay the desired
 list after the parent write; the updater's destroy itself performs no operation.
 A separate `azapi_resource_action.clear_backend_members[pool_key]` stores only
@@ -121,9 +129,14 @@ The lock-removal barrier covers both resources. Remove ReadOnly locks for
 updates and applicable locks for selective removal; the barrier does not unlock
 ordinary updates automatically.
 
-The earlier parent-list implementation failed live IP persistence. Diagnostic
-dedicated-endpoint and skeleton tests support this design, but they are not
-proof for this exact candidate, all metadata edits, automatic cleanup or upgrade.
+The earlier parent-list implementation failed live IP persistence.
+Candidate `ab278cc` passed fresh multi-region deployment, repeated refreshed
+no-ops, parent/NIC updates and ordinary automatic destroy, but **failed removal
+of one Global frontend member**: the updater sent both old members despite an
+east-only plan. Its cleanup passed; its migration test was stopped.
+The pre-write correction requires new exact-candidate runtime proof; earlier
+passes are not relabeled onto it. Diagnostic dedicated-endpoint and skeleton
+tests are not proof for this candidate, all metadata edits, cleanup or upgrade.
 No serialized wire body was captured in the initial skeleton diagnostic.
 Exact-candidate IP/frontend CRUD, automatic removal/destroy and state-backed
 upgrade remain release gates; see
@@ -191,6 +204,14 @@ slot, retry and timeouts. Pinned AzAPI does not expose `ignore_body_changes`
 for these two resource kinds; no unsupported argument or blanket ignore is
 invented. The cleanup request in AzAPI 2.13 uses the **create** timeout even at
 destroy; set that timeout for clearing rather than relying on `delete` alone.
+The stateless pre-write action uses the same pool API version and parent mutex,
+but AzAPI 2.13 exposes **no retry/timeouts or response-export arguments** on
+stateless actions and fixes their timeout at 30 minutes. Resource retry/timeouts
+therefore do not govern that first PUT. A changed explicit pool normally issues
+two PUTs (exact action, then refreshing updater), with no preliminary empty-list
+write. ReadOnly locks must be removed before either write.
+The existing Terraform >=1.16 requirement supports action triggers; the root's
+pinned interfaces utility already imposes AzAPI >=2.13. No new provider is added.
 An older API override must support every configured property; schema validation
 is not disabled to make an incompatible version pass.
 
@@ -651,7 +672,7 @@ Default: `{}`
 
 Description: AzAPI resource types and API versions.
 - `network_load_balancers` - Primary load balancer.
-- `network_load_balancers_backend_address_pools` - Dedicated member endpoint, for both refreshing updates and destroy-time clearing.
+- `network_load_balancers_backend_address_pools` - Dedicated member endpoint for exact pre-write actions, refreshing updates and destroy-time clearing.
 - `authorization_locks` - Resource locks.
 - `authorization_role_assignments` - RBAC assignments.
 - `insights_diagnostic_settings` - Diagnostic settings (the API only provides a preview version).
@@ -762,6 +783,8 @@ Description: Default per-operation timeouts applied to every `azapi` resource ma
 - `delete` - (Optional) Timeout for delete operations.
 
 AzAPI 2.13 resource\_action executes destroy-time requests using its create timeout. Configure create for the fixed-empty member cleanup; propagation of delete alone is not a guarantee of cleanup request timeout behavior.
+
+The stateless exact member pre-write action exposes no retry/timeouts in AzAPI 2.13 and uses its fixed 30-minute timeout. Resource retry and timeout controls do not govern that first PUT.
 
 Type:
 
