@@ -27,11 +27,19 @@ module "avm_interfaces" {
 resource "azapi_resource" "diagnostic_settings" {
   for_each = var.diagnostic_settings
 
-  name                   = coalesce(each.value.name, "diag-${var.name}")
-  parent_id              = azapi_resource.this.id
-  type                   = var.resource_types.insights_diagnostic_settings
-  body                   = module.avm_interfaces.diagnostic_settings_azapi_v2[each.key].body
-  ignore_body_changes    = length(var.ignore_body_changes.insights_diagnostic_settings) > 0 ? var.ignore_body_changes.insights_diagnostic_settings : null
+  name                = coalesce(each.value.name, "diag-${var.name}")
+  parent_id           = azapi_resource.this.id
+  type                = var.resource_types.insights_diagnostic_settings
+  body                = module.avm_interfaces.diagnostic_settings_azapi_v2[each.key].body
+  ignore_body_changes = length(var.ignore_body_changes.insights_diagnostic_settings) > 0 ? var.ignore_body_changes.insights_diagnostic_settings : null
+  # Utility v2 maps omitted/null/empty entries to null (unspecified). Azure
+  # expands unspecified logs into disabled categories on GET. Omit nulls,
+  # without ignoring configured category/group/enabled/destination values.
+  ignore_null_property = true
+  list_unique_id_property = {
+    "properties.logs"    = "category,categoryGroup"
+    "properties.metrics" = "category"
+  }
   response_export_values = []
   retry                  = var.retry
 

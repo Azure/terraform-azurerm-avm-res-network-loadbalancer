@@ -19,7 +19,7 @@ resource "azapi_resource" "public_ip" {
   type      = "Microsoft.Network/publicIPAddresses@2025-01-01"
   body = {
     sku   = { name = "Standard", tier = "Regional" }
-    zones = ["1", "2", "3"]
+    zones = toset(["1", "2", "3"])
     properties = {
       publicIPAllocationMethod = "Static"
       publicIPAddressVersion   = "IPv4"

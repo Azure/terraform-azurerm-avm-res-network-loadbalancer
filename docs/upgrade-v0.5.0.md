@@ -1,6 +1,9 @@
 # v0.5.0 to AzAPI — draft upgrade procedure
 
-**Not production-ready. No real-Azure migration or cleanup has been executed.**
+**Not production-ready. The initial real-Azure upgrade preserved identities and
+relationships but failed follow-up convergence; its cleanup completed. The
+normalization corrections still require independent live revalidation, including
+a real NIC-owner write. No live pass is claimed for this candidate.**
 The approved design manages **all LB child collections in the parent body**,
 including pools and NAT rules. One complete LB write avoids the parent-rule/
 separate-pool creation cycle and competing writes. There is no root ownership
@@ -47,7 +50,12 @@ move is claimed.
 | released modtm/random telemetry | pre-existing HEAD migration statements; not introduced by this implementation |
 
 Pool IP addresses are authoritative. Inventory and configure all live IP-based
-members before conversion. NIC-based membership is not written by this module.
+members before conversion. Set `backend_address_type = "NIC"` on every
+NIC-based pool (`app` and `retained` in the migration fixture); keep IP-based
+pools in the default `"IP"` mode even when removing their last IP member.
+NIC mode omits the server-maintained address projection, not the pool itself,
+and rejects configured IP members. Never switch modes as an implicit deletion.
+NIC-based membership is not written by this module.
 Preservation during a parent PUT still requires state-backed Azure verification.
 Every configured collection is authoritative, including pools and NAT rules.
 Reconcile all live members before using this draft. Read-only NIC back-references

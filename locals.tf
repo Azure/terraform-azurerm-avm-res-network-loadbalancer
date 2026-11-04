@@ -31,7 +31,10 @@ locals {
           type       = tunnel.type
         }
       ]
-      loadBalancerBackendAddresses = [
+      # NIC-derived entries contain read-only NIC references/NAT mappings.
+      # Null is omitted from PUT and refresh comparison; it is not an empty
+      # desired IP list. IP mode must retain [] to remove the last IP member.
+      loadBalancerBackendAddresses = pool.backend_address_type == "NIC" ? null : [
         for address in values(var.backend_address_pool_addresses) : {
           name = address.name
           properties = {

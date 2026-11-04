@@ -22,7 +22,8 @@ have writable endpoints, but splitting them out leaves parent rules needing
 pools before those separate children can exist. One complete LB write avoids
 that dependency cycle and competing writes. No object-only submodules are used.
 
-All configured collections are authoritative, including empty lists for removal.
+All configured collections are authoritative, including empty lists for removal,
+except the address projection of an explicitly NIC-based pool (see below).
 Declare every existing member before adoption. Do not combine this root with
 standalone child modules or another writer for the same LB collections. Retained
 pool/NAT modules are independently useful only for externally managed LBs whose
@@ -56,6 +57,9 @@ guarantee; Azure may reject immutable child-property changes. Mocked request
 equality is not proof of refresh normalization or repeat no-op plans. Those
 require an authorized real apply, repeat full-refresh plan, mutable-update apply,
 clean follow-up plan, and state-backed upgrade test. Live convergence is unproven.
+The initial v0.5.0 live upgrade preserved identities and relationships but failed
+repeat-plan convergence. The normalization corrections in this candidate still
+require an independent live rerun; no live pass is claimed.
 Freeze other writers during adoption/updates. Remove applicable ReadOnly locks
 before updates and locks preventing deletion before selective destructive
 operations; the full-destroy lock barrier is not an update-time unlock mechanism.
@@ -64,6 +68,22 @@ The LB exports `backend_address_pool_resource_ids` keyed by **input map keys**.
 Application owners configure memberships in the resource/module that owns the
 NIC. This module has no NIC updater, association input or NIC destroy action.
 Read [NIC handoff](docs/nic-membership-ownership.md).
+
+Set `backend_address_type = "NIC"` on each NIC-based pool. Its
+`loadBalancerBackendAddresses` is null in Terraform and omitted from PUT:
+Azure returns NIC-derived entries with read-only NIC references and NAT port
+mappings there. They are not desired IP members and must not be replayed or
+compared with an explicit empty IP-member list. The pool itself, its name,
+tunnels and other configured properties remain managed. NIC membership remains
+exclusively with the NIC owner; this does not adopt external IP members.
+
+`backend_address_type = "IP"` is the default, preserving authoritative IP-member
+management. Every configured IP member is sent and compared, and removing the
+last member still sends `[]`. IP members on a NIC-mode pool are rejected.
+Omitted or null mode values default to IP; an empty IP-member map never selects
+NIC mode implicitly. To change pool modes, clear IP members while still in IP
+mode and verify readback before separately coordinating the NIC owner. Changing
+to NIC mode is not a request to delete existing IP members.
 
 Public IP addresses are independently owned resources, supplied by ARM ID. The
 `complete` example demonstrates AzAPI-only public IP composition. Bundled PIP
@@ -75,7 +95,12 @@ deleting them; see the upgrade guide.
 
 Diagnostics use the canonical interfaces utility v2 contract. Omitted, null and
 empty `logs`/`metrics` sets become null body properties, **not explicit ARM empty
-arrays**. Do not rely on these values to clear existing log/metric entries.
+arrays**. Null fields are omitted on PUT and are unspecified during refresh,
+including Azure-expanded disabled log categories. Do not rely on these values
+to clear existing log/metric entries: use explicit `enabled = false` entries.
+Non-null category/group entries, enabled/retention values and destinations
+remain compared; logs match by category plus categoryGroup and metrics by
+category, not array order. There is no blanket log ignore.
 Removing a diagnostic setting's map key removes the entire Terraform resource;
 changing entries or destinations still requires service-side convergence proof.
 Marketplace partner IDs are polymorphic; workspace, storage and Event Hub rule
@@ -97,7 +122,8 @@ Mocks do not prove Azure tag clearing or provider-private ignore behavior.
 
 The supported source baseline under investigation is v0.5.0, commit
 `e83d34778efeb54a1779b968106067cc4b2bad63`.
-**Real-Azure upgrade validation has not run. Do not apply this draft to production.**
+**The initial real-Azure upgrade failed convergence. Corrections await a live
+rerun. Do not apply this draft to production.**
 
 1. Use Terraform `>= 1.16, < 2.0` and AzAPI `~> 2.12`. Keep an AzureRM provider
    configured at the consumer root until all released state has been converted.
@@ -266,13 +292,14 @@ Default: `null`
 
 ### <a name="input_backend_address_pools"></a> [backend\_address\_pools](#input\_backend\_address\_pools)
 
-Description: Backend pools by stable input key. Each has a unique name, optional virtual\_network\_resource\_id and tunnel\_interfaces (identifier, port, protocol, type). NIC membership is managed by the NIC owner.
+Description: Backend pools by stable input key. Each has a unique name, backend\_address\_type (IP by default, or NIC), optional virtual\_network\_resource\_id and tunnel\_interfaces (identifier, port, protocol, type). IP mode authoritatively manages backend\_address\_pool\_addresses, including an empty list to remove the last IP member. Set NIC explicitly for NIC-based pools: the server-maintained address projection is unspecified and NIC membership is managed only by the NIC owner. Do not change modes to clear members; empty the IP collection while still in IP mode first.
 
 Type:
 
 ```hcl
 map(object({
     name                        = optional(string, "bepool-1")
+    backend_address_type        = optional(string, "IP")
     virtual_network_resource_id = optional(string)
     tunnel_interfaces = optional(map(object({
       identifier = number

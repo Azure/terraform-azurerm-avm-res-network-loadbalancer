@@ -24,7 +24,8 @@ resource "azapi_resource" "this" {
     }
   }, var.edge_zone == null ? {} : { extendedLocation = { name = var.edge_zone, type = "EdgeZone" } })
   ignore_body_changes = length(var.ignore_body_changes.network_load_balancers) > 0 ? var.ignore_body_changes.network_load_balancers : null
-  # All child collections are authoritative, including empty lists for removal.
+  # Child collections are authoritative, including empty lists for removal.
+  # Only NIC-mode pool address projections are unspecified, not NIC membership.
   # Null optional fields mean unspecified, not an instruction to clear defaults.
   ignore_null_property = true
   locks                = [local.resource_id]

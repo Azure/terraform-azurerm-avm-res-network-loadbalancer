@@ -105,6 +105,10 @@ variable "backend_address_pool_addresses" {
     condition     = length(distinct([for v in var.backend_address_pool_addresses : "${v.backend_address_pool_object_name}/${v.name}"])) == length(var.backend_address_pool_addresses)
     error_message = "Address names must be unique within each pool."
   }
+  validation {
+    condition     = alltrue([for address in var.backend_address_pool_addresses : try(var.backend_address_pools[address.backend_address_pool_object_name].backend_address_type != "NIC", true)])
+    error_message = "NIC-based pools cannot configure IP-based backend_address_pool_addresses."
+  }
 }
 
 variable "backend_address_pool_configuration" {
@@ -121,6 +125,7 @@ variable "backend_address_pool_configuration" {
 variable "backend_address_pools" {
   type = map(object({
     name                        = optional(string, "bepool-1")
+    backend_address_type        = optional(string, "IP")
     virtual_network_resource_id = optional(string)
     tunnel_interfaces = optional(map(object({
       identifier = number
@@ -130,12 +135,16 @@ variable "backend_address_pools" {
     })), {})
   }))
   default     = {}
-  description = "Backend pools by stable input key. Each has a unique name, optional virtual_network_resource_id and tunnel_interfaces (identifier, port, protocol, type). NIC membership is managed by the NIC owner."
+  description = "Backend pools by stable input key. Each has a unique name, backend_address_type (IP by default, or NIC), optional virtual_network_resource_id and tunnel_interfaces (identifier, port, protocol, type). IP mode authoritatively manages backend_address_pool_addresses, including an empty list to remove the last IP member. Set NIC explicitly for NIC-based pools: the server-maintained address projection is unspecified and NIC membership is managed only by the NIC owner. Do not change modes to clear members; empty the IP collection while still in IP mode first."
   nullable    = false
 
   validation {
     condition     = length(distinct([for v in var.backend_address_pools : v.name])) == length(var.backend_address_pools)
     error_message = "Backend pool names must be unique."
+  }
+  validation {
+    condition     = alltrue([for pool in var.backend_address_pools : contains(["IP", "NIC"], pool.backend_address_type)])
+    error_message = "backend_address_type must be IP or NIC."
   }
   validation {
     condition     = alltrue([for v in var.backend_address_pools : v.virtual_network_resource_id == null || can(provider::azapi::parse_resource_id("Microsoft.Network/virtualNetworks", v.virtual_network_resource_id))])

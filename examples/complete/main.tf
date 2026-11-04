@@ -18,8 +18,9 @@ resource "azapi_resource" "public_ip" {
   parent_id = azapi_resource.resource_group.id
   type      = "Microsoft.Network/publicIPAddresses@2025-01-01"
   body = {
-    sku   = { name = "Standard", tier = "Regional" }
-    zones = ["1", "2", "3"]
+    sku = { name = "Standard", tier = "Regional" }
+    # ARM can return the same zones in a different order.
+    zones = toset(["1", "2", "3"])
     properties = {
       publicIPAllocationMethod = "Static"
       publicIPAddressVersion   = "IPv4"
