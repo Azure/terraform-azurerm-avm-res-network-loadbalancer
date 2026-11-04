@@ -17,7 +17,15 @@ resource "azapi_resource" "this" {
       update = timeouts.value.update
       delete = timeouts.value.delete
     }
+  }
 
+  lifecycle {
+    precondition {
+      condition = var.sku_tier == "Global" ? (
+        var.backend_address_type == "Frontend" && var.properties.virtualNetwork == null && length(var.properties.tunnelInterfaces) == 0
+      ) : var.backend_address_type != "Frontend"
+      error_message = "Global pools require Frontend mode without VNet/tunnels; Regional pools require IP or NIC mode."
+    }
   }
 }
 

@@ -53,6 +53,17 @@ run "standalone_reject_wrong_frontend_type" {
   expect_failures = [var.properties]
 }
 
+run "standalone_reject_regional_frontend_pool" {
+  command = plan
+  module {
+    source = "./modules/backend-address-pool"
+  }
+  variables {
+    sku_tier = "Regional"
+  }
+  expect_failures = [azapi_resource.this]
+}
+
 run "standalone_nic_omission" {
   command = apply
   module {

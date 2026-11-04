@@ -133,12 +133,8 @@ variable "sku_tier" {
   nullable    = false
 
   validation {
-    condition = contains(["Regional", "Global"], var.sku_tier) && (
-      var.sku_tier == "Global" ?
-      (var.backend_address_type == "Frontend" && var.properties.virtualNetwork == null && length(var.properties.tunnelInterfaces) == 0) :
-      var.backend_address_type != "Frontend"
-    )
-    error_message = "Global pools require Frontend mode without VNet/tunnels; Regional pools require IP or NIC mode."
+    condition     = contains(["Regional", "Global"], var.sku_tier)
+    error_message = "sku_tier must be Regional or Global."
   }
 }
 
