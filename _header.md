@@ -69,6 +69,28 @@ creation is retired rather than embedding a second resource module inside the
 LB resource module. Adopt existing PIPs and their extension resources without
 deleting them; see the upgrade guide.
 
+## Optional interface and control semantics
+
+Diagnostics use the canonical interfaces utility v2 contract. Omitted, null and
+empty `logs`/`metrics` sets become null body properties, **not explicit ARM empty
+arrays**. Do not rely on these values to clear existing log/metric entries.
+Removing a diagnostic setting's map key removes the entire Terraform resource;
+changing entries or destinations still requires service-side convergence proof.
+Marketplace partner IDs are polymorphic; workspace, storage and Event Hub rule
+IDs are validated against their respective ARM types.
+
+Keep `retry = null` to use provider defaults. When supplying a retry object,
+include `error_message_regex`: AzAPI requires it even though the canonical
+interface declares the field optional. Unspecified retry intervals are
+provider-computed; unspecified timeout operations use provider defaults.
+Each owned resource has an independent API-version and ignore-path slot.
+An older API override must support every configured property; schema validation
+is not disabled to make an incompatible version pass.
+
+Only the LB offers tags here; there is no per-resource tag override interface.
+`tags = null` is unspecified, while `{}` is an explicit empty desired tag map.
+Mocks do not prove Azure tag clearing or provider-private ignore behavior.
+
 ## Breaking upgrade from v0.5.0
 
 The supported source baseline under investigation is v0.5.0, commit

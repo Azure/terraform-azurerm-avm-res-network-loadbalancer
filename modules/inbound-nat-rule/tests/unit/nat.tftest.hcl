@@ -56,3 +56,59 @@ run "invalid_frontend" {
   variables { properties = { frontendIPConfiguration = { id = "/invalid" }, backendPort = 22 } }
   expect_failures = [var.properties]
 }
+run "api_override_partial_controls_and_consumer_ignore" {
+  command = apply
+  variables {
+    resource_types = { network_load_balancers_inbound_nat_rules = "Microsoft.Network/loadBalancers/inboundNatRules@2024-10-01" }
+    retry          = { error_message_regex = ["RetryableError"], max_interval_seconds = 17 }
+    timeouts       = { read = "6m", update = "41m" }
+  }
+  assert {
+    condition     = endswith(azapi_resource.this.type, "@2024-10-01") && azapi_resource.this.retry.max_interval_seconds == 17 && var.retry.interval_seconds == null && azapi_resource.this.retry.error_message_regex == tolist(["RetryableError"]) && azapi_resource.this.timeouts.read == "6m" && azapi_resource.this.timeouts.update == "41m" && azapi_resource.this.timeouts.create == null && azapi_resource.this.timeouts.delete == null
+    error_message = "NAT must apply its API override and partial controls without inventing unspecified values."
+  }
+}
+run "consumer_ignore_paths_accepted" {
+  command = apply
+  variables {
+    ignore_body_changes = { network_load_balancers_inbound_nat_rules = ["properties.idleTimeoutInMinutes"] }
+  }
+  assert {
+    condition     = var.ignore_body_changes.network_load_balancers_inbound_nat_rules == tolist(["properties.idleTimeoutInMinutes"])
+    error_message = "Consumer paths must be accepted; the write-only argument cannot be verified through state."
+  }
+}
+run "explicit_null_controls_and_optional_nat_fields" {
+  command = apply
+  variables {
+    properties = {
+      frontendIPConfiguration = { id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/lab/providers/Microsoft.Network/loadBalancers/lab/frontendIPConfigurations/public" }
+      frontendPort            = 50000
+      backendPort             = 22
+      protocol                = null
+      enableFloatingIP        = null
+      enableTcpReset          = null
+      idleTimeoutInMinutes    = null
+      backendAddressPool      = null
+    }
+    retry               = null
+    timeouts            = null
+    resource_types      = null
+    ignore_body_changes = null
+  }
+  assert {
+    condition     = azapi_resource.this.retry == null && azapi_resource.this.timeouts == null && endswith(azapi_resource.this.type, "@2025-01-01") && azapi_resource.this.body.properties.protocol == "Tcp" && !azapi_resource.this.body.properties.enableFloatingIP && !azapi_resource.this.body.properties.enableTcpReset && azapi_resource.this.body.properties.idleTimeoutInMinutes == 4 && azapi_resource.this.body.properties.backendAddressPool == null
+    error_message = "Explicit null optional fields must select their defaults without manufacturing a pool."
+  }
+}
+run "invalid_backend_pool" {
+  command = plan
+  variables {
+    properties = {
+      frontendIPConfiguration = { id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/lab/providers/Microsoft.Network/loadBalancers/lab/frontendIPConfigurations/public" }
+      backendAddressPool      = { id = "/invalid" }
+      backendPort             = 22
+    }
+  }
+  expect_failures = [var.properties]
+}
