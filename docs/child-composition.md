@@ -67,7 +67,7 @@ delegate/preserve the relevant collection. They are not called by this root.
 Never use them alongside this root for the same LB collection, even for
 different keys or initially empty root collections.
 `examples/child-resources` uses a direct AzAPI parent with explicit delegation;
-`default` and `interfaces` use authoritative root ownership. No object-only
+`default` and `complete` use authoritative root ownership. No object-only
 submodule is introduced as a nominal compliance workaround.
 
 ## Plan stability, defaults and remaining proof

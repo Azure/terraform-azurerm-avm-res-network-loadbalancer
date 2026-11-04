@@ -10,7 +10,7 @@ not an option offered by the authoritative root.
 The NAT module depends on pool creation through its resource ID.
 
 This demonstrates standalone child consumption, not state migration proof.
-The `default` and `interfaces` examples manage all their child collections in
+The `default` and `complete` examples manage all their child collections in
 the root LB body. Never combine these standalone modules with root ownership of
 the same collections, even when the root collections are initially empty.
 No NIC is owned here. Application owners use the pool output in their NIC module.

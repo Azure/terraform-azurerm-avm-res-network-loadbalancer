@@ -1,4 +1,4 @@
-# Composed public load balancer
+# Complete public load balancer
 
 AzAPI-only supporting infrastructure with an existing-ID PIP composition.
 One LB combines a frontend, backend pool, HTTP probe, load-balancing rule,

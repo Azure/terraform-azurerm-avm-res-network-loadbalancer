@@ -64,7 +64,7 @@ NIC. This module has no NIC updater, association input or NIC destroy action.
 Read [NIC handoff](docs/nic-membership-ownership.md).
 
 Public IP addresses are independently owned resources, supplied by ARM ID. The
-`interfaces` example demonstrates AzAPI-only public IP composition. Bundled PIP
+`complete` example demonstrates AzAPI-only public IP composition. Bundled PIP
 creation is retired rather than embedding a second resource module inside the
 LB resource module. Adopt existing PIPs and their extension resources without
 deleting them; see the upgrade guide.
