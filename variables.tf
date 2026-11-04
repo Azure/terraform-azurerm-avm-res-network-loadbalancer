@@ -84,15 +84,41 @@ variable "avm_managed_migration_enabled" {
 
 variable "backend_address_pool_addresses" {
   type = map(object({
-    name                             = string
-    backend_address_pool_object_name = string
-    ip_address                       = string
-    virtual_network_resource_id      = optional(string)
+    name                                                = string
+    backend_address_pool_object_name                    = string
+    ip_address                                          = optional(string)
+    virtual_network_resource_id                         = optional(string)
+    load_balancer_frontend_ip_configuration_resource_id = optional(string)
   }))
   default     = {}
-  description = "IP-based backend addresses, folded into their owning pool. name, backend_address_pool_object_name (input pool key) and ip_address are required; virtual_network_resource_id overrides the pool/default VNet. This collection authoritatively owns IP address members, not NIC members. Azure forbids mixing IP-address members and native NIC associations in the same pool. Target an IP-mode pool here and use a separate NIC-mode pool for memberships configured by the NIC owner."
+  description = "Explicit backend members by stable key. name and backend_address_pool_object_name (pool input key) are required. Supply exactly one of ip_address (IP mode, with optional virtual_network_resource_id overriding pool/default VNet) or load_balancer_frontend_ip_configuration_resource_id (Frontend mode on a Global LB, referencing a public regional LB frontend). Frontend members cannot specify a VNet. A dedicated refreshing pool endpoint owns this authoritative list, including [] for last-member removal. Native NIC memberships require a separate NIC-mode pool and remain owned by the NIC owner."
   nullable    = false
 
+  validation {
+    condition = alltrue([for a in var.backend_address_pool_addresses :
+      (a.ip_address == null ? 0 : 1) + (a.load_balancer_frontend_ip_configuration_resource_id == null ? 0 : 1) == 1 &&
+      (a.load_balancer_frontend_ip_configuration_resource_id == null || a.virtual_network_resource_id == null)
+    ])
+    error_message = "Each backend member requires exactly one IP address or regional LB frontend ID; frontend members cannot specify a VNet."
+  }
+  validation {
+    condition = alltrue([for a in var.backend_address_pool_addresses :
+      a.load_balancer_frontend_ip_configuration_resource_id == null || can(provider::azapi::parse_resource_id("Microsoft.Network/loadBalancers/frontendIPConfigurations", a.load_balancer_frontend_ip_configuration_resource_id))
+    ])
+    error_message = "Frontend member IDs must identify Microsoft.Network/loadBalancers/frontendIPConfigurations."
+  }
+  validation {
+    condition = alltrue([for a in var.backend_address_pool_addresses :
+      a.ip_address == null || can(cidrhost("${a.ip_address}/${strcontains(a.ip_address, ":") ? 128 : 32}", 0))
+    ])
+    error_message = "ip_address must be a valid IPv4 or IPv6 address."
+  }
+  validation {
+    condition = alltrue([for a in var.backend_address_pool_addresses :
+      try((var.backend_address_pools[a.backend_address_pool_object_name].backend_address_type == "Frontend") == (a.load_balancer_frontend_ip_configuration_resource_id != null), true)
+    ])
+    error_message = "Frontend-mode pools accept only frontend references; IP-mode pools accept only IP addresses."
+  }
   validation {
     condition     = alltrue([for v in var.backend_address_pool_addresses : contains(keys(var.backend_address_pools), v.backend_address_pool_object_name)])
     error_message = "Every backend address must reference a configured backend pool key."
@@ -138,7 +164,7 @@ variable "backend_address_pools" {
     })), {})
   }))
   default     = {}
-  description = "Backend pools by stable input key. Each has a unique name, backend_address_type (IP by default, or NIC), optional virtual_network_resource_id and tunnel_interfaces (identifier, port, protocol, type). IP mode authoritatively manages backend_address_pool_addresses, including an empty list to remove the last IP member. Set NIC explicitly for NIC-based pools: the server-maintained address projection is unspecified and NIC membership is managed only by the NIC owner. Azure allows both pool types on one LB, but forbids mixing IP and native NIC members in one pool. This mode is a module ownership declaration, not an Azure conversion operation or an inspection of externally configured NICs. Do not change modes to clear members; empty the IP collection while still in IP mode first."
+  description = "Backend pools by stable input key: unique name, backend_address_type (IP default, NIC, or Frontend), optional virtual_network_resource_id and tunnel_interfaces (identifier, port, protocol, type). The parent owns metadata, not member lists. Dedicated endpoints authoritatively manage IP/Frontend members, including [] to clear the last member and fixed-empty destroy cleanup. Global pools require Frontend mode and no VNet/tunnels; regional pools require IP or NIC. NIC membership remains exclusively with the NIC owner. Modes declare ownership, not an Azure conversion: clear explicit members before switching to NIC; detach native NICs before switching from NIC. Coordinate mode changes separately."
   nullable    = false
 
   validation {
@@ -146,10 +172,10 @@ variable "backend_address_pools" {
     error_message = "Backend pool names must be unique."
   }
   validation {
-    condition = alltrue([for pool in var.backend_address_pools : contains(["IP", "NIC"], pool.backend_address_type)])
+    condition = alltrue([for pool in var.backend_address_pools : contains(["IP", "NIC", "Frontend"], pool.backend_address_type)])
     error_message = format(
-      "backend_address_type must be exactly \"IP\" or \"NIC\". Invalid pool keys: %s. Use IP for explicit backend_address_pool_addresses and NIC for native memberships configured by the NIC owner. IP and NIC members require separate pools, which can belong to the same load balancer.",
-      join(", ", [for key, pool in var.backend_address_pools : key if !contains(["IP", "NIC"], pool.backend_address_type)])
+      "backend_address_type must be exactly \"IP\", \"NIC\" or \"Frontend\". Invalid pool keys: %s. Use IP for explicit addresses, NIC for native memberships configured by the NIC owner, and Frontend for regional LB frontends on Global LBs. Different member types require separate pools.",
+      join(", ", [for key, pool in var.backend_address_pools : key if !contains(["IP", "NIC", "Frontend"], pool.backend_address_type)])
     )
   }
   validation {
@@ -414,5 +440,38 @@ variable "sku_tier" {
   validation {
     condition     = contains(["Regional", "Global"], var.sku_tier)
     error_message = "SKU tier must be Regional or Global."
+  }
+  validation {
+    condition = var.sku_tier != "Global" || (
+      var.sku == "Standard" &&
+      length(var.lb_probes) == 0 &&
+      length(var.lb_nat_rules) == 0 &&
+      length(var.lb_nat_pools) == 0 &&
+      length(var.lb_outbound_rules) == 0 &&
+      alltrue([for r in var.lb_rules : r.probe_object_name == null && r.probe_resource_id == null && r.protocol != "All" && !(r.protocol == "Udp" && (r.frontend_port == 3 || r.backend_port == 3))]) &&
+      alltrue([for f in var.frontend_ip_configurations :
+        f.public_ip_address_resource_id != null &&
+        f.frontend_private_ip_address == null &&
+        f.frontend_private_ip_subnet_resource_id == null &&
+        f.gateway_load_balancer_frontend_ip_configuration_id == null
+      ]) &&
+      var.frontend_subnet_resource_id == null
+    )
+    error_message = "Global LBs require Standard SKU and public-IP frontends. Configure only load-balancing rules: no health probes (including rule probe references), NAT pools/rules, outbound rules, Gateway chaining, All protocol or UDP port 3. Health is inherited from regional LBs."
+  }
+  validation {
+    condition = alltrue([for p in var.backend_address_pools :
+      var.sku_tier == "Global" ?
+      (p.backend_address_type == "Frontend" && p.virtual_network_resource_id == null && var.backend_address_pool_configuration == null && length(p.tunnel_interfaces) == 0) :
+      p.backend_address_type != "Frontend"
+    ])
+    error_message = "Global pools require backend_address_type = \"Frontend\" with no VNet/tunnels; Frontend mode is not supported on Regional LBs."
+  }
+  validation {
+    condition = var.sku_tier != "Global" || alltrue([for r in var.lb_rules :
+      r.frontend_port == r.backend_port && !r.enable_tcp_reset &&
+      length(r.backend_address_pool_resource_ids != null ? r.backend_address_pool_resource_ids : coalesce(r.backend_address_pool_object_names, [])) == 1
+    ])
+    error_message = "Global rules require matching frontend_port and backend_port, enable_tcp_reset = false, and exactly one backend pool reference (serialized as backendAddressPool). Azure rejects Global port translation and TCP reset."
   }
 }

@@ -152,7 +152,7 @@ run "all_child_shapes_and_nondefaults" {
     error_message = "Parent cardinality and stable consumer keys must be preserved."
   }
   assert {
-    condition     = local.backend_pool_properties.app.loadBalancerBackendAddresses[0].properties.ipAddress == "10.0.0.4" && local.backend_pool_properties.app.loadBalancerBackendAddresses[0].properties.virtualNetwork.id == var.backend_address_pools.app.virtual_network_resource_id
+    condition     = local.backend_pool_members.app[0].properties.ipAddress == "10.0.0.4" && local.backend_pool_members.app[0].properties.virtualNetwork.id == var.backend_address_pools.app.virtual_network_resource_id
     error_message = "Backend address shape and VNet fallback must match the ARM contract."
   }
   assert {

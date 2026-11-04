@@ -44,10 +44,10 @@ run "original_ip_payload" {
   }
   assert {
     condition = (
-      length(local.backend_pool_properties.ip.loadBalancerBackendAddresses) == 1 &&
-      local.backend_pool_properties.ip.loadBalancerBackendAddresses[0].properties.virtualNetwork.id == var.backend_address_pool_configuration &&
-      local.backend_pool_properties.app.loadBalancerBackendAddresses == null &&
-      local.backend_pool_properties.retained.loadBalancerBackendAddresses == null
+      length(local.backend_pool_members.ip) == 1 &&
+      local.backend_pool_members.ip[0].properties.virtualNetwork.id == var.backend_address_pool_configuration &&
+      !contains(keys(local.backend_pool_members), "app") &&
+      !contains(keys(local.backend_pool_members), "retained")
     )
     error_message = "The IP pool must have a concrete member/VNet; separate NIC projections must remain unspecified."
   }
@@ -68,12 +68,12 @@ run "exact_failed_addition_payload_not_persistence" {
   }
   assert {
     condition = (
-      { for a in azapi_resource.this.body.properties.backendAddressPools[1].properties.loadBalancerBackendAddresses : a.name => a.properties.ipAddress } == jsondecode(file("tests/fixtures/ip-member-persistence.json")).expected &&
+      { for a in azapi_update_resource.backend_members["ip"].body.properties.loadBalancerBackendAddresses : a.name => a.properties.ipAddress } == jsondecode(file("tests/fixtures/ip-member-persistence.json")).expected &&
       jsondecode(file("tests/fixtures/ip-member-persistence.json")).observed != jsondecode(file("tests/fixtures/ip-member-persistence.json")).expected &&
       jsondecode(file("tests/fixtures/ip-member-persistence.json")).result == "FAIL" &&
       azapi_resource.this.ignore_body_changes == null &&
       azapi_resource.this.ignore_other_items_in_list == null &&
-      alltrue([for a in local.backend_pool_properties.ip.loadBalancerBackendAddresses :
+      alltrue([for a in local.backend_pool_members.ip :
         a.properties.virtualNetwork.id == var.backend_address_pool_configuration &&
         !contains(keys(a.properties), "networkInterfaceIPConfiguration")
       ])
@@ -97,9 +97,9 @@ run "update_member_payload" {
   }
   assert {
     condition = (
-      { for a in local.backend_pool_properties.ip.loadBalancerBackendAddresses : a.name => a.properties.ipAddress } == { second = "10.40.1.12", static = "10.40.1.10" } &&
-      local.backend_pool_properties.app.loadBalancerBackendAddresses == null &&
-      local.backend_pool_properties.retained.loadBalancerBackendAddresses == null
+      { for a in local.backend_pool_members.ip : a.name => a.properties.ipAddress } == { second = "10.40.1.12", static = "10.40.1.10" } &&
+      !contains(keys(local.backend_pool_members), "app") &&
+      !contains(keys(local.backend_pool_members), "retained")
     )
     error_message = "Updating one IP must retain the other IP without writing NIC projections."
   }
@@ -118,7 +118,7 @@ run "remove_one_member_payload" {
     }
   }
   assert {
-    condition     = { for a in local.backend_pool_properties.ip.loadBalancerBackendAddresses : a.name => a.properties.ipAddress } == { second = "10.40.1.12" }
+    condition     = { for a in local.backend_pool_members.ip : a.name => a.properties.ipAddress } == { second = "10.40.1.12" }
     error_message = "Removing static must retain exactly second; deletion cannot be represented by omission of the whole list."
   }
   providers = {
@@ -135,11 +135,11 @@ run "last_member_clear_payload" {
   }
   assert {
     condition = (
-      length(azapi_resource.this.body.properties.backendAddressPools[1].properties.loadBalancerBackendAddresses) == 0 &&
-      azapi_resource.this.body.properties.backendAddressPools[1].properties.loadBalancerBackendAddresses != null &&
+      length(azapi_update_resource.backend_members["ip"].body.properties.loadBalancerBackendAddresses) == 0 &&
+      azapi_update_resource.backend_members["ip"].body.properties.loadBalancerBackendAddresses != null &&
       var.backend_address_pools.ip.backend_address_type == "IP" &&
-      local.backend_pool_properties.app.loadBalancerBackendAddresses == null &&
-      local.backend_pool_properties.retained.loadBalancerBackendAddresses == null &&
+      !contains(keys(local.backend_pool_members), "app") &&
+      !contains(keys(local.backend_pool_members), "retained") &&
       azapi_resource.this.ignore_body_changes == null
     )
     error_message = "Last-member removal must emit a compared [] in IP mode, not null, NIC mode or an ignore."

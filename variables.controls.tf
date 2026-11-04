@@ -13,21 +13,25 @@ List indices are unsupported. All LB child collections are authoritative by defa
 - `authorization_locks` - Lock paths.
 - `authorization_role_assignments` - RBAC paths.
 - `insights_diagnostic_settings` - Diagnostic paths.
+
+AzAPI 2.13 does not support ignore_body_changes on update_resource or resource_action. Dedicated member updates and fixed-empty cleanup therefore do not expose an unsupported ignore argument; their lists remain authoritative.
 DESCRIPTION
   nullable    = false
 }
 
 variable "resource_types" {
   type = object({
-    network_load_balancers         = optional(string, "Microsoft.Network/loadBalancers@2025-01-01")
-    authorization_locks            = optional(string, "Microsoft.Authorization/locks@2020-05-01")
-    authorization_role_assignments = optional(string, "Microsoft.Authorization/roleAssignments@2022-04-01")
-    insights_diagnostic_settings   = optional(string, "Microsoft.Insights/diagnosticSettings@2021-05-01-preview")
+    network_load_balancers                       = optional(string, "Microsoft.Network/loadBalancers@2025-01-01")
+    network_load_balancers_backend_address_pools = optional(string, "Microsoft.Network/loadBalancers/backendAddressPools@2025-01-01")
+    authorization_locks                          = optional(string, "Microsoft.Authorization/locks@2020-05-01")
+    authorization_role_assignments               = optional(string, "Microsoft.Authorization/roleAssignments@2022-04-01")
+    insights_diagnostic_settings                 = optional(string, "Microsoft.Insights/diagnosticSettings@2021-05-01-preview")
   })
   default     = {}
   description = <<DESCRIPTION
 AzAPI resource types and API versions.
 - `network_load_balancers` - Primary load balancer.
+- `network_load_balancers_backend_address_pools` - Dedicated member endpoint, for both refreshing updates and destroy-time clearing.
 - `authorization_locks` - Resource locks.
 - `authorization_role_assignments` - RBAC assignments.
 - `insights_diagnostic_settings` - Diagnostic settings (the API only provides a preview version).
@@ -70,5 +74,7 @@ Default per-operation timeouts applied to every `azapi` resource managed by the 
 - `read`   - (Optional) Timeout for read operations.
 - `update` - (Optional) Timeout for update operations.
 - `delete` - (Optional) Timeout for delete operations.
+
+AzAPI 2.13 resource_action executes destroy-time requests using its create timeout. Configure create for the fixed-empty member cleanup; propagation of delete alone is not a guarantee of cleanup request timeout behavior.
 DESCRIPTION
 }

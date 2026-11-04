@@ -214,6 +214,16 @@ run "immutable_tier_change" {
   command = apply
   variables {
     sku_tier = "Global"
+    backend_address_pools = {
+      z = { name = "z-pool", backend_address_type = "Frontend" }
+      a = { name = "a-pool", backend_address_type = "Frontend" }
+    }
+    lb_probes         = {}
+    lb_nat_rules      = {}
+    lb_outbound_rules = {}
+    lb_rules = {
+      web = { name = "web", frontend_ip_configuration_name = "a-front", backend_address_pool_object_names = ["a"], disable_outbound_snat = true }
+    }
   }
   assert {
     condition     = azapi_resource.this.body.sku.tier == "Global" && azapi_resource.this.replace_triggers_external_values.sku_tier == "Global"

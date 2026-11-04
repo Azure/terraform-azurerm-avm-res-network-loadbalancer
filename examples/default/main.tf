@@ -38,7 +38,7 @@ module "loadbalancer" {
   location              = var.location
   name                  = "lb-${random_id.example.hex}"
   parent_id             = azapi_resource.resource_group.id
-  backend_address_pools = { app = { name = "app" } }
+  backend_address_pools = { app = { name = "app", backend_address_type = "NIC" } }
   enable_telemetry      = var.enable_telemetry
 }
 

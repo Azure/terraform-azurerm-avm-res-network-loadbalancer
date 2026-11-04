@@ -1,5 +1,5 @@
 output "backend_address_pool_resource_ids" {
-  depends_on  = [azapi_resource.this]
+  depends_on  = [azapi_resource.this, azapi_update_resource.backend_members, azapi_resource_action.clear_backend_members]
   description = "Backend pool IDs keyed by backend_address_pools input keys. Pass these to the module that owns the NIC."
   value       = local.pool_ids
 }

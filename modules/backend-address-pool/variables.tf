@@ -33,14 +33,32 @@ variable "properties" {
     loadBalancerBackendAddresses = optional(list(object({
       name = string
       properties = object({
-        ipAddress      = string
-        virtualNetwork = optional(object({ id = string }))
+        ipAddress                           = optional(string)
+        virtualNetwork                      = optional(object({ id = string }))
+        loadBalancerFrontendIPConfiguration = optional(object({ id = string }))
       })
     })), [])
   })
-  description = "Writable pool ARM properties: virtualNetwork ID object, tunnelInterfaces (identifier/port/protocol/type), and authoritative loadBalancerBackendAddresses (name, properties.ipAddress and properties.virtualNetwork ID). NIC membership remains external."
+  description = "Writable pool ARM properties: virtualNetwork ID object, tunnelInterfaces (identifier/port/protocol/type), and authoritative loadBalancerBackendAddresses. Each member has name and properties containing exactly one of ipAddress (optional virtualNetwork ID object) or loadBalancerFrontendIPConfiguration ID object. Frontend members require Global tier/Frontend mode and no VNet. NIC mode requires an empty input list and omits the server projection; NIC ownership remains external."
   nullable    = false
 
+  validation {
+    condition = alltrue([for a in var.properties.loadBalancerBackendAddresses :
+      (a.properties.ipAddress == null ? 0 : 1) + (a.properties.loadBalancerFrontendIPConfiguration == null ? 0 : 1) == 1 &&
+      (a.properties.loadBalancerFrontendIPConfiguration == null || a.properties.virtualNetwork == null) &&
+      (a.properties.loadBalancerFrontendIPConfiguration == null ? true : can(provider::azapi::parse_resource_id("Microsoft.Network/loadBalancers/frontendIPConfigurations", a.properties.loadBalancerFrontendIPConfiguration.id))) &&
+      (a.properties.ipAddress == null ? true : can(cidrhost("${a.properties.ipAddress}/${strcontains(a.properties.ipAddress, ":") ? 128 : 32}", 0)))
+    ])
+    error_message = "Each member requires exactly one valid IP address or valid regional LB frontend resource ID; frontend members cannot specify a VNet."
+  }
+  validation {
+    condition = (
+      length(distinct([for a in var.properties.loadBalancerBackendAddresses : a.name])) == length(var.properties.loadBalancerBackendAddresses) &&
+      (var.backend_address_type != "NIC" || length(var.properties.loadBalancerBackendAddresses) == 0) &&
+      alltrue([for a in var.properties.loadBalancerBackendAddresses : (var.backend_address_type == "Frontend") == (a.properties.loadBalancerFrontendIPConfiguration != null)])
+    )
+    error_message = "Member names must be unique, NIC-mode lists empty, and IP/Frontend member forms must match backend_address_type."
+  }
   validation {
     condition = (
       (var.properties.virtualNetwork == null ? true : can(provider::azapi::parse_resource_id("Microsoft.Network/virtualNetworks", var.properties.virtualNetwork.id))) &&
@@ -55,6 +73,18 @@ variable "avm_managed_migration_enabled" {
   default     = false
   description = "Import an existing pool at parent_id/backendAddressPools/name without deleting it. Enable only for adoption, never fresh creation; disable after convergence."
   nullable    = false
+}
+
+variable "backend_address_type" {
+  type        = string
+  default     = "IP"
+  description = "IP (default) or Frontend owns an explicit list with fixed-empty destroy cleanup; NIC omits the projection and leaves memberships to the NIC owner. Clear explicit members before changing to NIC, and detach NICs before changing from NIC."
+  nullable    = false
+
+  validation {
+    condition     = contains(["IP", "NIC", "Frontend"], var.backend_address_type)
+    error_message = "backend_address_type must be IP, NIC or Frontend."
+  }
 }
 
 variable "enable_telemetry" {
@@ -94,6 +124,22 @@ variable "retry" {
   })
   default     = null
   description = "Resource retry controls: error_message_regex, interval_seconds and max_interval_seconds."
+}
+
+variable "sku_tier" {
+  type        = string
+  default     = "Regional"
+  description = "Declaration of the externally owned parent LB tier, Regional or Global. The caller must match its actual SKU and use public Standard regional frontend IDs for Global members; this module does not inspect remote parents."
+  nullable    = false
+
+  validation {
+    condition = contains(["Regional", "Global"], var.sku_tier) && (
+      var.sku_tier == "Global" ?
+      (var.backend_address_type == "Frontend" && var.properties.virtualNetwork == null && length(var.properties.tunnelInterfaces) == 0) :
+      var.backend_address_type != "Frontend"
+    )
+    error_message = "Global pools require Frontend mode without VNet/tunnels; Regional pools require IP or NIC mode."
+  }
 }
 
 variable "timeouts" {

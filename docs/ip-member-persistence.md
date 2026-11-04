@@ -1,11 +1,32 @@
-# IP-member persistence: unresolved parent-write boundary
+# IP-member persistence: dedicated-endpoint correction awaiting candidate proof
 
 ## Status
 
-**Blocked, not fixed.** This draft uses one parent LB writer. Do not adopt its
-IP-member management until Azure readback and repeated refreshed plans prove
-add, update, remove and last-member clearing. No second pool writer or field
-ignore has been added to mask the failure.
+**Implementation corrected; exact-candidate runtime proof still pending.**
+The root now sends pool skeletons/metadata without any member list. A single
+refreshing `azapi_update_resource.backend_members[pool_key]` writes the
+authoritative IP/frontend list through the dedicated endpoint, including
+`[]` for last-member removal. A destroy-only fixed-empty action clears explicit
+lists before pool removal. Neither resource owns pool lifecycle or NICs.
+No blanket ignore has been added to mask the historical failure.
+
+Diagnostic dedicated-endpoint experiments persisted explicit IP and real regional
+frontend members. A separate skeleton diagnostic preserved IP+VNet and actual
+frontend references across parent tag writes, and IP members across regional
+probe/rule writes without scheduling a restorative updater. Its Global
+probe/rule stage failed because the fixture incorrectly configured a Global
+health probe (`GlobalLoadBalancerCanOnlyContainLoadBalancingRules`). That failure
+is preserved, not reclassified. The implementation rejects Global health
+probes, rule probe references, NAT and outbound configuration.
+The corrected independent Global rule-only follow-up subsequently passed
+TCP80-to-80 addition and a floating-IP edit, twice-refreshed no-op plans after
+each, and actual serialized skeleton request bodies with member fields omitted.
+It retained both actual frontend references with no restorative member writes.
+Separate failed TCP-reset and port-translation requests remain failures; the
+module now validates both restrictions and emits singular backendAddressPool
+for one Global rule pool. These diagnostics are not this candidate's E2E or
+migration evidence. The first run's planned body/source/readbacks remain distinct
+from the corrected follow-up's actual serialized wire evidence.
 
 The independent test of `dce02d370272893ab408a7f8828eba9e752d3899` on
 2026-11-04 applied a saved plan adding `second=10.40.1.11` alongside
@@ -35,7 +56,7 @@ and clearing were stopped, not passed. The isolated test was cleaned up.
 
 ## Source trace and authority
 
-1. [`locals.tf`](../locals.tf) folds the input map into
+1. The failed historical implementation folded the input map into
    `properties.backendAddressPools[].properties.loadBalancerBackendAddresses`.
    IP mode retains an explicit empty array; NIC mode omits only the
    server-maintained address projection.
@@ -79,14 +100,15 @@ the dedicated pool GET. Assert exact names, IPs, VNet IDs and cardinality, then
 require two fully refreshed no-op plans after each mutation. Stop at the first
 failure and preserve it. Verify unchanged NIC memberships/backlinks and IDs.
 
-If the actual parent PUT contains the correct member list but GET omits it,
-the approved single-parent management design has no demonstrated IP CRUD
-path. Escalate that exact request/response to the service owner, or obtain an
-explicit decision to redesign pool ownership. A dedicated pool owner would
-require resolving parent-write overlap, creation ordering/cycles, migration
-imports, pool removal, lock ordering and destruction before implementation.
-Adding a satellite update resource while both it and the parent own the same
-list is not a safe solution.
+The now-approved correction deliberately removes the entire member field from
+the parent instead of adding a competing list writer. Pool metadata/rules
+bootstrap together, then the refreshing endpoint owner writes members. Partial
+bindings require no second pool import. Parent edits replay that owner, while
+fixed-empty cleanup precedes removal. The lock barrier covers both bindings.
+Actual automatic pool removal/rename, metadata/rule mutation, LB replacement,
+lock interaction, frontend teardown and v0.5.0 adoption must still be exercised
+on the frozen candidate. Stop on lost membership, repeated drift or failed
+cleanup; a mock pass cannot satisfy these gates.
 
 The new unit cases prove only payload construction for these mutations.
 They deliberately retain the historical expected-versus-observed mismatch;

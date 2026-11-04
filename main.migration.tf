@@ -3,6 +3,11 @@ moved {
   to   = azapi_resource.this
 }
 
+# backend_members is a partial-field updater of an already-existing pool, not
+# a pool lifecycle binding: its first apply writes through the dedicated
+# endpoint after the parent adopts metadata. No pool import or second
+# azapi_resource owner is introduced. clear_backend_members initially stores
+# only an empty destroy-time request and performs no Azure write on creation.
 removed {
   from = azurerm_lb_backend_address_pool.this
   lifecycle {

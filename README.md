@@ -3,27 +3,32 @@
 # Azure load balancer — AzAPI implementation
 
 Deploys a Standard or Gateway Azure load balancer, frontend configurations,
-backend pools, IP backend members, probes, load-balancing rules, NAT rules,
+backend pools, IP and regional-frontend backend members, probes, load-balancing rules, NAT rules,
 outbound rules and legacy VMSS NAT pools. Supports canonical diagnostics v2,
 RBAC, locks, tags, telemetry and AzAPI controls.
 
 **Implementation status:** this is a breaking migration draft, not a released
-or Azure-upgrade-validated implementation. All LB child collections, including
-backend pools and inbound NAT rules, are managed in one authoritative parent
-body. This is the selected practical REST-aligned design, not a pending ownership
-choice or a claim of full AVM specification compliance.
+or Azure-upgrade-validated implementation. The parent owns pool metadata and
+referencing rules; refreshing dedicated-endpoint updaters exclusively own
+explicit member lists. Fixed-empty destroy actions clear those lists before
+pool removal. This is not a claim of full AVM specification compliance or of
+exact-candidate Azure validation.
 
 ## ARM ownership
 
 Frontends, probes, load-balancing rules and outbound rules have GET-only ARM
 child endpoints in Network API 2025-01-01. They must be configured through the
 load balancer body, not invented child PUT resources. Pools and NAT rules do
-have writable endpoints, but splitting them out leaves parent rules needing
-pools before those separate children can exist. One complete LB write avoids
-that dependency cycle and competing writes. No object-only submodules are used.
+have writable endpoints, but splitting out pool lifecycle leaves parent rules
+needing pools before those separate children can exist. The parent therefore
+bootstraps and owns pool skeletons/metadata alongside rules. It never sends
+`loadBalancerBackendAddresses` or read-only `backendIPConfigurations`.
+A single `azapi_update_resource.backend_members[pool_key]` refreshes and writes
+the explicit member list at the dedicated pool endpoint. It is not a second
+pool lifecycle owner and does not own metadata or delete the pool.
 
 All configured collections are authoritative, including empty lists for removal,
-except the address projection of an explicitly NIC-based pool (see below).
+with explicit member lists owned separately (see below).
 Declare every existing member before adoption. Do not combine this root with
 standalone child modules or another writer for the same LB collections. Retained
 pool/NAT modules are independently useful only for externally managed LBs whose
@@ -96,26 +101,64 @@ than changing the mode to bypass validation. See
 [Azure's pool membership limitations](https://learn.microsoft.com/en-us/azure/load-balancer/backend-pool-management#limitations-for-ip-based-backend-pools).
 
 Set `backend_address_type = "NIC"` on each NIC-based pool. Its
-`loadBalancerBackendAddresses` is null in Terraform and omitted from PUT:
+`loadBalancerBackendAddresses` is absent from the parent and has no updater:
 Azure returns NIC-derived entries with read-only NIC references and NAT port
 mappings there. They are not desired IP members and must not be replayed or
 compared with an explicit empty IP-member list. The pool itself, its name,
 tunnels and other configured properties remain managed. NIC membership remains
 exclusively with the NIC owner; this does not adopt external IP members.
 
-`backend_address_type = "IP"` is the default. The desired IP-member list is
-included in the parent request and compared on refresh; removing the last
-member produces `[]`. **Persistence is not currently verified:** an actual
-upgrade test accepted an IP-member addition but Azure returned only the original
-member, and the next refreshed plan repeated the update. Do not treat apply
-success or the mocked payload tests as proof that IP members were persisted.
-IP-member CRUD is a release blocker; see
+`backend_address_type = "IP"` is the default. The desired member list is sent
+only through the dedicated endpoint and compared on refresh, with missing
+properties not ignored. Removing the last member sends `[]`. Parent changes
+recreate only the updater's partial Terraform binding and replay the desired
+list after the parent write; the updater's destroy itself performs no operation.
+A separate `azapi_resource_action.clear_backend_members[pool_key]` stores only
+a fixed empty list for destroy. Its dependency on the updater orders clearing
+before inline pool removal/rename or parent replacement/destruction; regional
+frontend dependencies also protect teardown of referenced regional LBs.
+The lock-removal barrier covers both resources. Remove ReadOnly locks for
+updates and applicable locks for selective removal; the barrier does not unlock
+ordinary updates automatically.
+
+The earlier parent-list implementation failed live IP persistence. Diagnostic
+dedicated-endpoint and skeleton tests support this design, but they are not
+proof for this exact candidate, all metadata edits, automatic cleanup or upgrade.
+No serialized wire body was captured in the initial skeleton diagnostic.
+Exact-candidate IP/frontend CRUD, automatic removal/destroy and state-backed
+upgrade remain release gates; see
 [IP-member persistence investigation](docs/ip-member-persistence.md).
 IP members on a NIC-mode pool are rejected.
 Omitted or null mode values default to IP; an empty IP-member map never selects
 NIC mode implicitly. To change pool modes, clear IP members while still in IP
-mode and verify readback before separately coordinating the NIC owner. Changing
-to NIC mode is not a request to delete existing IP members.
+mode and verify readback before separately coordinating the NIC owner. Detach
+native NICs through their owner before switching from NIC to IP mode. Changing
+to NIC mode removes the explicit owner and executes its fixed-empty cleanup;
+do not use mode changes as a substitute for an inspected membership migration.
+
+### Global multi-region pools
+
+Set `sku_tier = "Global"`, `sku = "Standard"` and
+`backend_address_type = "Frontend"` for Global pools. Each
+`backend_address_pool_addresses` entry requires
+`load_balancer_frontend_ip_configuration_resource_id`, mutually exclusive with
+`ip_address` and VNet configuration. References must identify actual public
+Standard regional LB frontends; ID parsing validates type, not remote tier,
+publicness or IP-family compatibility. The consumer must ensure those match.
+Global pools cannot use IP/NIC mode, VNet metadata or tunnels.
+
+Global LBs allow public frontends and load-balancing rules, not configured
+health probes (including rule probe IDs), outbound rules or NAT pools/rules.
+Health is inherited from regional LBs. Global rules require matching frontend/backend ports,
+TCP reset disabled, and exactly one pool reference; this is serialized using
+the singular `backendAddressPool` field exercised by the corrected diagnostic.
+That diagnostic captured actual serialized member-field omission and successful
+Global rule edits, not this candidate's automatic lifecycle or migration.
+Deploy Global LB/PIP resources in a supported home region and use matching IP families across tiers;
+the module does not hard-code a changing Azure home-region catalog.
+See [multi-region](examples/multi-region) for two regional LBs and a Global
+LB, separate regional IP/NIC pools and real frontend-reference members.
+It has no VMs or traffic/health proof.
 
 Public IP addresses are independently owned resources, supplied by ARM ID. The
 `complete` example demonstrates AzAPI-only public IP composition. Bundled PIP
@@ -142,7 +185,12 @@ Keep `retry = null` to use provider defaults. When supplying a retry object,
 include `error_message_regex`: AzAPI requires it even though the canonical
 interface declares the field optional. Unspecified retry intervals are
 provider-computed; unspecified timeout operations use provider defaults.
-Each owned resource has an independent API-version and ignore-path slot.
+Each full resource has an independent API-version and ignore-path slot.
+The dedicated member updater and destroy action share the pool API-version
+slot, retry and timeouts. Pinned AzAPI does not expose `ignore_body_changes`
+for these two resource kinds; no unsupported argument or blanket ignore is
+invented. The cleanup request in AzAPI 2.13 uses the **create** timeout even at
+destroy; set that timeout for clearing rather than relying on `delete` alone.
 An older API override must support every configured property; schema validation
 is not disabled to make an incompatible version pass.
 
@@ -196,7 +244,10 @@ rerun. Do not apply this draft to production.**
 9. Save and inspect a migration plan. Expect a same-boundary LB provider move,
    lock/diagnostic provider moves, forgotten synthetic child/association/PIP
    bindings and captured-GUID RBAC imports. The LB body adopts **all** configured
-   child collections; there are no root pool/NAT module imports. Released child
+   child metadata and rules; dedicated member updater bindings apply to existing
+   pool endpoints without a second pool import or Azure pool creation. Cleanup
+   actions only store their empty destroy request on creation. There are no
+   root pool/NAT module imports. Released child
    bindings are forgotten with `destroy=false`, never destroyed. Experimental
    drafts with root-composed children also have non-destructive module removals;
    see the distinct draft-to-draft procedure in the upgrade guide.
@@ -231,6 +282,8 @@ The following resources are used by this module:
 - [azapi_resource.role_assignments](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource) (resource)
 - [azapi_resource.telemetry](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource) (resource)
 - [azapi_resource.this](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource) (resource)
+- [azapi_resource_action.clear_backend_members](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource_action) (resource)
+- [azapi_update_resource.backend_members](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/update_resource) (resource)
 - [terraform_data.telemetry](https://registry.terraform.io/providers/hashicorp/terraform/latest/docs/resources/data) (resource)
 - [time_sleep.lock_removal](https://registry.terraform.io/providers/hashicorp/time/latest/docs/resources/sleep) (resource)
 - [azapi_client_config.telemetry](https://registry.terraform.io/providers/Azure/azapi/latest/docs/data-sources/client_config) (data source)
@@ -299,16 +352,17 @@ Default: `false`
 
 ### <a name="input_backend_address_pool_addresses"></a> [backend\_address\_pool\_addresses](#input\_backend\_address\_pool\_addresses)
 
-Description: IP-based backend addresses, folded into their owning pool. name, backend\_address\_pool\_object\_name (input pool key) and ip\_address are required; virtual\_network\_resource\_id overrides the pool/default VNet. This collection authoritatively owns IP address members, not NIC members. Azure forbids mixing IP-address members and native NIC associations in the same pool. Target an IP-mode pool here and use a separate NIC-mode pool for memberships configured by the NIC owner.
+Description: Explicit backend members by stable key. name and backend\_address\_pool\_object\_name (pool input key) are required. Supply exactly one of ip\_address (IP mode, with optional virtual\_network\_resource\_id overriding pool/default VNet) or load\_balancer\_frontend\_ip\_configuration\_resource\_id (Frontend mode on a Global LB, referencing a public regional LB frontend). Frontend members cannot specify a VNet. A dedicated refreshing pool endpoint owns this authoritative list, including [] for last-member removal. Native NIC memberships require a separate NIC-mode pool and remain owned by the NIC owner.
 
 Type:
 
 ```hcl
 map(object({
-    name                             = string
-    backend_address_pool_object_name = string
-    ip_address                       = string
-    virtual_network_resource_id      = optional(string)
+    name                                                = string
+    backend_address_pool_object_name                    = string
+    ip_address                                          = optional(string)
+    virtual_network_resource_id                         = optional(string)
+    load_balancer_frontend_ip_configuration_resource_id = optional(string)
   }))
 ```
 
@@ -324,7 +378,7 @@ Default: `null`
 
 ### <a name="input_backend_address_pools"></a> [backend\_address\_pools](#input\_backend\_address\_pools)
 
-Description: Backend pools by stable input key. Each has a unique name, backend\_address\_type (IP by default, or NIC), optional virtual\_network\_resource\_id and tunnel\_interfaces (identifier, port, protocol, type). IP mode authoritatively manages backend\_address\_pool\_addresses, including an empty list to remove the last IP member. Set NIC explicitly for NIC-based pools: the server-maintained address projection is unspecified and NIC membership is managed only by the NIC owner. Azure allows both pool types on one LB, but forbids mixing IP and native NIC members in one pool. This mode is a module ownership declaration, not an Azure conversion operation or an inspection of externally configured NICs. Do not change modes to clear members; empty the IP collection while still in IP mode first.
+Description: Backend pools by stable input key: unique name, backend\_address\_type (IP default, NIC, or Frontend), optional virtual\_network\_resource\_id and tunnel\_interfaces (identifier, port, protocol, type). The parent owns metadata, not member lists. Dedicated endpoints authoritatively manage IP/Frontend members, including [] to clear the last member and fixed-empty destroy cleanup. Global pools require Frontend mode and no VNet/tunnels; regional pools require IP or NIC. NIC membership remains exclusively with the NIC owner. Modes declare ownership, not an Azure conversion: clear explicit members before switching to NIC; detach native NICs before switching from NIC. Coordinate mode changes separately.
 
 Type:
 
@@ -434,6 +488,8 @@ List indices are unsupported. All LB child collections are authoritative by defa
 - `authorization_locks` - Lock paths.
 - `authorization_role_assignments` - RBAC paths.
 - `insights_diagnostic_settings` - Diagnostic paths.
+
+AzAPI 2.13 does not support ignore\_body\_changes on update\_resource or resource\_action. Dedicated member updates and fixed-empty cleanup therefore do not expose an unsupported ignore argument; their lists remain authoritative.
 
 Type:
 
@@ -595,6 +651,7 @@ Default: `{}`
 
 Description: AzAPI resource types and API versions.
 - `network_load_balancers` - Primary load balancer.
+- `network_load_balancers_backend_address_pools` - Dedicated member endpoint, for both refreshing updates and destroy-time clearing.
 - `authorization_locks` - Resource locks.
 - `authorization_role_assignments` - RBAC assignments.
 - `insights_diagnostic_settings` - Diagnostic settings (the API only provides a preview version).
@@ -605,10 +662,11 @@ Type:
 
 ```hcl
 object({
-    network_load_balancers         = optional(string, "Microsoft.Network/loadBalancers@2025-01-01")
-    authorization_locks            = optional(string, "Microsoft.Authorization/locks@2020-05-01")
-    authorization_role_assignments = optional(string, "Microsoft.Authorization/roleAssignments@2022-04-01")
-    insights_diagnostic_settings   = optional(string, "Microsoft.Insights/diagnosticSettings@2021-05-01-preview")
+    network_load_balancers                       = optional(string, "Microsoft.Network/loadBalancers@2025-01-01")
+    network_load_balancers_backend_address_pools = optional(string, "Microsoft.Network/loadBalancers/backendAddressPools@2025-01-01")
+    authorization_locks                          = optional(string, "Microsoft.Authorization/locks@2020-05-01")
+    authorization_role_assignments               = optional(string, "Microsoft.Authorization/roleAssignments@2022-04-01")
+    insights_diagnostic_settings                 = optional(string, "Microsoft.Insights/diagnosticSettings@2021-05-01-preview")
   })
 ```
 
@@ -702,6 +760,8 @@ Description: Default per-operation timeouts applied to every `azapi` resource ma
 - `read`   - (Optional) Timeout for read operations.
 - `update` - (Optional) Timeout for update operations.
 - `delete` - (Optional) Timeout for delete operations.
+
+AzAPI 2.13 resource\_action executes destroy-time requests using its create timeout. Configure create for the fixed-empty member cleanup; propagation of delete alone is not a guarantee of cleanup request timeout behavior.
 
 Type:
 

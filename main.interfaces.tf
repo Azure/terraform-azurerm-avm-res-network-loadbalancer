@@ -109,6 +109,8 @@ resource "time_sleep" "lock_removal" {
     azapi_resource.this,
     azapi_resource.diagnostic_settings,
     azapi_resource.role_assignments,
+    azapi_update_resource.backend_members,
+    azapi_resource_action.clear_backend_members,
   ]
 }
 

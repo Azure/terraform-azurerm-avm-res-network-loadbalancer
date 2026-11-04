@@ -45,7 +45,9 @@ run "nic_response_projection_is_unspecified_not_empty" {
       length(jsondecode(file("tests/fixtures/observed-normalization.json")).nic_pool.properties.loadBalancerBackendAddresses) == 1 &&
       can(jsondecode(file("tests/fixtures/observed-normalization.json")).nic_pool.properties.loadBalancerBackendAddresses[0].properties.networkInterfaceIPConfiguration.id) &&
       can(jsondecode(file("tests/fixtures/observed-normalization.json")).nic_pool.properties.loadBalancerBackendAddresses[0].properties.inboundNatRulesPortMapping) &&
-      alltrue([for p in azapi_resource.this.body.properties.backendAddressPools : p.properties.loadBalancerBackendAddresses == null]) &&
+      alltrue([for p in azapi_resource.this.body.properties.backendAddressPools : !contains(keys(p.properties), "loadBalancerBackendAddresses")]) &&
+      length(azapi_update_resource.backend_members) == 0 &&
+      length(azapi_resource_action.clear_backend_members) == 0 &&
       azapi_resource.this.ignore_null_property &&
       azapi_resource.this.ignore_body_changes == null &&
       azapi_resource.this.ignore_other_items_in_list == null
@@ -71,7 +73,8 @@ run "omitted_null_and_explicit_ip_modes_keep_empty_lists" {
   }
   assert {
     condition = (
-      alltrue([for p in azapi_resource.this.body.properties.backendAddressPools : p.properties.loadBalancerBackendAddresses != null && length(p.properties.loadBalancerBackendAddresses) == 0]) &&
+      alltrue([for p in azapi_update_resource.backend_members : p.body.properties.loadBalancerBackendAddresses != null && length(p.body.properties.loadBalancerBackendAddresses) == 0]) &&
+      length(azapi_update_resource.backend_members) == 3 &&
       alltrue([for p in var.backend_address_pools : p.backend_address_type == "IP"]) &&
       azapi_resource.this.ignore_other_items_in_list == null
     )
@@ -102,9 +105,9 @@ run "ip_addition_and_nic_projection_can_coexist_in_separate_pools" {
   }
   assert {
     condition = (
-      azapi_resource.this.body.properties.backendAddressPools[0].properties.loadBalancerBackendAddresses == null &&
-      azapi_resource.this.body.properties.backendAddressPools[1].properties.loadBalancerBackendAddresses[0].properties.ipAddress == "10.40.1.10" &&
-      !can(azapi_resource.this.body.properties.backendAddressPools[1].properties.loadBalancerBackendAddresses[0].properties.networkInterfaceIPConfiguration)
+      !contains(keys(azapi_resource.this.body.properties.backendAddressPools[0].properties), "loadBalancerBackendAddresses") &&
+      azapi_update_resource.backend_members["ip"].body.properties.loadBalancerBackendAddresses[0].properties.ipAddress == "10.40.1.10" &&
+      !can(azapi_update_resource.backend_members["ip"].body.properties.loadBalancerBackendAddresses[0].properties.networkInterfaceIPConfiguration)
     )
     error_message = "IP configuration must remain writable on the IP pool without replaying NIC read-only properties."
   }
@@ -125,7 +128,7 @@ run "removing_last_ip_member_does_not_select_nic_mode" {
     backend_address_pool_addresses = {}
   }
   assert {
-    condition     = azapi_resource.this.body.properties.backendAddressPools[0].properties.loadBalancerBackendAddresses == null && length(azapi_resource.this.body.properties.backendAddressPools[1].properties.loadBalancerBackendAddresses) == 0
+    condition     = !contains(keys(azapi_resource.this.body.properties.backendAddressPools[0].properties), "loadBalancerBackendAddresses") && length(azapi_update_resource.backend_members["ip"].body.properties.loadBalancerBackendAddresses) == 0
     error_message = "Removing the last IP must leave an explicit authoritative [] beside an unspecified NIC projection."
   }
   providers = {

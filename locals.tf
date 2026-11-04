@@ -31,19 +31,23 @@ locals {
           type       = tunnel.type
         }
       ]
-      # NIC-derived entries contain read-only NIC references/NAT mappings.
-      # Null is omitted from PUT and refresh comparison; it is not an empty
-      # desired IP list. IP mode must retain [] to remove the last IP member.
-      loadBalancerBackendAddresses = pool.backend_address_type == "NIC" ? null : [
-        for address in values(var.backend_address_pool_addresses) : {
-          name = address.name
-          properties = {
-            ipAddress      = address.ip_address
-            virtualNetwork = coalesce(address.virtual_network_resource_id, pool.virtual_network_resource_id, var.backend_address_pool_configuration, "unset") == "unset" ? null : { id = coalesce(address.virtual_network_resource_id, pool.virtual_network_resource_id, var.backend_address_pool_configuration) }
-          }
-        } if address.backend_address_pool_object_name == key
-      ]
     }
+  }
+  # Never include these lists in the parent PUT. Only the dedicated pool
+  # endpoint persists explicit members reliably. NIC projections are read-only.
+  backend_pool_members = {
+    for key, pool in var.backend_address_pools : key => [
+      for address in values(var.backend_address_pool_addresses) : {
+        name = address.name
+        properties = merge(
+          pool.backend_address_type == "Frontend" ? { loadBalancerFrontendIPConfiguration = { id = address.load_balancer_frontend_ip_configuration_resource_id } } : {},
+          pool.backend_address_type == "IP" ? { ipAddress = address.ip_address } : {},
+          pool.backend_address_type == "IP" && coalesce(address.virtual_network_resource_id, pool.virtual_network_resource_id, var.backend_address_pool_configuration, "unset") != "unset" ? {
+            virtualNetwork = { id = coalesce(address.virtual_network_resource_id, pool.virtual_network_resource_id, var.backend_address_pool_configuration, "unset") }
+          } : {}
+        )
+      } if address.backend_address_pool_object_name == key
+    ] if pool.backend_address_type != "NIC"
   }
   probe_properties = {
     for key, probe in var.lb_probes : key => {
@@ -58,7 +62,8 @@ locals {
   rule_properties = {
     for key, rule in var.lb_rules : key => {
       frontendIPConfiguration = { id = "${local.resource_id}/frontendIPConfigurations/${rule.frontend_ip_configuration_name}" }
-      backendAddressPools     = [for id in sort(distinct(rule.backend_address_pool_resource_ids != null ? rule.backend_address_pool_resource_ids : [for key in coalesce(rule.backend_address_pool_object_names, []) : local.pool_ids[key]])) : { id = id }]
+      backendAddressPools     = var.sku_tier == "Global" ? null : [for id in sort(distinct(rule.backend_address_pool_resource_ids != null ? rule.backend_address_pool_resource_ids : [for key in coalesce(rule.backend_address_pool_object_names, []) : local.pool_ids[key]])) : { id = id }]
+      backendAddressPool      = var.sku_tier != "Global" ? null : try({ id = (rule.backend_address_pool_resource_ids != null ? rule.backend_address_pool_resource_ids : [for key in coalesce(rule.backend_address_pool_object_names, []) : local.pool_ids[key]])[0] }, null)
       probe                   = rule.probe_resource_id != null ? { id = rule.probe_resource_id } : rule.probe_object_name != null ? { id = local.probe_ids[rule.probe_object_name] } : null
       protocol                = rule.protocol
       frontendPort            = rule.frontend_port

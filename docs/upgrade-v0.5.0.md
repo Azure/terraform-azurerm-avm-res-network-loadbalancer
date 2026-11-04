@@ -4,9 +4,12 @@
 relationships but failed follow-up convergence; its cleanup completed. The
 normalization corrections still require independent live revalidation, including
 a real NIC-owner write. No live pass is claimed for this candidate.**
-The approved design manages **all LB child collections in the parent body**,
-including pools and NAT rules. One complete LB write avoids the parent-rule/
-separate-pool creation cycle and competing writes. There is no root ownership
+The approved design manages **pool metadata and referencing rules in the parent
+body**, with explicit IP/frontend lists owned only by refreshing dedicated-pool
+endpoint updaters. The parent never sends member lists. This avoids the
+parent-rule/separate-pool bootstrap cycle without a second pool lifecycle
+resource. Fixed-empty destroy actions clear explicit lists before removal.
+There is no root ownership
 switch or object-only submodule. This practical design deliberately departs
 from current TFRMNFR1 composition requirements; full compliance is not claimed.
 
@@ -33,7 +36,7 @@ move is claimed.
 | `azurerm_lb.this` | `azapi_resource.this`, same-boundary provider `moved` |
 | LB inline frontend configurations | LB body's `frontendIPConfigurations`, preserved names |
 | `azurerm_lb_backend_address_pool.this[key]` | LB body's `backendAddressPools`; old binding forgotten with `destroy=false`, no ARM delete |
-| `azurerm_lb_backend_address_pool_address.this[key]` | owning pool's `loadBalancerBackendAddresses`; synthetic binding forgotten |
+| `azurerm_lb_backend_address_pool_address.this[key]` | `azapi_update_resource.backend_members[pool_key]` owns the dedicated endpoint list; synthetic binding forgotten |
 | `azurerm_lb_probe.this[key]` | LB body's `probes`; old binding forgotten |
 | `azurerm_lb_rule.this[key]` | LB body's `loadBalancingRules`; old binding forgotten |
 | `azurerm_lb_nat_rule.this[name]` | LB body's `inboundNatRules`, preserving Azure name; old binding forgotten with `destroy=false` |
@@ -56,7 +59,7 @@ pools in the default `"IP"` mode even when removing their last IP member.
 NIC mode omits the server-maintained address projection, not the pool itself,
 and rejects configured IP members. Never switch modes as an implicit deletion.
 NIC-based membership is not written by this module.
-Preservation during a parent PUT still requires state-backed Azure verification.
+Preservation during a parent PUT still requires exact-candidate state-backed Azure verification.
 Every configured collection is authoritative, including pools and NAT rules.
 Reconcile all live members before using this draft. Read-only NIC back-references
 are excluded from the request; this is not live preservation proof.
@@ -65,10 +68,21 @@ are excluded from the request; this is not live preservation proof.
 
 Set `avm_managed_migration_enabled = true` for the one upgrade apply. The module
 forgets released child bindings without deletion. The moved/imported LB adopts
-their complete configured properties in its body; no pool/NAT imports target root
+their configured metadata and rules in its body; no pool/NAT imports target root
 child modules. The migration flag gates captured-ID RBAC imports only. Never
 enable it on an empty deployment with role assignments: imports need existing
 objects. No generic collection-to-module `moved` block is claimed.
+
+New `azapi_update_resource.backend_members[pool_key]` bindings do not import or
+create a second pool. Their initial apply writes the existing dedicated endpoint
+after the parent has adopted/created metadata. The provider forgets these partial
+bindings without deleting anything. One `clear_backend_members[pool_key]`
+destroy action stores a fixed empty list on initial creation; no Azure call occurs
+then. No migration import is required for these partial updaters/actions.
+On parent edits the updater binding is replaced and replays its desired list;
+such a binding replacement is not an Azure pool replacement. Inspect the actual
+plan to distinguish them. Existing IP members must all be declared, or this
+authoritative write can remove omitted members.
 
 The nested parent destination is
 `module.workload["app"].module.load_balancer.azapi_resource.this`.
@@ -76,8 +90,9 @@ Released NAT/pool addresses remain in the `removed { destroy = false }`
 declarations at that same LB module boundary. Stable input keys are not a
 substitute for preserving each resolved Azure child name.
 
-The lock removal barrier covers the parent, diagnostics and RBAC. Full destroy
-removes the lock, waits, then deletes the parent and its child collections.
+The lock removal barrier covers the parent, diagnostics, RBAC, member updaters
+and cleanup actions. Full destroy removes the lock, waits, clears explicit
+member lists and then deletes the parent and its child collections.
 Selective updates under ReadOnly locks, and removals subject to applicable locks,
 need separately reviewed unlocking. Parent updates are complete PUTs, not an
 assurance that Azure permits every child edit or preserves every live relationship.
