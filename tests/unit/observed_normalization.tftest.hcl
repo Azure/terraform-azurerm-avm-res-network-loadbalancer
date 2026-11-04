@@ -164,6 +164,44 @@ run "reject_unknown_pool_mode" {
   }
 }
 
+run "reject_all_conflicting_nic_pools_among_valid_ip_members" {
+  command = plan
+  variables {
+    backend_address_pools = {
+      appliances = { name = "nvas", backend_address_type = "NIC" }
+      app        = { name = "app", backend_address_type = "NIC" }
+      ip         = { name = "static", backend_address_type = "IP" }
+    }
+    backend_address_pool_addresses = {
+      nva_address = { name = "nva", backend_address_pool_object_name = "appliances", ip_address = "10.40.1.10" }
+      app_address = { name = "app", backend_address_pool_object_name = "app", ip_address = "10.40.1.11" }
+      valid       = { name = "static", backend_address_pool_object_name = "ip", ip_address = "10.40.1.12" }
+    }
+  }
+  expect_failures = [var.backend_address_pool_addresses]
+  providers = {
+    azapi  = azapi
+    random = random
+    time   = time
+  }
+}
+
+run "reject_lowercase_pool_mode" {
+  command = plan
+  variables {
+    backend_address_pools = {
+      app = { name = "app", backend_address_type = "nic" }
+      ip  = { name = "ip", backend_address_type = "IP" }
+    }
+  }
+  expect_failures = [var.backend_address_pools]
+  providers = {
+    azapi  = azapi
+    random = random
+    time   = time
+  }
+}
+
 run "omitted_null_empty_logs_do_not_compare_disabled_expansion" {
   command = apply
   variables {

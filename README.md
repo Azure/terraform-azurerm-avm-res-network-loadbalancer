@@ -69,6 +69,32 @@ Application owners configure memberships in the resource/module that owns the
 NIC. This module has no NIC updater, association input or NIC destroy action.
 Read [NIC handoff](docs/nic-membership-ownership.md).
 
+### IP and NIC members require separate pools
+
+Azure allows IP-based and NIC-based pools on the same load balancer, but rejects
+mixing explicit IP members and native NIC associations in a single pool with
+`CannotMixIPBasedAddressesAndIPConfigurationsOnLoadBalancerBackendAddressPool`.
+Configure distinct pools, for example:
+
+```hcl
+backend_address_pools = {
+  static = { name = "static", backend_address_type = "IP" }
+  nvas   = { name = "nvas", backend_address_type = "NIC" }
+}
+```
+
+Point `backend_address_pool_addresses[*].backend_address_pool_object_name` at
+`"static"`. Pass `backend_address_pool_resource_ids["nvas"]` to the NIC-owning
+module for native membership. The module rejects IP members targeting NIC-mode
+pools and reports the conflicting address and pool input keys.
+
+Validation covers this module's inputs, not associations managed by another
+module or state. The NIC owner must not attach NICs to an IP-based pool; Azure
+enforces that external operation. Setting `backend_address_type` does not convert
+an existing pool or move its members. Coordinate migration separately rather
+than changing the mode to bypass validation. See
+[Azure's pool membership limitations](https://learn.microsoft.com/en-us/azure/load-balancer/backend-pool-management#limitations-for-ip-based-backend-pools).
+
 Set `backend_address_type = "NIC"` on each NIC-based pool. Its
 `loadBalancerBackendAddresses` is null in Terraform and omitted from PUT:
 Azure returns NIC-derived entries with read-only NIC references and NAT port
@@ -273,7 +299,7 @@ Default: `false`
 
 ### <a name="input_backend_address_pool_addresses"></a> [backend\_address\_pool\_addresses](#input\_backend\_address\_pool\_addresses)
 
-Description: IP-based backend addresses, folded into their owning pool. name, backend\_address\_pool\_object\_name (input pool key) and ip\_address are required; virtual\_network\_resource\_id overrides the pool/default VNet. This collection authoritatively owns IP address members, not NIC members.
+Description: IP-based backend addresses, folded into their owning pool. name, backend\_address\_pool\_object\_name (input pool key) and ip\_address are required; virtual\_network\_resource\_id overrides the pool/default VNet. This collection authoritatively owns IP address members, not NIC members. Azure forbids mixing IP-address members and native NIC associations in the same pool. Target an IP-mode pool here and use a separate NIC-mode pool for memberships configured by the NIC owner.
 
 Type:
 
@@ -298,7 +324,7 @@ Default: `null`
 
 ### <a name="input_backend_address_pools"></a> [backend\_address\_pools](#input\_backend\_address\_pools)
 
-Description: Backend pools by stable input key. Each has a unique name, backend\_address\_type (IP by default, or NIC), optional virtual\_network\_resource\_id and tunnel\_interfaces (identifier, port, protocol, type). IP mode authoritatively manages backend\_address\_pool\_addresses, including an empty list to remove the last IP member. Set NIC explicitly for NIC-based pools: the server-maintained address projection is unspecified and NIC membership is managed only by the NIC owner. Do not change modes to clear members; empty the IP collection while still in IP mode first.
+Description: Backend pools by stable input key. Each has a unique name, backend\_address\_type (IP by default, or NIC), optional virtual\_network\_resource\_id and tunnel\_interfaces (identifier, port, protocol, type). IP mode authoritatively manages backend\_address\_pool\_addresses, including an empty list to remove the last IP member. Set NIC explicitly for NIC-based pools: the server-maintained address projection is unspecified and NIC membership is managed only by the NIC owner. Azure allows both pool types on one LB, but forbids mixing IP and native NIC members in one pool. This mode is a module ownership declaration, not an Azure conversion operation or an inspection of externally configured NICs. Do not change modes to clear members; empty the IP collection while still in IP mode first.
 
 Type:
 

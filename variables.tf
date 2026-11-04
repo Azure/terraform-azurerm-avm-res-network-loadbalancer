@@ -90,7 +90,7 @@ variable "backend_address_pool_addresses" {
     virtual_network_resource_id      = optional(string)
   }))
   default     = {}
-  description = "IP-based backend addresses, folded into their owning pool. name, backend_address_pool_object_name (input pool key) and ip_address are required; virtual_network_resource_id overrides the pool/default VNet. This collection authoritatively owns IP address members, not NIC members."
+  description = "IP-based backend addresses, folded into their owning pool. name, backend_address_pool_object_name (input pool key) and ip_address are required; virtual_network_resource_id overrides the pool/default VNet. This collection authoritatively owns IP address members, not NIC members. Azure forbids mixing IP-address members and native NIC associations in the same pool. Target an IP-mode pool here and use a separate NIC-mode pool for memberships configured by the NIC owner."
   nullable    = false
 
   validation {
@@ -106,8 +106,11 @@ variable "backend_address_pool_addresses" {
     error_message = "Address names must be unique within each pool."
   }
   validation {
-    condition     = alltrue([for address in var.backend_address_pool_addresses : try(var.backend_address_pools[address.backend_address_pool_object_name].backend_address_type != "NIC", true)])
-    error_message = "NIC-based pools cannot configure IP-based backend_address_pool_addresses."
+    condition = alltrue([for address in var.backend_address_pool_addresses : try(var.backend_address_pools[address.backend_address_pool_object_name].backend_address_type != "NIC", true)])
+    error_message = format(
+      "Azure does not allow IP-address members and native NIC associations in the same backend pool (CannotMixIPBasedAddressesAndIPConfigurationsOnLoadBalancerBackendAddressPool). Conflicting backend_address_pool_addresses keys -> NIC-mode pool keys: %s. Put these IP members in a separate pool with backend_address_type = \"IP\". Keep backend_address_type = \"NIC\" on pools whose memberships are configured by the NIC owner using backend_address_pool_resource_ids. Both pool types can coexist on the same load balancer.",
+      join(", ", [for key, address in var.backend_address_pool_addresses : format("'%s' -> '%s'", key, address.backend_address_pool_object_name) if try(var.backend_address_pools[address.backend_address_pool_object_name].backend_address_type == "NIC", false)])
+    )
   }
 }
 
@@ -135,7 +138,7 @@ variable "backend_address_pools" {
     })), {})
   }))
   default     = {}
-  description = "Backend pools by stable input key. Each has a unique name, backend_address_type (IP by default, or NIC), optional virtual_network_resource_id and tunnel_interfaces (identifier, port, protocol, type). IP mode authoritatively manages backend_address_pool_addresses, including an empty list to remove the last IP member. Set NIC explicitly for NIC-based pools: the server-maintained address projection is unspecified and NIC membership is managed only by the NIC owner. Do not change modes to clear members; empty the IP collection while still in IP mode first."
+  description = "Backend pools by stable input key. Each has a unique name, backend_address_type (IP by default, or NIC), optional virtual_network_resource_id and tunnel_interfaces (identifier, port, protocol, type). IP mode authoritatively manages backend_address_pool_addresses, including an empty list to remove the last IP member. Set NIC explicitly for NIC-based pools: the server-maintained address projection is unspecified and NIC membership is managed only by the NIC owner. Azure allows both pool types on one LB, but forbids mixing IP and native NIC members in one pool. This mode is a module ownership declaration, not an Azure conversion operation or an inspection of externally configured NICs. Do not change modes to clear members; empty the IP collection while still in IP mode first."
   nullable    = false
 
   validation {
@@ -143,8 +146,11 @@ variable "backend_address_pools" {
     error_message = "Backend pool names must be unique."
   }
   validation {
-    condition     = alltrue([for pool in var.backend_address_pools : contains(["IP", "NIC"], pool.backend_address_type)])
-    error_message = "backend_address_type must be IP or NIC."
+    condition = alltrue([for pool in var.backend_address_pools : contains(["IP", "NIC"], pool.backend_address_type)])
+    error_message = format(
+      "backend_address_type must be exactly \"IP\" or \"NIC\". Invalid pool keys: %s. Use IP for explicit backend_address_pool_addresses and NIC for native memberships configured by the NIC owner. IP and NIC members require separate pools, which can belong to the same load balancer.",
+      join(", ", [for key, pool in var.backend_address_pools : key if !contains(["IP", "NIC"], pool.backend_address_type)])
+    )
   }
   validation {
     condition     = alltrue([for v in var.backend_address_pools : v.virtual_network_resource_id == null || can(provider::azapi::parse_resource_id("Microsoft.Network/virtualNetworks", v.virtual_network_resource_id))])

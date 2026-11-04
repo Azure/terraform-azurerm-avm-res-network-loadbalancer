@@ -5,6 +5,22 @@ The load balancer owns its pools. The application/NIC owner owns
 Pool IDs are returned by `backend_address_pool_resource_ids` using the input map
 keys, not the pools' Azure names.
 
+## Choose a separate pool for native NIC membership
+
+Set `backend_address_type = "NIC"` for the pool passed to the NIC owner.
+Configure explicit `backend_address_pool_addresses` only against separate
+`backend_address_type = "IP"` pools. Both pool types can belong to the same LB,
+but Azure rejects a native NIC association on a pool containing explicit IP
+members with
+`CannotMixIPBasedAddressesAndIPConfigurationsOnLoadBalancerBackendAddressPool`.
+Our isolated same-pool VM/NIC test confirmed that rejection.
+
+The LB module can validate an IP input targeting a declared NIC-mode pool. It
+cannot inspect or prevent a different module from attempting to attach a NIC to
+an IP-mode pool. The NIC owner must consume the correct pool ID. Mode selection
+is a module ownership contract, not an automatic conversion of Azure membership.
+Do not use IP lookups as a transparent substitute for native NIC membership.
+
 ## Existing association bindings
 
 Do **not** empty the association map while still running v0.5.0: that invokes

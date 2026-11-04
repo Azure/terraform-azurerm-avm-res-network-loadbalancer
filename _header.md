@@ -67,6 +67,32 @@ Application owners configure memberships in the resource/module that owns the
 NIC. This module has no NIC updater, association input or NIC destroy action.
 Read [NIC handoff](docs/nic-membership-ownership.md).
 
+### IP and NIC members require separate pools
+
+Azure allows IP-based and NIC-based pools on the same load balancer, but rejects
+mixing explicit IP members and native NIC associations in a single pool with
+`CannotMixIPBasedAddressesAndIPConfigurationsOnLoadBalancerBackendAddressPool`.
+Configure distinct pools, for example:
+
+```hcl
+backend_address_pools = {
+  static = { name = "static", backend_address_type = "IP" }
+  nvas   = { name = "nvas", backend_address_type = "NIC" }
+}
+```
+
+Point `backend_address_pool_addresses[*].backend_address_pool_object_name` at
+`"static"`. Pass `backend_address_pool_resource_ids["nvas"]` to the NIC-owning
+module for native membership. The module rejects IP members targeting NIC-mode
+pools and reports the conflicting address and pool input keys.
+
+Validation covers this module's inputs, not associations managed by another
+module or state. The NIC owner must not attach NICs to an IP-based pool; Azure
+enforces that external operation. Setting `backend_address_type` does not convert
+an existing pool or move its members. Coordinate migration separately rather
+than changing the mode to bypass validation. See
+[Azure's pool membership limitations](https://learn.microsoft.com/en-us/azure/load-balancer/backend-pool-management#limitations-for-ip-based-backend-pools).
+
 Set `backend_address_type = "NIC"` on each NIC-based pool. Its
 `loadBalancerBackendAddresses` is null in Terraform and omitted from PUT:
 Azure returns NIC-derived entries with read-only NIC references and NAT port
