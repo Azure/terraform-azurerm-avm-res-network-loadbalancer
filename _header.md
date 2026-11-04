@@ -75,9 +75,15 @@ compared with an explicit empty IP-member list. The pool itself, its name,
 tunnels and other configured properties remain managed. NIC membership remains
 exclusively with the NIC owner; this does not adopt external IP members.
 
-`backend_address_type = "IP"` is the default, preserving authoritative IP-member
-management. Every configured IP member is sent and compared, and removing the
-last member still sends `[]`. IP members on a NIC-mode pool are rejected.
+`backend_address_type = "IP"` is the default. The desired IP-member list is
+included in the parent request and compared on refresh; removing the last
+member produces `[]`. **Persistence is not currently verified:** an actual
+upgrade test accepted an IP-member addition but Azure returned only the original
+member, and the next refreshed plan repeated the update. Do not treat apply
+success or the mocked payload tests as proof that IP members were persisted.
+IP-member CRUD is a release blocker; see
+[IP-member persistence investigation](docs/ip-member-persistence.md).
+IP members on a NIC-mode pool are rejected.
 Omitted or null mode values default to IP; an empty IP-member map never selects
 NIC mode implicitly. To change pool modes, clear IP members while still in IP
 mode and verify readback before separately coordinating the NIC owner. Changing

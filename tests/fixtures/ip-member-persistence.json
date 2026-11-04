@@ -1,0 +1,15 @@
+{
+  "tested_sha": "dce02d370272893ab408a7f8828eba9e752d3899",
+  "source": "convergence-rerun/protected/ip-add.json; ip-add-azure.json; ip-add-confirm-azure.json",
+  "scope": "Redacted member-only excerpts; not an HTTP request capture",
+  "expected": {
+    "second": "10.40.1.11",
+    "static": "10.40.1.10"
+  },
+  "observed": {
+    "static": "10.40.1.10"
+  },
+  "apply_exit": 0,
+  "refreshed_plan_exit": 2,
+  "result": "FAIL"
+}
