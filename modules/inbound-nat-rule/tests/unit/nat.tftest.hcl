@@ -23,8 +23,8 @@ run "scalar_nat_defaults" {
     error_message = "NAT v1 defaults and output must be supported."
   }
   assert {
-    condition     = azapi_resource.this.locks == tolist([var.parent_id]) && !contains(keys(azapi_resource.this.body.properties), "backendIPConfiguration")
-    error_message = "NAT operations must share the LB mutex and omit read-only NIC back references."
+    condition     = azapi_resource.this.ignore_null_property && azapi_resource.this.body.properties.frontendPortRangeStart == null && azapi_resource.this.body.properties.frontendPortRangeEnd == null && azapi_resource.this.locks == tolist([var.parent_id]) && !contains(keys(azapi_resource.this.body.properties), "backendIPConfiguration")
+    error_message = "Scalar NAT must omit unspecified range/pool properties, share the LB mutex and exclude read-only NIC back references."
   }
 }
 run "range_nat_and_controls" {
@@ -42,8 +42,25 @@ run "range_nat_and_controls" {
     timeouts = { create = "1h", delete = "30m" }
   }
   assert {
-    condition     = azapi_resource.this.body.properties.frontendPort == null && azapi_resource.this.body.properties.frontendPortRangeEnd == 50100 && azapi_resource.this.body.properties.enableTcpReset && azapi_resource.this.retry.interval_seconds == 5 && azapi_resource.this.timeouts.create == "1h"
-    error_message = "NAT v2 shapes and controls must reach the resource."
+    condition     = azapi_resource.this.ignore_null_property && azapi_resource.this.body.properties.frontendPort == null && azapi_resource.this.body.properties.frontendPortRangeStart == 50000 && azapi_resource.this.body.properties.frontendPortRangeEnd == 50100 && azapi_resource.this.body.properties.enableTcpReset && azapi_resource.this.retry.interval_seconds == 5 && azapi_resource.this.timeouts.create == "1h"
+    error_message = "Range NAT must omit an unspecified scalar port so Azure's returned zero does not cause drift, while managing explicit ranges and controls."
+  }
+}
+run "explicit_zero_scalar_port_is_not_null" {
+  command = apply
+  variables {
+    properties = {
+      frontendIPConfiguration = { id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/lab/providers/Microsoft.Network/loadBalancers/lab/frontendIPConfigurations/public" }
+      backendAddressPool      = { id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/lab/providers/Microsoft.Network/loadBalancers/lab/backendAddressPools/app" }
+      frontendPort            = 0
+      frontendPortRangeStart  = 50000
+      frontendPortRangeEnd    = 50100
+      backendPort             = 22
+    }
+  }
+  assert {
+    condition     = azapi_resource.this.ignore_null_property && azapi_resource.this.body.properties.frontendPort == 0 && azapi_resource.this.body.properties.backendPort == 22 && !azapi_resource.this.body.properties.enableTcpReset
+    error_message = "Null omission must preserve explicit zero, false and non-null port values."
   }
 }
 run "invalid_parent" {
