@@ -44,8 +44,12 @@ destroy-only fixed-empty PUT, not a refreshing owner. Dependency reversal
 clears before updater removal and inline parent pool removal/rename; it also
 precedes parent replacement/destroy and deletion of referenced regional LBs.
 The lock-removal barrier covers updater and cleanup. The local Terraform
-graph model verifies the abstract ordering, not Azure service success.
-Exact-candidate lifecycle and upgraded-state proof remain mandatory.
+graph model verifies only abstract ordering. Independent Azure verification of
+exact candidate `7ebb9465497dbae051d4d8ca45aeca718e86c01b` additionally confirmed
+fixed-empty cleanup before parent pool/rule removal, pool rename and LB
+deletion, plus qualified v0.5.0 same-state adoption and lock-ordered cleanup.
+Deliberate LB replacement and standalone Frontend-pool destruction remain
+unproved; ordinary root destruction does not establish those separate cases.
 
 NAT rules follow the same single-authority boundary even though they have an
 independent write API. No mandatory `ignore_body_changes` or lifecycle ignore
@@ -133,6 +137,26 @@ Mocked tests cover stable request construction, identical/reordered inputs,
 mutable edits, collection additions/removals, controls and replacement input
 wiring. They do **not** exercise real AzAPI refresh/plan modifiers, Azure
 normalization, NIC preservation, service disruption or no-op convergence.
-Authorized fresh deployment, repeat refresh plans, mutable update/convergence,
-same-state v0.5.0 upgrade and cleanup remain untested. Broad optional/null
-combinations remain tracked in the evidence matrix, not assumed covered.
+Independent Azure tests on `7ebb946` passed the 18-resource multi-region
+example and 16 core membership/parent/NIC/pool-lifecycle cases, including drift
+reconciliation, with two normal refreshed no-op plans per passed case.
+Actual serialized traffic confirmed the exact member PUT before updater
+GET/PUT, not a preliminary clear followed by restoration.
+
+The v0.5.0 baseline was actually applied, then upgraded in the same nested
+consumer state: 5 imports, 3 moves, 15 nondestructive forgets and zero
+deletes/replacements. A first consumer PIP diagnostic import plan proposed
+case-only replacement and was rejected before apply. The corrected import input
+preserved case-insensitive identity; a separately inspected plan passed,
+followed by identity/interface comparisons, convergence, migration-flag removal,
+real NIC-owner handoff and cleanup. All three test RGs were absent and all four
+states empty; 40 refreshed no-op plans passed across the run.
+
+These are exact-SHA control-plane results with telemetry disabled and no VMs.
+They do not prove traffic/failover, compute-AVM coexistence, enabled telemetry,
+valid whole-LB VNet migration, arbitrary metadata/null combinations or all
+replacement paths. A cross-VNet attempt while native NICs stayed in the original
+VNet was rejected by Azure and is not a migration pass. Historical failures
+retain their original candidate SHAs. Documentation-only descendants may reuse
+the results only when runtime, dependency and migration sources are unchanged;
+do not label them as new runtime executions.

@@ -1,8 +1,9 @@
-# IP-member persistence: dedicated-endpoint correction awaiting candidate proof
+# IP-member persistence: verified dedicated-endpoint correction
 
 ## Status
 
-**Member-removal correction implemented; new exact-candidate proof pending.**
+**Core member-removal and lifecycle correction verified on exact candidate
+`7ebb9465497dbae051d4d8ca45aeca718e86c01b`.**
 The root now sends pool skeletons/metadata without any member list. A single
 refreshing `azapi_update_resource.backend_members[pool_key]` is coupled to a
 stateless exact-PUT action at `before_create` and `before_update`. The action
@@ -12,6 +13,41 @@ lists before pool removal. None of these partial bindings owns pool lifecycle or
 No blanket ignore has been added to mask the historical failure. The action
 does not merge old member arrays. The updater subsequently reads/writes the
 corrected pool and retains configured-list drift detection.
+
+Independent Azure verification on 2026-11-04 passed:
+
+- The byte-verified multi-region example: 18 creates, 21 independent
+  membership/NIC assertions, two refreshed no-op plans and ordinary automatic
+  destruction. The managed Terraform standard E2E sequence was used, not a
+  claimed literal `avm test e2e` command pass.
+- Sixteen core mutation cases: IP/frontend add, subset removal, last-member
+  clear/restore, same-count rename/retarget, parent tag/rule changes, actual
+  NIC-owner PUTs, pool removal with its rule, recreation/rename and detection
+  and reconciliation of an extra live member. Every passed case reached two
+  immediate normal refreshed no-op plans.
+- Serialized exact action PUT before updater GET/PUT, with no preliminary
+  clear of retained members. Parent responses preserved existing members
+  before the subsequent member writes.
+- An actual v0.5.0 same-state upgrade with preserved normalized ARM identities
+  and interfaces, migration-flag removal, NIC-owner handoff and cleanup.
+  The first case-only PIP diagnostic import replacement plan was rejected
+  before apply. After case-insensitive identity equality was asserted, the
+  import input was canonicalized to the already-declared parent and captured
+  name; a separately inspected zero-replacement plan was applied.
+
+Forty normal refreshed no-op plans passed across the complete run. All three
+test resource groups were absent and all four states empty after cleanup;
+no recoverable test workspace remained. Telemetry was disabled and no VMs
+or traffic were deployed. This is not a VM-AVM coexistence result.
+
+The additional attempt to retarget IP members to another VNet while native
+NICs stayed in the original VNet failed with
+`LoadBalancerBackendAddressesMustBelongToSameVNET`; it remains a failed,
+unsupported combination, not a valid whole-LB VNet migration pass.
+Deliberate LB replacement, standalone Frontend-pool destruction, enabled
+telemetry and traffic/failover remain unproved. Documentation-only descendants
+may retain these results only with unchanged runtime/dependency/migration
+sources; the tested runtime SHA remains `7ebb946`.
 
 ## Exact-candidate removal failure and correction
 
@@ -150,9 +186,10 @@ endpoint to the parent endpoint lost persistence. The fixture is not shown
 to be invalid. A casing change, guessed `syncMode`, broad ignore, or API
 upgrade is not an evidence-backed fix.
 
-## Required independent proof and design decision
+## Ownership decision and remaining proof
 
-Reproduce in a new isolated RG with the exact candidate and pinned providers.
+For future runtime, dependency or migration changes, reproduce in a new isolated
+RG with the exact candidate and pinned providers.
 Capture the actual parent request, response and two independent GETs, including
 the dedicated pool GET. Assert exact names, IPs, VNet IDs and cardinality, then
 require two fully refreshed no-op plans after each mutation. Stop at the first
@@ -164,10 +201,13 @@ bootstrap together, then the exact pre-write action and refreshing updater
 manage members in their coupled lifecycle. Partial
 bindings require no second pool import. Parent edits replay that owner, while
 fixed-empty cleanup precedes removal. The lock barrier covers both bindings.
-Actual automatic pool removal/rename, metadata/rule mutation, LB replacement,
-lock interaction, frontend teardown and v0.5.0 adoption must still be exercised
-on the frozen candidate. Stop on lost membership, repeated drift or failed
-cleanup; a mock pass cannot satisfy these gates.
+Automatic pool removal/rename, exercised parent/rule mutations, native-member
+preservation, frontend teardown and v0.5.0 adoption passed on `7ebb946`.
+The upgrade included locks with grants/diagnostics and their ordered cleanup;
+it did not establish arbitrary selective operations under locks. Deliberate
+LB replacement and standalone Frontend-pool destruction remain separate gates.
+Stop on lost membership, repeated drift or failed cleanup; a mock pass cannot
+satisfy these gates.
 
 The Terraform unit cases prove payload construction and mocked lifecycle
 configuration only. The separate pinned-provider regression proves serialization

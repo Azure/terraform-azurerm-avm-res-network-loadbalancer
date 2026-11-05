@@ -5,12 +5,16 @@ backend pools, IP and regional-frontend backend members, probes, load-balancing 
 outbound rules and legacy VMSS NAT pools. Supports canonical diagnostics v2,
 RBAC, locks, tags, telemetry and AzAPI controls.
 
-**Implementation status:** this is a breaking migration draft, not a released
-or Azure-upgrade-validated implementation. The parent owns pool metadata and
+**Implementation status:** this is an unreleased breaking migration candidate.
+Independent Azure verification of
+`7ebb9465497dbae051d4d8ca45aeca718e86c01b` passed the multi-region example,
+core member/pool lifecycle and a qualified same-state upgrade from v0.5.0.
+The parent owns pool metadata and
 referencing rules; a coupled exact-PUT action and refreshing dedicated-endpoint
 updater exclusively manage each explicit member list. Fixed-empty destroy actions clear those lists before
-pool removal. This is not a claim of full AVM specification compliance or of
-exact-candidate Azure validation.
+pool removal. These scoped results do not establish full AVM specification
+compliance or unconditional release readiness. See the tested scope and
+remaining limits below.
 
 ## ARM ownership
 
@@ -63,10 +67,13 @@ parent PUT, not a child-level PATCH. That is not a service zero-disruption
 guarantee; Azure may reject immutable child-property changes. Mocked request
 equality is not proof of refresh normalization or repeat no-op plans. Those
 require an authorized real apply, repeat full-refresh plan, mutable-update apply,
-clean follow-up plan, and state-backed upgrade test. Live convergence is unproven.
-The initial v0.5.0 live upgrade preserved identities and relationships but failed
-repeat-plan convergence. The normalization corrections in this candidate still
-require an independent live rerun; no live pass is claimed.
+clean follow-up plan, and state-backed upgrade test. On exact candidate
+`7ebb946`, independent Azure tests passed fresh multi-region deployment,
+16 core member/parent/NIC/pool-lifecycle cases and a same-state v0.5.0 upgrade,
+with 40 normal refreshed no-op plans across the run. Historical failed
+convergence and removal tests remain failures of their original candidates.
+Telemetry was disabled. Deliberate LB replacement, standalone Frontend-pool
+destruction, enabled telemetry and traffic/failover remain unproved.
 Freeze other writers during adoption/updates. Remove applicable ReadOnly locks
 before updates and locks preventing deletion before selective destructive
 operations; the full-destroy lock barrier is not an update-time unlock mechanism.
@@ -132,12 +139,14 @@ Candidate `ab278cc` passed fresh multi-region deployment, repeated refreshed
 no-ops, parent/NIC updates and ordinary automatic destroy, but **failed removal
 of one Global frontend member**: the updater sent both old members despite an
 east-only plan. Its cleanup passed; its migration test was stopped.
-The pre-write correction requires new exact-candidate runtime proof; earlier
-passes are not relabeled onto it. Diagnostic dedicated-endpoint and skeleton
-tests are not proof for this candidate, all metadata edits, cleanup or upgrade.
-No serialized wire body was captured in the initial skeleton diagnostic.
-Exact-candidate IP/frontend CRUD, automatic removal/destroy and state-backed
-upgrade remain release gates; see
+Independent Azure verification of correction `7ebb946` subsequently passed
+IP/frontend subset removal, last-member clear/restore, rename/retarget and drift
+reconciliation. Serialized requests confirmed the exact action PUT preceded
+updater reads/writes, without preliminary clearing of retained members.
+Pool removal with its rule, recreation, rename and ordinary automatic destroy
+also passed. These are new exact-candidate results, not relabeled diagnostic
+or `ab278cc` passes. The same-state upgrade passed with the import-ID casing
+qualification described below. See
 [IP-member persistence investigation](docs/ip-member-persistence.md).
 IP members on a NIC-mode pool are rejected.
 Omitted or null mode values default to IP; an empty IP-member map never selects
@@ -162,9 +171,8 @@ Global LBs allow public frontends and load-balancing rules, not configured
 health probes (including rule probe IDs), outbound rules or NAT pools/rules.
 Health is inherited from regional LBs. Global rules require matching frontend/backend ports,
 TCP reset disabled, and exactly one pool reference; this is serialized using
-the singular `backendAddressPool` field exercised by the corrected diagnostic.
-That diagnostic captured actual serialized member-field omission and successful
-Global rule edits, not this candidate's automatic lifecycle or migration.
+the singular `backendAddressPool` field exercised by both the corrected
+diagnostic and exact-candidate `7ebb946` deployment and rule-update tests.
 Deploy Global LB/PIP resources in a supported home region and use matching IP families across tiers;
 the module does not hard-code a changing Azure home-region catalog.
 See [multi-region](examples/multi-region) for two regional LBs and a Global
@@ -219,10 +227,19 @@ Mocks do not prove Azure tag clearing or provider-private ignore behavior.
 
 ## Breaking upgrade from v0.5.0
 
-The supported source baseline under investigation is v0.5.0, commit
+The tested source baseline is v0.5.0, commit
 `e83d34778efeb54a1779b968106067cc4b2bad63`.
-**The initial real-Azure upgrade failed convergence. Corrections await a live
-rerun. Do not apply this draft to production.**
+The independent same-state upgrade to `7ebb946` passed after a recorded
+consumer import-ID casing correction: 5 imports, 3 moves, 15 nondestructive
+forgets, 5 state/binding additions, 8 updates and zero deletes/replacements.
+The initial case-only diagnostic replacement plan was rejected before apply;
+after asserting case-insensitive identity equality, the import ID was
+canonicalized to the already-declared PIP parent plus captured diagnostic name.
+A separately inspected zero-replacement plan was applied. Do not blindly copy
+returned import-ID casing or accept a replacement as harmless.
+Identity/interface checks, two migration no-ops, migration-flag removal, a real
+NIC-owner update and cleanup passed. This remains an unreleased candidate,
+not blanket production or rollback approval.
 
 1. Use Terraform `>= 1.16, < 2.0` and AzAPI `~> 2.12`. Keep an AzureRM provider
    configured at the consumer root until all released state has been converted.

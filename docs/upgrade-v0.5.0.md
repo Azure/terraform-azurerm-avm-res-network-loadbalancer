@@ -1,9 +1,14 @@
 # v0.5.0 to AzAPI — draft upgrade procedure
 
-**Not production-ready. The initial real-Azure upgrade preserved identities and
-relationships but failed follow-up convergence; its cleanup completed. The
-normalization corrections still require independent live revalidation, including
-a real NIC-owner write. No live pass is claimed for this candidate.**
+**Unreleased candidate with qualified upgrade proof.** Independent Azure testing
+applied v0.5.0 and upgraded the same state to
+`7ebb9465497dbae051d4d8ca45aeca718e86c01b`, preserving identities and interfaces,
+reaching refreshed no-op plans and completing a real NIC-owner write and cleanup.
+The first consumer PIP diagnostic import plan proposed a case-only replacement
+and was rejected before apply; the successful separately inspected plan required
+the import-ID casing correction described below. Earlier failed convergence
+remains historical evidence, not a pass. These scoped results do not establish
+unconditional production readiness, full interface coverage or rollback safety.
 The approved design manages **pool metadata and referencing rules in the parent
 body**, with explicit IP/frontend lists managed by coupled exact-PUT actions
 and refreshing dedicated-pool endpoint updaters. The parent never sends member lists. This avoids the
@@ -17,8 +22,10 @@ from current TFRMNFR1 composition requirements; full compliance is not claimed.
 
 - Released baseline: v0.5.0,
   `e83d34778efeb54a1779b968106067cc4b2bad63`.
-- Target: use the exact locally committed candidate SHA from the evidence
-  record. No validated immutable candidate exists until all local gates pass.
+- Tested target: `7ebb9465497dbae051d4d8ca45aeca718e86c01b`.
+  Documentation-only descendants retain this runtime evidence only if
+  runtime, dependency and migration sources are unchanged; they are not new
+  live-tested SHAs.
 - Terraform >=1.16 and <2.0; Azure/azapi ~>2.12.
 - Canonical interfaces utility: `Azure/avm-utl-interfaces/azure` **0.9.0**.
 - Keep the released AzureRM provider configuration in the consumer until the
@@ -59,10 +66,13 @@ pools in the default `"IP"` mode even when removing their last IP member.
 NIC mode omits the server-maintained address projection, not the pool itself,
 and rejects configured IP members. Never switch modes as an implicit deletion.
 NIC-based membership is not written by this module.
-Preservation during a parent PUT still requires exact-candidate state-backed Azure verification.
+Preservation during the exercised parent/NIC PUTs passed exact-candidate
+state-backed verification on `7ebb946`; new writer combinations still need
+their own proof.
 Every configured collection is authoritative, including pools and NAT rules.
 Reconcile all live members before using this draft. Read-only NIC back-references
-are excluded from the request; this is not live preservation proof.
+are excluded from the request; that implementation detail alone is not
+preservation proof.
 
 ## Released child adoption and ordering
 
@@ -96,8 +106,15 @@ Do not assume the updater's retry controls govern the action. Two PUTs per
 changed explicit pool are expected; there is no clear-all-before-restore stage.
 Candidate `ab278cc` passed fresh deployment/ordinary cleanup but failed
 nonempty frontend removal, and its migration was not started. Those results
-remain scoped to that SHA. This correction still requires independently applied
-v0.5.0-to-exact-candidate upgrade and ordinary destroy evidence.
+remain scoped to that SHA. Correction `7ebb946` subsequently passed independently
+applied v0.5.0-to-exact-candidate upgrade and ordinary automatic destroy.
+The executed nested consumer plan contained 5 imports, 3 moves, 15 nondestructive
+forgets, 5 state/binding additions, 8 updates and zero deletes/replacements.
+Full ARM comparisons covered LB/PIP/NIC identities, native memberships,
+children/rules, diagnostics, role GUIDs and locks. Two immediate migration
+no-ops, migration-flag removal and an actual NIC-owner PUT with the complete
+two-pool list passed. All fixture states were empty and test RGs absent after
+cleanup. No VMs were deployed and telemetry was disabled.
 
 The nested parent destination is
 `module.workload["app"].module.load_balancer.azapi_resource.this`.
@@ -173,6 +190,20 @@ pipelines, serialize forget then adoption, and verify after each step.
 No PIP or extension may be left permanently unmanaged. If adoption configuration
 or GUID/name inventory is missing, stop before applying.
 
+### Import-ID casing qualification
+
+The executed upgrade's first consumer-owned PIP diagnostic import used the
+lower-cased parent type spelling returned by Azure, while the unchanged
+consumer declared canonical casing. AzAPI proposed replacement solely on
+`parent_id`; that saved plan was rejected and never applied.
+
+After asserting case-insensitive ARM identity equality, the captured import ID
+was canonicalized to the already-declared PIP parent plus captured diagnostic
+name. No product HCL, state or Azure identity was changed to force convergence.
+A new separately saved zero-replacement plan was reviewed and applied.
+Preserve both rejected and accepted plans. Do not treat arbitrary casing
+rewrites or replacement as a safe import recipe.
+
 ## Evidence required before applying
 
 1. Apply the released baseline in an explicitly authorized isolated scope.
@@ -187,6 +218,16 @@ or GUID/name inventory is missing, stop before applying.
    collection updates/removals, NIC owner handoff and independent PIP adoption.
 7. Detach test NICs through their owner; destroy the migrated fixture; verify
    empty states and no retained resources except explicitly authorized ones.
+
+The executed `7ebb946` path satisfies the scoped baseline, migration,
+identity/convergence, NIC-owner and cleanup checks above. Deliberate LB
+replacement, standalone Frontend-pool destruction, enabled telemetry,
+traffic/failover and broad optional/null combinations remain unproved.
+Selective operations under locks require separate review. Retargeting explicit
+members to another VNet while native NICs stayed in the original was rejected by
+Azure; that failed case does not validate a whole-LB VNet migration.
+The experimental child-composition draft procedure above was not this released
+baseline upgrade and remains separately unverified.
 
 ## Rollback limitations
 

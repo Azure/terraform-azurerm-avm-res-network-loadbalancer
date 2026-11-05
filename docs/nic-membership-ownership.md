@@ -39,8 +39,24 @@ removed {
 
 This removes all legacy module-owned association bindings without asking Azure
 to detach anything. It does not import a NIC, update a NIC, or establish that a
-future NIC-owner PUT will preserve memberships. Actual same-state upgrade and
-live membership preservation remain untested.
+future NIC-owner PUT will preserve memberships by itself.
+
+Independent Azure verification of exact candidate
+`7ebb9465497dbae051d4d8ca45aeca718e86c01b` applied v0.5.0 and upgraded the same
+nested consumer state. Both native memberships/backlinks and NIC/LB identities
+were preserved. A real NIC-owner update sent the complete desired two-pool
+membership list; full ARM comparisons and two refreshed no-op plans passed.
+Fresh multi-region NIC-owner updates also preserved native memberships.
+These fixtures used real NICs without attached VMs and did not prove compute
+AVM coexistence or LB-owned native association management.
+
+The upgrade's first consumer PIP diagnostic import plan proposed a case-only
+replacement and was rejected before apply; case-equivalent import input
+canonicalization produced the separately inspected successful plan.
+Migration-flag removal and ordered cleanup also passed. The result is scoped
+to the executed same-state handoff, not arbitrary cross-state writer behavior.
+Keep the tested SHA attached to this evidence on documentation-only descendants
+with unchanged runtime/dependency/migration sources.
 
 1. Freeze applies in both the LB and NIC-owning states.
 2. Back up both states outside source control and capture NIC IDs, IP
