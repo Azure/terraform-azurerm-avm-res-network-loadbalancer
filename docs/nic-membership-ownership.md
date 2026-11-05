@@ -1,9 +1,110 @@
 # NIC membership ownership handoff
 
-The load balancer owns its pools. The application/NIC owner owns
+The load balancer owns pool definitions and explicit IP/Frontend member lists.
+The application/NIC owner exclusively owns native associations in
 `ipConfigurations[*].properties.loadBalancerBackendAddressPools` on the NIC.
 Pool IDs are returned by `backend_address_pool_resource_ids` using the input map
-keys, not the pools' Azure names.
+keys, not the pools' Azure names. Supply these IDs to the NIC/compute owner's
+supported membership configuration; do not introduce a second NIC writer.
+
+## Why LB-side native association management was retired
+
+The released association input let the LB configuration write a property on an
+application-owned NIC. The AzAPI migration retires that input and deliberately
+does not replace it with an LB-side NIC updater. A pool's NIC back-references
+are not an independently writable association lifecycle. An external NIC write
+also needs an explicit preservation/delegation contract with the NIC owner,
+plus safe selective detach that retains unrelated configurations/memberships.
+Successful attachment alone establishes neither contract.
+
+An isolated actual-VM diagnostic on 2026-11-05 demonstrated the conflict:
+compute's next NIC PUT removed a membership attached outside its declared
+configuration. Allowing the external updater to restore it in the same apply
+would have hidden the loss, not established stable ownership. This result
+supports keeping native membership with the NIC owner; it does not assert that
+every compute version/provider behaves identically.
+
+### Frozen diagnostic and observed result
+
+| Component | Exact tested configuration |
+|---|---|
+| LB runtime | `7ebb9465497dbae051d4d8ca45aeca718e86c01b` |
+| Compute AVM | Unreleased AzAPI `main`, pinned `9cd85039358a12f744752a7e8ce519d0e692a1eb` |
+| Terraform / AzAPI | 1.16.5 / 2.13.0 |
+| Compute / diagnostic NIC API | `2024-10-01` / `2025-01-01` |
+| Actual VM | Nonzonal `Standard_B2s_v2`, West US 2, `Canonical:ubuntu-24_04-lts:server:24.04.202610210`, private-only NIC, deny-inbound NSG |
+| NIC controls | Two static IP configurations; an unrelated native association on the secondary configuration |
+
+Baseline creation and two full refreshed no-op plans passed. A separate
+diagnostic fresh-read/merge updater attached the primary configuration to the
+test pool. NIC GETs and pool reverse-reference GETs confirmed attachment and
+retention of the secondary association. This was an external diagnostic fixture,
+not an implementation of native membership in this LB module.
+
+The two immediate post-attachment plans did **not** converge: the diagnostic
+updater's refresh expanded its `ipConfigurations` state to include the unmanaged
+secondary configuration. That separate list-scope flaw is retained as a failure,
+not attributed to compute stripping membership.
+
+A reviewed, isolated compute-owned NIC PUT then changed only
+`ip_forwarding_enabled` from false to true. Independent Azure reads showed the
+primary native association and its pool backlink had disappeared. The unrelated
+secondary association, VM/NIC GUIDs, both IP configurations, subnet, NSG, DNS and
+tags remained unchanged. Both subsequent full refreshed plans wanted the
+diagnostic updater to restore the missing association. No restoration apply,
+broad ignore or repeated alternation was used; testing stopped on first loss.
+
+### Reproduction and evidence boundaries
+
+1. In a separately authorized isolated scope, freeze the exact pins above and
+   deploy an actual compute-AVM VM/NIC plus the LB. Give the NIC two static IP
+   configurations: omit `load_balancer_backend_pools` from
+   `network_interfaces.primary.ip_configurations.primary`, and declare the
+   secondary sentinel through
+   `network_interfaces.primary.ip_configurations.secondary.load_balancer_backend_pools.sentinel.load_balancer_backend_pool_resource_id`.
+   Require two full refreshed baseline no-op plans before attachment.
+2. Use an external diagnostic updater to attach the primary native membership.
+   In the executed fixture, `azapi_update_resource.diagnostic_attachment[0]`
+   targeted `module.compute.network_interfaces["primary"].id` and requested
+   the primary IP configuration's native pool reference using
+   `module.loadbalancer.backend_address_pool_resource_ids["diagnostic"]`,
+   with `ignore_missing_property=false` and no ignores.
+   Read the NIC and both dedicated pools independently; preserve the two
+   post-attachment plans, including any diagnostic list-scope drift.
+3. Change only `network_interfaces.primary.ip_forwarding_enabled` to true.
+   Save a plan with
+   `terraform plan -input=false -no-color -target=module.compute -out=compute-write.tfplan`.
+   Inspect its JSON: the executed plan contained only an update at
+   `module.compute.azapi_resource.virtualmachine_network_interfaces["primary"]`,
+   with no VM change, replacement or diagnostic repair. Apply the saved plan
+   without the diagnostic updater, so reattachment cannot conceal compute's
+   behavior. Retain the targeting warning; targeting is diagnostic isolation,
+   not a recommended normal deployment workflow.
+4. Before another apply, read the NIC and both pools again and take two normal
+   full refreshed plans. Compare memberships, backlinks and unrelated NIC/VM
+   properties. Stop on loss; destroy through the compute owner, then the LB and
+   supporting resources, and verify empty state and resource-group absence.
+
+Protected diagnostic artifacts retain `nic-coexistence-research.json` and
+`nic-diagnostic-attempt2/verified-result.json`, the fixture/source fingerprints,
+sanitized planned NIC payload, actual PUT URLs and before/after Azure GETs.
+The result records `requirementResult="FAIL"` and twelve successful evidence
+assertions establishing that negative result, not twelve passing coexistence
+tests. Key supporting files in `nic-diagnostic-attempt2` include
+`compute-write-sanitized-plan.json`, `compute-write-put-requests.txt`,
+`attached-snapshot.json`, `after-compute-write-snapshot.json` and
+`cleanup-verified.json`. These are protected session artifacts, not public
+evidence links or newly committed Azure identifiers.
+Serialized HTTP request bodies were **not** captured (`IncludeBody=false`).
+The result is based on actual isolated NIC execution and readbacks, not a claim
+that a planned body is a captured wire request. Secret-bearing plans, full debug
+logs and state backups were removed after redacted evidence was validated.
+
+Normal destroy removed the actual VM/OS disk, then NIC before LB, and remaining
+supporting resources. State was empty and both attempt resource groups absent.
+The earlier `Standard_B2s` capacity failure remains a separate failed attempt,
+not a coexistence result. The successful baseline retry did not change that
+history or turn the negative ownership test into a pass.
 
 ## Choose a separate pool for native NIC membership
 

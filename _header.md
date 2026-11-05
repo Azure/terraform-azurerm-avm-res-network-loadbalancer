@@ -81,7 +81,16 @@ operations; the full-destroy lock barrier is not an update-time unlock mechanism
 The LB exports `backend_address_pool_resource_ids` keyed by **input map keys**.
 Application owners configure memberships in the resource/module that owns the
 NIC. This module has no NIC updater, association input or NIC destroy action.
-Read [NIC handoff](docs/nic-membership-ownership.md).
+The LB owns pool definitions and explicit IP/Frontend member lists; native NIC
+associations belong exclusively to the NIC/compute owner. The legacy LB-side
+association input is retired because it creates a second writer to NIC-owned
+properties. In an isolated actual-VM test, compute AVM's NIC update removed an
+externally attached pool membership and the diagnostic updater then wanted to
+restore it. That failed transparent coexistence test used unreleased compute
+commit `9cd85039358a12f744752a7e8ce519d0e692a1eb`, not a released compute AVM
+or a shipped LB-native membership implementation. Pass the pool ID to the NIC
+owner's supported membership input instead of adding a competing NIC writer.
+Read [NIC handoff and reproducible ownership evidence](docs/nic-membership-ownership.md).
 
 ### IP and NIC members require separate pools
 
