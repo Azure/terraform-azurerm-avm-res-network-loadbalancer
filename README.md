@@ -109,7 +109,8 @@ See the [upgrade guide](docs/upgrade-v0.5.0.md) for address mapping and exceptio
    Inspect imports for case-only parent-ID replacement before applying.
 5. Update diagnostics to canonical `logs`/`metrics` objects, preserving names
    and destinations. Review output consumers: discrete ID maps remain keyed
-   by input keys; raw resource outputs are AzAPI-shaped.
+   by input keys. Replace removed whole-resource outputs with `resource_id`,
+   `name` and the discrete child-ID maps; AzureRM object shapes are not emulated.
 6. Configure complete memberships in the NIC owner, then retire
    `backend_address_pool_network_interfaces`. Module-owned nondestructive
    removals forget legacy association bindings without detaching NICs.

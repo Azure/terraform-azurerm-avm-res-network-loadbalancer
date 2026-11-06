@@ -10,8 +10,9 @@ membership operation and can fail with
 The LB module owns pool definitions, exports pool IDs keyed by input keys, and
 never owns the NIC. NIC is the default pool mode for omission/null. These pools
 omit member projections and have no explicit-member action, updater or cleanup.
-Pass pool IDs to the resource/module owning each NIC IP configuration using
-its supported membership input, such as `backend_address_pool_resource_ids`.
+Pass IDs from the LB's `backend_address_pool_resource_ids` output to the
+resource/module owning each NIC IP configuration through that owner's
+supported membership input.
 Keep the complete desired list, including pools belonging to other LBs.
 
 Do not attach native NICs to IP/Frontend pools or place explicit IP members in

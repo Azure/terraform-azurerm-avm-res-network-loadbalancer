@@ -24,8 +24,9 @@ Preserve identity, input keys and resolved child names.
   `metrics` objects. Preserve actual diagnostic names and destinations.
 - Configure the complete native membership lists in the NIC owner before
   retiring `backend_address_pool_network_interfaces`.
-- Review outputs: discrete ID maps retain input keys; raw resource outputs now
-  have AzAPI shape rather than AzureRM attributes.
+- Replace removed whole-resource outputs with `resource_id`, `name` and the
+  discrete child-ID maps, which retain input keys. AzureRM object shapes are
+  not emulated.
 
 ## Module-owned state path
 
