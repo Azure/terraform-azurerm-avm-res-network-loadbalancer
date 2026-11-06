@@ -1,0 +1,40 @@
+{
+  "_provenance": "Redacted response excerpts from protected/real-20261104/migration-repeat-confirm.json change.before.body (2026-11-04, candidate 16d0196). IDs replaced, volatile fields omitted. Request-contract regressions, not a provider refresh simulator or live convergence proof.",
+  "nic_pool": {
+    "name": "app",
+    "properties": {
+      "loadBalancerBackendAddresses": [
+        {
+          "name": "lab_nic-upgradeprimary",
+          "properties": {
+            "networkInterfaceIPConfiguration": {
+              "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/lab/providers/Microsoft.Network/networkInterfaces/nic-upgrade/ipConfigurations/primary"
+            },
+            "inboundNatRulesPortMapping": [
+              { "backendPort": 22, "frontendPort": 50000, "inboundNatRuleName": "admin" }
+            ],
+            "provisioningState": "Succeeded"
+          }
+        }
+      ]
+    }
+  },
+  "lb_diagnostics": {
+    "logs": [
+      {
+        "category": "LoadBalancerHealthEvent",
+        "categoryGroup": null,
+        "enabled": false,
+        "retentionPolicy": { "days": 0, "enabled": false }
+      }
+    ]
+  },
+  "pip_diagnostics": {
+    "logs": [
+      { "category": "DDoSProtectionNotifications", "categoryGroup": null, "enabled": false, "retentionPolicy": { "days": 0, "enabled": false } },
+      { "category": "DDoSMitigationFlowLogs", "categoryGroup": null, "enabled": false, "retentionPolicy": { "days": 0, "enabled": false } },
+      { "category": "DDoSMitigationReports", "categoryGroup": null, "enabled": false, "retentionPolicy": { "days": 0, "enabled": false } }
+    ]
+  },
+  "pip_zones": ["2", "3", "1"]
+}
