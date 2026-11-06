@@ -92,10 +92,6 @@ resource "azapi_resource" "role_assignments" {
       condition     = strcontains(lower(local.resolved_role_assignments[each.key].role_definition_id_or_name), "/providers/microsoft.authorization/roledefinitions/")
       error_message = "The role definition name could not be resolved at the resource group. Supply an assignable role name or resource ID."
     }
-    precondition {
-      condition     = !var.avm_managed_migration_enabled || contains(keys(var.migration_role_assignment_resource_ids), each.key)
-      error_message = "Migration requires the existing ARM role assignment ID for every role assignment key. Never generate replacement GUIDs during adoption."
-    }
   }
 }
 

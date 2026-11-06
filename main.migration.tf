@@ -94,11 +94,9 @@ removed {
   }
 }
 
-removed {
+moved {
   from = azurerm_role_assignment.this
-  lifecycle {
-    destroy = false
-  }
+  to   = azapi_resource.role_assignments
 }
 
 moved {
@@ -126,10 +124,4 @@ removed {
   lifecycle {
     destroy = false
   }
-}
-
-import {
-  for_each = var.avm_managed_migration_enabled ? var.migration_role_assignment_resource_ids : {}
-  to       = azapi_resource.role_assignments[each.key]
-  id       = "${each.value}?api-version=${split("@", var.resource_types.authorization_role_assignments)[1]}"
 }

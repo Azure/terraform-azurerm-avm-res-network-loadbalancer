@@ -118,6 +118,7 @@ run "all_child_shapes_and_nondefaults" {
     backend_address_pools = {
       app = {
         name                        = "web-pool"
+        backend_address_type        = "IP"
         virtual_network_resource_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/lab/providers/Microsoft.Network/virtualNetworks/lab"
       }
       batch = { name = "worker-pool" }

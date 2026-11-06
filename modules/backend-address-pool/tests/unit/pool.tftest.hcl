@@ -15,8 +15,8 @@ variables {
 run "default_pool" {
   command = apply
   assert {
-    condition     = length(azapi_resource.this.body.properties.loadBalancerBackendAddresses) == 0 && length(azapi_resource.this.body.properties.tunnelInterfaces) == 0 && output.resource_id != null
-    error_message = "Empty pool defaults and scalar ID output must be supported."
+    condition     = var.backend_address_type == "NIC" && !contains(keys(azapi_resource.this.body.properties), "loadBalancerBackendAddresses") && length(azapi_resource_action.clear_backend_members) == 0 && length(azapi_resource.this.body.properties.tunnelInterfaces) == 0 && output.resource_id != null
+    error_message = "Default NIC pools must omit member projections and cleanup while retaining metadata and scalar ID output."
   }
   assert {
     condition     = azapi_resource.this.locks == tolist([var.parent_id]) && !contains(keys(azapi_resource.this.body.properties), "backendIPConfigurations")
@@ -26,6 +26,7 @@ run "default_pool" {
 run "pool_addresses_and_controls" {
   command = apply
   variables {
+    backend_address_type = "IP"
     properties = {
       virtualNetwork               = { id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/lab/providers/Microsoft.Network/virtualNetworks/lab" }
       loadBalancerBackendAddresses = [{ name = "app", properties = { ipAddress = "10.0.0.4" } }]
@@ -74,11 +75,12 @@ run "consumer_ignore_paths_accepted" {
 run "explicit_null_controls_and_empty_address_removal" {
   command = apply
   variables {
-    properties          = { virtualNetwork = null, tunnelInterfaces = null, loadBalancerBackendAddresses = [] }
-    retry               = null
-    timeouts            = null
-    resource_types      = { network_load_balancers_backend_address_pools = null }
-    ignore_body_changes = { network_load_balancers_backend_address_pools = [] }
+    backend_address_type = "IP"
+    properties           = { virtualNetwork = null, tunnelInterfaces = null, loadBalancerBackendAddresses = [] }
+    retry                = null
+    timeouts             = null
+    resource_types       = { network_load_balancers_backend_address_pools = null }
+    ignore_body_changes  = { network_load_balancers_backend_address_pools = [] }
   }
   assert {
     condition     = azapi_resource.this.retry == null && azapi_resource.this.timeouts == null && endswith(azapi_resource.this.type, "@2025-01-01") && azapi_resource.this.body.properties.virtualNetwork == null && length(azapi_resource.this.body.properties.loadBalancerBackendAddresses) == 0 && length(azapi_resource.this.body.properties.tunnelInterfaces) == 0
@@ -88,7 +90,8 @@ run "explicit_null_controls_and_empty_address_removal" {
 run "invalid_address_vnet" {
   command = plan
   variables {
-    properties = { loadBalancerBackendAddresses = [{ name = "bad", properties = { ipAddress = "10.0.0.4", virtualNetwork = { id = "/invalid" } } }] }
+    backend_address_type = "IP"
+    properties           = { loadBalancerBackendAddresses = [{ name = "bad", properties = { ipAddress = "10.0.0.4", virtualNetwork = { id = "/invalid" } } }] }
   }
   expect_failures = [var.properties]
 }

@@ -75,13 +75,6 @@ variable "parent_id" {
   }
 }
 
-variable "avm_managed_migration_enabled" {
-  type        = bool
-  default     = false
-  description = "Enable only for the existing-state upgrade from v0.5.0. Imports existing ARM children into their new module addresses. Never enable on a new deployment; remove after a successful upgrade and convergence plan."
-  nullable    = false
-}
-
 variable "backend_address_pool_addresses" {
   type = map(object({
     name                                                = string
@@ -154,7 +147,7 @@ variable "backend_address_pool_configuration" {
 variable "backend_address_pools" {
   type = map(object({
     name                        = optional(string, "bepool-1")
-    backend_address_type        = optional(string, "IP")
+    backend_address_type        = optional(string, "NIC")
     virtual_network_resource_id = optional(string)
     tunnel_interfaces = optional(map(object({
       identifier = number
@@ -164,7 +157,7 @@ variable "backend_address_pools" {
     })), {})
   }))
   default     = {}
-  description = "Backend pools by stable input key: unique name, backend_address_type (IP default, NIC, or Frontend), optional virtual_network_resource_id and tunnel_interfaces (identifier, port, protocol, type). The parent owns metadata, not member lists. Dedicated endpoints authoritatively manage IP/Frontend members, including [] to clear the last member and fixed-empty destroy cleanup. Global pools require Frontend mode and no VNet/tunnels; regional pools require IP or NIC. NIC membership remains exclusively with the NIC owner. Modes declare ownership, not an Azure conversion: clear explicit members before switching to NIC; detach native NICs before switching from NIC. Coordinate mode changes separately."
+  description = "Backend pools by stable input key: unique name, backend_address_type (NIC default for omission/null, IP, or Frontend), optional virtual_network_resource_id and tunnel_interfaces (identifier, port, protocol, type). The parent owns metadata, not member lists. NIC creates no explicit-member writer or cleanup; membership remains exclusively with the NIC owner. Opt into IP for explicit addresses. Dedicated endpoints authoritatively manage IP/Frontend members, including [] to clear the last member and fixed-empty destroy cleanup. Global pools require explicit Frontend mode and no VNet/tunnels; regional pools require IP or NIC. Modes declare ownership, not an Azure conversion: keep existing IP pools explicitly IP; clear explicit members before switching to NIC; detach native NICs before switching from NIC. Coordinate mode changes separately."
   nullable    = false
 
   validation {
@@ -404,18 +397,6 @@ variable "lb_rules" {
   validation {
     condition     = length(distinct([for r in var.lb_rules : coalesce(r.name, "rule-${var.name}")])) == length(var.lb_rules)
     error_message = "Resolved load balancing rule names must be unique."
-  }
-}
-
-variable "migration_role_assignment_resource_ids" {
-  type        = map(string)
-  default     = {}
-  description = "During migration only, existing role assignment ARM IDs keyed exactly as role_assignments. Capture GUIDs from released state. Required with migration enabled; permits safe adoption including legacy cross-tenant composite IDs after their suffix is removed."
-  nullable    = false
-
-  validation {
-    condition     = alltrue([for id in var.migration_role_assignment_resource_ids : can(provider::azapi::parse_resource_id("Microsoft.Authorization/roleAssignments", id))])
-    error_message = "Migration role assignment IDs must be valid ARM role assignment IDs without a tenant suffix."
   }
 }
 

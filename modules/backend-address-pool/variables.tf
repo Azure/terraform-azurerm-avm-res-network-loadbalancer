@@ -77,8 +77,8 @@ variable "avm_managed_migration_enabled" {
 
 variable "backend_address_type" {
   type        = string
-  default     = "IP"
-  description = "IP (default) or Frontend owns an explicit list with fixed-empty destroy cleanup; NIC omits the projection and leaves memberships to the NIC owner. Clear explicit members before changing to NIC, and detach NICs before changing from NIC."
+  default     = "NIC"
+  description = "NIC (default for omission/null) omits the projection and creates no explicit-member cleanup, leaving memberships to the NIC owner. Opt into IP or Frontend to own an explicit list with fixed-empty destroy cleanup. Keep existing IP pools explicitly IP; clear explicit members before changing to NIC, and detach NICs before changing from NIC."
   nullable    = false
 
   validation {

@@ -61,7 +61,7 @@ run "nic_response_projection_is_unspecified_not_empty" {
   }
 }
 
-run "omitted_null_and_explicit_ip_modes_keep_empty_lists" {
+run "omitted_null_nic_and_explicit_empty_ip_have_distinct_owners" {
   command = apply
   variables {
     backend_address_pools = {
@@ -74,11 +74,16 @@ run "omitted_null_and_explicit_ip_modes_keep_empty_lists" {
   assert {
     condition = (
       alltrue([for p in azapi_update_resource.backend_members : p.body.properties.loadBalancerBackendAddresses != null && length(p.body.properties.loadBalancerBackendAddresses) == 0]) &&
-      length(azapi_update_resource.backend_members) == 3 &&
-      alltrue([for p in var.backend_address_pools : p.backend_address_type == "IP"]) &&
+      keys(azapi_update_resource.backend_members) == ["explicit"] &&
+      keys(azapi_resource_action.clear_backend_members) == ["explicit"] &&
+      keys(local.backend_pool_members) == ["explicit"] &&
+      var.backend_address_pools.omitted.backend_address_type == "NIC" &&
+      var.backend_address_pools.nullable.backend_address_type == "NIC" &&
+      var.backend_address_pools.explicit.backend_address_type == "IP" &&
+      alltrue([for p in azapi_resource.this.body.properties.backendAddressPools : !contains(keys(p.properties), "loadBalancerBackendAddresses")]) &&
       azapi_resource.this.ignore_other_items_in_list == null
     )
-    error_message = "Empty IP lists must still be sent/compared; absence/null mode must not silently delegate last-member removal."
+    error_message = "Omitted/null NIC pools must have no explicit-member action, updater or cleanup. Explicit IP must retain authoritative empty-list ownership."
   }
   providers = {
     azapi  = azapi
@@ -92,7 +97,7 @@ run "ip_addition_and_nic_projection_can_coexist_in_separate_pools" {
   variables {
     backend_address_pools = {
       app = { name = "app", backend_address_type = "NIC" }
-      ip  = { name = "ip" }
+      ip  = { name = "ip", backend_address_type = "IP" }
     }
     backend_address_pool_addresses = {
       static = {
@@ -123,7 +128,7 @@ run "removing_last_ip_member_does_not_select_nic_mode" {
   variables {
     backend_address_pools = {
       app = { name = "app", backend_address_type = "NIC" }
-      ip  = { name = "ip" }
+      ip  = { name = "ip", backend_address_type = "IP" }
     }
     backend_address_pool_addresses = {}
   }
@@ -142,6 +147,38 @@ run "reject_ip_members_on_nic_pool" {
   command = plan
   variables {
     backend_address_pools = { app = { backend_address_type = "NIC" } }
+    backend_address_pool_addresses = {
+      bad = { name = "bad", backend_address_pool_object_name = "app", ip_address = "10.40.1.10" }
+    }
+  }
+  expect_failures = [var.backend_address_pool_addresses]
+  providers = {
+    azapi  = azapi
+    random = random
+    time   = time
+  }
+}
+
+run "reject_ip_members_on_default_nic_pool" {
+  command = plan
+  variables {
+    backend_address_pools = { app = { name = "app" } }
+    backend_address_pool_addresses = {
+      bad = { name = "bad", backend_address_pool_object_name = "app", ip_address = "10.40.1.10" }
+    }
+  }
+  expect_failures = [var.backend_address_pool_addresses]
+  providers = {
+    azapi  = azapi
+    random = random
+    time   = time
+  }
+}
+
+run "reject_ip_members_on_null_nic_pool" {
+  command = plan
+  variables {
+    backend_address_pools = { app = { name = "app", backend_address_type = null } }
     backend_address_pool_addresses = {
       bad = { name = "bad", backend_address_pool_object_name = "app", ip_address = "10.40.1.10" }
     }

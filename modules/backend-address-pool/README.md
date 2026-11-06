@@ -4,9 +4,10 @@
 
 Manages one pool, explicit IP or regional-frontend backend addresses, and Gateway tunnel interfaces.
 The caller owns cardinality. NIC membership belongs to the NIC-owning module.
-Set `backend_address_type = "NIC"` to omit the server-maintained address
-projection; native NIC references are never authored here. IP/Frontend member
-lists are authoritative, including `[]` for last-member removal. Frontend mode
+NIC is the default, including omission/null of `backend_address_type`, and omits
+the server-maintained address projection; native NIC references are never authored
+here. Explicitly select IP/Frontend mode to own authoritative member lists,
+including `[]` for last-member removal. Frontend mode
 requires the caller to declare `sku_tier = "Global"` matching the actual parent.
 Each frontend member supplies `properties.loadBalancerFrontendIPConfiguration.id`
 instead of `properties.ipAddress`, with no VNet. IDs must reference public
@@ -18,7 +19,10 @@ required for Global frontend-reference pools. It stores a fixed empty list,
 not a NIC snapshot, and is not the refreshing resource owner. It shares retry,
 timeouts and the parent mutex. AzAPI 2.13 does not support ignore\_body\_changes
 on actions, and its destroy action uses the create timeout for the request.
-Exact-candidate automatic lifecycle and migration remain subject to live proof.
+Mode changes require coordinated ownership transfer, not automatic conversion.
+Keep existing IP pools explicitly IP before upgrading from a configuration
+that used the former IP default. See the root upgrade guide for the narrow
+erroneous-native cleanup-binding recovery; never send `[]` against native NIC references.
 
 This standalone module is for externally managed LBs only; see
 `examples/child-resources`. The root does not call it and always owns the entire
@@ -114,11 +118,11 @@ Default: `false`
 
 ### <a name="input_backend_address_type"></a> [backend\_address\_type](#input\_backend\_address\_type)
 
-Description: IP (default) or Frontend owns an explicit list with fixed-empty destroy cleanup; NIC omits the projection and leaves memberships to the NIC owner. Clear explicit members before changing to NIC, and detach NICs before changing from NIC.
+Description: NIC (default for omission/null) omits the projection and creates no explicit-member cleanup, leaving memberships to the NIC owner. Opt into IP or Frontend to own an explicit list with fixed-empty destroy cleanup. Keep existing IP pools explicitly IP; clear explicit members before changing to NIC, and detach NICs before changing from NIC.
 
 Type: `string`
 
-Default: `"IP"`
+Default: `"NIC"`
 
 ### <a name="input_enable_telemetry"></a> [enable\_telemetry](#input\_enable\_telemetry)
 

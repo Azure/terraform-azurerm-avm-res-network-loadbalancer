@@ -2,9 +2,10 @@
 
 Manages one pool, explicit IP or regional-frontend backend addresses, and Gateway tunnel interfaces.
 The caller owns cardinality. NIC membership belongs to the NIC-owning module.
-Set `backend_address_type = "NIC"` to omit the server-maintained address
-projection; native NIC references are never authored here. IP/Frontend member
-lists are authoritative, including `[]` for last-member removal. Frontend mode
+NIC is the default, including omission/null of `backend_address_type`, and omits
+the server-maintained address projection; native NIC references are never authored
+here. Explicitly select IP/Frontend mode to own authoritative member lists,
+including `[]` for last-member removal. Frontend mode
 requires the caller to declare `sku_tier = "Global"` matching the actual parent.
 Each frontend member supplies `properties.loadBalancerFrontendIPConfiguration.id`
 instead of `properties.ipAddress`, with no VNet. IDs must reference public
@@ -16,7 +17,10 @@ required for Global frontend-reference pools. It stores a fixed empty list,
 not a NIC snapshot, and is not the refreshing resource owner. It shares retry,
 timeouts and the parent mutex. AzAPI 2.13 does not support ignore_body_changes
 on actions, and its destroy action uses the create timeout for the request.
-Exact-candidate automatic lifecycle and migration remain subject to live proof.
+Mode changes require coordinated ownership transfer, not automatic conversion.
+Keep existing IP pools explicitly IP before upgrading from a configuration
+that used the former IP default. See the root upgrade guide for the narrow
+erroneous-native cleanup-binding recovery; never send `[]` against native NIC references.
 
 This standalone module is for externally managed LBs only; see
 `examples/child-resources`. The root does not call it and always owns the entire
