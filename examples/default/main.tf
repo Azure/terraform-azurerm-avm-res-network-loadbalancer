@@ -1,87 +1,64 @@
-module "naming" {
-  source  = "Azure/avm-utl-naming/azure"
-  version = "0.2.0"
+resource "random_id" "example" {
+  byte_length = 4
 }
 
-module "regions" {
-  source  = "Azure/regions/azurerm"
-  version = "0.4.0"
+data "azapi_client_config" "current" {}
+
+resource "azapi_resource" "resource_group" {
+  location               = var.location
+  name                   = "rg-lb-${random_id.example.hex}"
+  parent_id              = data.azapi_client_config.current.subscription_resource_id
+  type                   = "Microsoft.Resources/resourceGroups@2025-04-01"
+  response_export_values = []
 }
 
-# Helps pick a random region from the list of regions.
-resource "random_integer" "region_index" {
-  max = length(local.azure_regions) - 1
-  min = 0
-}
-
-resource "random_integer" "zone_index" {
-  max = length(module.regions.regions_by_name[local.azure_regions[random_integer.region_index.result]].zones) - 1
-  min = 1
-}
-
-resource "azurerm_resource_group" "example" {
-  location = local.azure_regions[random_integer.region_index.result]
-  name     = module.naming.resource_group.name_unique
-}
-
-resource "azurerm_virtual_network" "example" {
-  location            = azurerm_resource_group.example.location
-  name                = module.naming.virtual_network.name_unique
-  resource_group_name = azurerm_resource_group.example.name
-  address_space       = ["10.1.0.0/16"]
-}
-
-resource "azurerm_subnet" "example" {
-  name                 = module.naming.subnet.name_unique
-  resource_group_name  = azurerm_virtual_network.example.resource_group_name
-  virtual_network_name = azurerm_virtual_network.example.name
-  address_prefixes     = ["10.1.1.0/26"]
-}
-
-resource "azurerm_network_interface" "example_1" {
-  location            = azurerm_resource_group.example.location
-  name                = "${module.naming.network_interface.name_unique}-1"
-  resource_group_name = azurerm_resource_group.example.name
-
-  ip_configuration {
-    name                          = "ipconfig1"
-    private_ip_address_allocation = "Dynamic"
-    subnet_id                     = azurerm_subnet.example.id
+resource "azapi_resource" "virtual_network" {
+  location  = var.location
+  name      = "vnet-lb"
+  parent_id = azapi_resource.resource_group.id
+  type      = "Microsoft.Network/virtualNetworks@2025-01-01"
+  body = {
+    properties = {
+      addressSpace = { addressPrefixes = ["10.1.0.0/16"] }
+      subnets      = [{ name = "backend", properties = { addressPrefix = "10.1.1.0/24" } }]
+    }
   }
-}
-
-resource "azurerm_network_interface" "example_2" {
-  location            = azurerm_resource_group.example.location
-  name                = "${module.naming.network_interface.name_unique}-2"
-  resource_group_name = azurerm_resource_group.example.name
-
-  ip_configuration {
-    name                          = "ipconfig1"
-    private_ip_address_allocation = "Dynamic"
-    subnet_id                     = azurerm_subnet.example.id
-  }
+  response_export_values = []
 }
 
 module "loadbalancer" {
   source = "../../"
 
-  # Internal
-  # Standard SKU
-  # Regional
-  # Zone-redundant
   frontend_ip_configurations = {
-    frontend_configuration_1 = {
-      name                                   = "myFrontend"
-      frontend_private_ip_subnet_resource_id = azurerm_subnet.example.id
-      # zones = ["1", "2", "3"] # Zone-redundant
-      # zones = ["None"] # Non-zonal
+    internal = {
+      name                                   = "internal"
+      frontend_private_ip_subnet_resource_id = "${azapi_resource.virtual_network.id}/subnets/backend"
     }
   }
-  location            = azurerm_resource_group.example.location
-  name                = "default-lb"
-  resource_group_name = azurerm_resource_group.example.name
-  enable_telemetry    = var.enable_telemetry
-  tags = {
-    version = "x.y.z"
+  location              = var.location
+  name                  = "lb-${random_id.example.hex}"
+  parent_id             = azapi_resource.resource_group.id
+  backend_address_pools = { app = { name = "app" } }
+  enable_telemetry      = var.enable_telemetry
+}
+
+# The NIC owns its IP configurations and backend memberships.
+resource "azapi_resource" "network_interface" {
+  location  = var.location
+  name      = "nic-app"
+  parent_id = azapi_resource.resource_group.id
+  type      = "Microsoft.Network/networkInterfaces@2025-01-01"
+  body = {
+    properties = {
+      ipConfigurations = [{
+        name = "primary"
+        properties = {
+          privateIPAllocationMethod       = "Dynamic"
+          subnet                          = { id = "${azapi_resource.virtual_network.id}/subnets/backend" }
+          loadBalancerBackendAddressPools = [{ id = module.loadbalancer.backend_address_pool_resource_ids["app"] }]
+        }
+      }]
+    }
   }
+  response_export_values = []
 }

@@ -1,8 +1,11 @@
 # Examples
 
-- Create a directory for each example.
-- Create a `_header.md` file in each directory to describe the example.
-- See the `default` example provided as a skeleton - this must remain, but you can add others.
-- Run `make fmt && make docs` from the repo root to generate the required documentation.
+- [default](default): private LB, AzAPI VNet and a NIC whose owner configures its
+  backend pool membership using the module's keyed pool-ID output.
+- [interfaces](interfaces): consumer-owned public IP plus pools, probe, load rule,
+  NAT rule, outbound rule, diagnostics, RBAC, lock and tags.
 
-> **Note:** Examples must be deployable and idempotent. Ensure that no input variables are required to run the example and that random values are used to ensure unique resource names. E.g. use the [naming module](https://registry.terraform.io/modules/Azure/naming/azurerm/latest) to generate a unique name for a resource.
+These are breaking AzAPI draft examples, not evidence of successful Azure
+deployment. Review the root upgrade guide before use. Regenerate documentation
+and run local validation with managed Avm.Authoring (`avm pre-commit` and
+`avm pr-check`). Real deployment requires separately authorized Azure scope.
