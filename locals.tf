@@ -42,7 +42,10 @@ locals {
         properties = merge(
           pool.backend_address_type == "Frontend" ? { loadBalancerFrontendIPConfiguration = { id = address.load_balancer_frontend_ip_configuration_resource_id } } : {},
           pool.backend_address_type == "IP" ? { ipAddress = address.ip_address } : {},
-          pool.backend_address_type == "IP" && coalesce(address.virtual_network_resource_id, pool.virtual_network_resource_id, var.backend_address_pool_configuration, "unset") != "unset" ? {
+          pool.backend_address_type == "IP" && address.subnet_resource_id != null ? {
+            subnet = { id = address.subnet_resource_id }
+          } : {},
+          pool.backend_address_type == "IP" && address.subnet_resource_id == null && coalesce(address.virtual_network_resource_id, pool.virtual_network_resource_id, var.backend_address_pool_configuration, "unset") != "unset" ? {
             virtualNetwork = { id = coalesce(address.virtual_network_resource_id, pool.virtual_network_resource_id, var.backend_address_pool_configuration, "unset") }
           } : {}
         )
