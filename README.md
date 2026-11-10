@@ -220,6 +220,7 @@ map(object({
     name                                                = string
     backend_address_pool_object_name                    = string
     ip_address                                          = optional(string)
+    subnet_resource_id                                  = optional(string)
     virtual_network_resource_id                         = optional(string)
     load_balancer_frontend_ip_configuration_resource_id = optional(string)
   }))
