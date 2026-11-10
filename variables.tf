@@ -104,6 +104,17 @@ variable "backend_address_pool_addresses" {
     error_message = "Backend addresses must not specify both subnet_resource_id and virtual_network_resource_id."
   }
   validation {
+    condition = alltrue([
+      for address in var.backend_address_pool_addresses :
+      address.subnet_resource_id == null || try(
+        var.backend_address_pools[address.backend_address_pool_object_name].virtual_network_resource_id == null &&
+        var.backend_address_pool_configuration == null,
+        false
+      )
+    ])
+    error_message = "Subnet-backed addresses require network scope only at address level. Remove the pool's virtual_network_resource_id and the backend_address_pool_configuration default."
+  }
+  validation {
     condition = alltrue([for a in var.backend_address_pool_addresses :
       a.load_balancer_frontend_ip_configuration_resource_id == null || can(provider::azapi::parse_resource_id("Microsoft.Network/loadBalancers/frontendIPConfigurations", a.load_balancer_frontend_ip_configuration_resource_id))
     ])
