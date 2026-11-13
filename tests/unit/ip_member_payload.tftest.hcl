@@ -58,9 +58,10 @@ run "original_ip_payload" {
   }
 }
 
-run "ip_member_subnet_takes_precedence_over_vnet" {
+run "ip_members_use_address_level_network_scope" {
   command = apply
   variables {
+    backend_address_pool_configuration = null
     backend_address_pool_addresses = {
       subnet = {
         name                             = "subnet-member"
@@ -89,7 +90,7 @@ run "ip_member_subnet_takes_precedence_over_vnet" {
         }
       }
     )
-    error_message = "An explicit backend subnet must be serialized as subnet and suppress VNet, while members without a subnet retain VNet behavior."
+    error_message = "Backend members must serialize their address-level subnet or VNet without adding the other network scope."
   }
   providers = {
     azapi  = azapi
