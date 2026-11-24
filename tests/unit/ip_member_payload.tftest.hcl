@@ -58,6 +58,47 @@ run "original_ip_payload" {
   }
 }
 
+run "ip_members_use_address_level_network_scope" {
+  command = apply
+  variables {
+    backend_address_pool_configuration = null
+    backend_address_pool_addresses = {
+      subnet = {
+        name                             = "subnet-member"
+        backend_address_pool_object_name = "ip"
+        ip_address                       = "10.40.1.31"
+        subnet_resource_id               = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/lab/providers/Microsoft.Network/virtualNetworks/lab/subnets/backend"
+      }
+      vnet = {
+        name                             = "vnet-member"
+        backend_address_pool_object_name = "ip"
+        ip_address                       = "10.40.1.32"
+        virtual_network_resource_id      = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/lab/providers/Microsoft.Network/virtualNetworks/other"
+      }
+    }
+  }
+  assert {
+    condition = (
+      { for address in local.backend_pool_members.ip : address.name => address.properties } == {
+        subnet-member = {
+          ipAddress = "10.40.1.31"
+          subnet    = { id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/lab/providers/Microsoft.Network/virtualNetworks/lab/subnets/backend" }
+        }
+        vnet-member = {
+          ipAddress      = "10.40.1.32"
+          virtualNetwork = { id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/lab/providers/Microsoft.Network/virtualNetworks/other" }
+        }
+      }
+    )
+    error_message = "Backend members must serialize their address-level subnet or VNet without adding the other network scope."
+  }
+  providers = {
+    azapi  = azapi
+    random = random
+    time   = time
+  }
+}
+
 run "exact_failed_addition_payload_not_persistence" {
   command = apply
   variables {

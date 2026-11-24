@@ -80,6 +80,7 @@ variable "backend_address_pool_addresses" {
     name                                                = string
     backend_address_pool_object_name                    = string
     ip_address                                          = optional(string)
+    subnet_resource_id                                  = optional(string)
     virtual_network_resource_id                         = optional(string)
     load_balancer_frontend_ip_configuration_resource_id = optional(string)
   }))
@@ -90,9 +91,28 @@ variable "backend_address_pool_addresses" {
   validation {
     condition = alltrue([for a in var.backend_address_pool_addresses :
       (a.ip_address == null ? 0 : 1) + (a.load_balancer_frontend_ip_configuration_resource_id == null ? 0 : 1) == 1 &&
-      (a.load_balancer_frontend_ip_configuration_resource_id == null || a.virtual_network_resource_id == null)
+      (a.load_balancer_frontend_ip_configuration_resource_id == null || (a.virtual_network_resource_id == null && a.subnet_resource_id == null))
     ])
-    error_message = "Each backend member requires exactly one IP address or regional LB frontend ID; frontend members cannot specify a VNet."
+    error_message = "Each backend member requires exactly one IP address or regional LB frontend ID; frontend members cannot specify a VNet or subnet."
+  }
+  validation {
+    condition     = alltrue([for address in var.backend_address_pool_addresses : address.subnet_resource_id == null || can(provider::azapi::parse_resource_id("Microsoft.Network/virtualNetworks/subnets", address.subnet_resource_id))])
+    error_message = "Backend address subnet IDs must identify Microsoft.Network/virtualNetworks/subnets resources."
+  }
+  validation {
+    condition     = alltrue([for address in var.backend_address_pool_addresses : address.subnet_resource_id == null || address.virtual_network_resource_id == null])
+    error_message = "Backend addresses must not specify both subnet_resource_id and virtual_network_resource_id."
+  }
+  validation {
+    condition = alltrue([
+      for address in var.backend_address_pool_addresses :
+      address.subnet_resource_id == null || try(
+        var.backend_address_pools[address.backend_address_pool_object_name].virtual_network_resource_id == null &&
+        var.backend_address_pool_configuration == null,
+        false
+      )
+    ])
+    error_message = "Subnet-backed addresses require network scope only at address level. Remove the pool's virtual_network_resource_id and the backend_address_pool_configuration default."
   }
   validation {
     condition = alltrue([for a in var.backend_address_pool_addresses :
