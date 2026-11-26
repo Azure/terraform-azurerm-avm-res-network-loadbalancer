@@ -10,7 +10,7 @@ data "azapi_resource_list" "role_definitions" {
 
 module "avm_interfaces" {
   source  = "Azure/avm-utl-interfaces/azure"
-  version = "0.9.0"
+  version = "0.10.1"
 
   location               = var.location
   diagnostic_settings_v2 = var.diagnostic_settings
