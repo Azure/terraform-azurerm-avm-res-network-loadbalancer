@@ -10,11 +10,11 @@ data "azapi_resource_list" "role_definitions" {
 
 module "avm_interfaces" {
   source  = "Azure/avm-utl-interfaces/azure"
-  version = "0.9.0"
+  version = "0.10.1"
 
-  location               = var.location
   diagnostic_settings_v2 = var.diagnostic_settings
   enable_telemetry       = var.enable_telemetry
+  location               = var.location
   lock = var.lock == null ? null : {
     kind  = var.lock.kind
     name  = coalesce(var.lock.name, "lock-${var.name}")
